@@ -152,10 +152,24 @@ function syncEditorTypography() {
     }
 }
 
+// 탭 아이콘 위 "채워짐" 점 갱신 (제목/사진 탭에 내용이 있는지 표시)
+function updateDockDots() {
+    const dotTitle = document.getElementById("dockDotTitle");
+    if (dotTitle) {
+        const filled = (els.headingTitleInput?.value.trim() || els.headingSubtitleInput?.value.trim());
+        dotTitle.classList.toggle("show", !!filled);
+    }
+    const dotImage = document.getElementById("dockDotImage");
+    if (dotImage && els.editor) {
+        dotImage.classList.toggle("show", !!els.editor.querySelector(".editor-image-block"));
+    }
+}
+
 function updateCanvas() {
     if (!els.captureArea) return;
 
     syncEditorTypography();
+    updateDockDots();
 
     const ratio = els.ratioSelect.value;
     els.captureArea.style.width = "";
@@ -691,7 +705,7 @@ function applyInvertToSelection() {
 
 document.getElementById("btnInvertHighlight").addEventListener("click", () => {
     if (applyInvertToSelection()) updateCanvas();
-    else alert("먼저 본문에서 글자를 드래그해 선택해 주세요.");
+    else showToast("먼저 본문에서 글자를 드래그해 선택해 주세요.");
 });
 
 document.getElementById("selHighlight").addEventListener("change", function () {
@@ -754,7 +768,7 @@ if (selFontFamilyEl) {
         this.value = "";
         if (!val) return;
         if (applyStyleToSelection("fontFamily", val)) updateCanvas();
-        else alert("먼저 본문에서 글자를 드래그해 선택해 주세요.");
+        else showToast("먼저 본문에서 글자를 드래그해 선택해 주세요.");
     });
 }
 
@@ -765,7 +779,7 @@ if (selFontSizeEl) {
         this.value = "";
         if (!val) return;
         if (applyStyleToSelection("fontSize", `${val}px`)) updateCanvas();
-        else alert("먼저 본문에서 글자를 드래그해 선택해 주세요.");
+        else showToast("먼저 본문에서 글자를 드래그해 선택해 주세요.");
     });
 }
 
@@ -795,6 +809,17 @@ els.editor.addEventListener("keydown", function (e) {
         if (inDialogue) { e.preventDefault(); document.execCommand("insertLineBreak"); }
     }
 });
+
+// ==== 토스트 알림 ====
+let toastTimer = null;
+function showToast(message) {
+    const toast = document.getElementById("toast");
+    if (!toast) { alert(message); return; }
+    toast.textContent = message;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove("show"), 2400);
+}
 
 // ==== 바텀시트 열기/닫기 (탭 클릭, 사진 선택, 프리셋 버튼에서 공통으로 사용) ====
 function openSheetPanel(panelId) {
@@ -832,6 +857,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const sheetOverlay = document.getElementById("sheetOverlay");
     if (sheetOverlay) sheetOverlay.addEventListener("click", closeSheetPanel);
 
+    const btnCloseSheet = document.getElementById("btnCloseSheet");
+    if (btnCloseSheet) btnCloseSheet.addEventListener("click", closeSheetPanel);
+
     const btnOpenPresets = document.getElementById("btnOpenPresets");
     if (btnOpenPresets) {
         btnOpenPresets.addEventListener("click", () => {
@@ -839,6 +867,48 @@ document.addEventListener("DOMContentLoaded", () => {
             if (isOpen) closeSheetPanel();
             else openSheetPanel("panel-presets");
         });
+    }
+
+    // ==== 미리보기 탭하면 크게 보기 ====
+    const previewZoomOverlay = document.getElementById("previewZoomOverlay");
+    const previewZoomInner = document.getElementById("previewZoomInner");
+    const captureAreaScaleWrapper = document.getElementById("captureAreaScaleWrapper");
+    if (previewZoomOverlay && previewZoomInner && captureAreaScaleWrapper) {
+        captureAreaScaleWrapper.addEventListener("click", () => {
+            if (!els.captureArea) return;
+            previewZoomInner.innerHTML = "";
+            const clone = els.captureArea.cloneNode(true);
+            clone.removeAttribute("id");
+            clone.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
+            clone.style.transform = "none";
+            clone.style.margin = "0";
+            clone.style.flexShrink = "0";
+            clone.style.maxWidth = "none";
+            previewZoomInner.appendChild(clone);
+            previewZoomOverlay.classList.add("show");
+
+            requestAnimationFrame(() => {
+                const availW = previewZoomInner.clientWidth;
+                const availH = previewZoomInner.clientHeight;
+                const realW = clone.offsetWidth;
+                const realH = clone.offsetHeight;
+                const scale = realW > 0 && realH > 0 ? Math.min(availW / realW, availH / realH, 3) : 1;
+                clone.style.transformOrigin = "center center";
+                clone.style.transform = `scale(${scale})`;
+            });
+        });
+        previewZoomOverlay.addEventListener("click", () => previewZoomOverlay.classList.remove("show"));
+    }
+
+    // ==== 본문 글자 수 표시 ====
+    const editorMeta = document.getElementById("editorMeta");
+    if (editorMeta && els.editor) {
+        const refreshEditorMeta = () => {
+            const len = (els.editor.innerText || "").replace(/\n/g, "").length;
+            editorMeta.textContent = `${len}자`;
+        };
+        els.editor.addEventListener("input", refreshEditorMeta);
+        refreshEditorMeta();
     }
 
     document.querySelectorAll(".segmented-control button").forEach((btn) => {
@@ -956,11 +1026,11 @@ document.getElementById("btnCopy").addEventListener("click", () => {
             els.captureArea.style.transform = originalTransform;
             applyPreviewScale();
             canvas.toBlob((blob) => {
-                if (!blob) { alert("이미지 변환 실패"); return; }
+                if (!blob) { showToast("이미지 변환에 실패했어요."); return; }
                 const item = new ClipboardItem({ "image/png": blob });
                 navigator.clipboard.write([item])
-                    .then(() => alert("발췌문 이미지가 클립보드에 복사되었습니다!"))
-                    .catch(() => alert("보안 정책으로 이미지 복사가 실패했습니다. 저장 버튼을 이용해 주세요."));
+                    .then(() => showToast("클립보드에 복사됐어요"))
+                    .catch(() => showToast("복사가 막혀 있어요 — 저장 버튼을 이용해 주세요."));
             }, "image/png");
         })
         .catch(() => {
@@ -991,7 +1061,7 @@ document.getElementById("btnSave").addEventListener("click", () => {
             els.captureArea.style.transform = originalTransform;
             applyPreviewScale();
             canvas.toBlob((blob) => {
-                if (!blob) { alert("이미지 변환 실패"); return; }
+                if (!blob) { showToast("이미지 변환에 실패했어요."); return; }
                 const blobURL = URL.createObjectURL(blob);
                 const link = document.createElement("a");
                 link.href = blobURL;
@@ -1511,7 +1581,7 @@ function applyCropTool() {
         const natW = srcImg.naturalWidth;
         const natH = srcImg.naturalHeight;
         if (!natW || !natH) {
-            alert("이미지를 불러오지 못해 자르기를 적용하지 못했어요. 다시 시도해주세요.");
+            showToast("이미지를 불러오지 못했어요. 다시 시도해주세요.");
             closeCropTool();
             return;
         }
@@ -1527,7 +1597,7 @@ function applyCropTool() {
         let sh = clampNum(Math.round((rectPct.h / 100) * natH), 1, natH - sy);
 
         if (sw < 2 || sh < 2) {
-            alert("자르기 영역이 올바르지 않아 적용하지 못했어요. 영역을 다시 잡고 시도해주세요.");
+            showToast("자르기 영역이 올바르지 않아요. 다시 잡아주세요.");
             closeCropTool();
             return;
         }
@@ -1544,7 +1614,7 @@ function applyCropTool() {
         try {
             ctx.drawImage(srcImg, sx, sy, sw, sh, 0, 0, sw, sh);
         } catch (err) {
-            alert("이미지를 자르는 중 오류가 발생했어요. 다시 시도해주세요.");
+            showToast("자르는 중 오류가 발생했어요. 다시 시도해주세요.");
             closeCropTool();
             return;
         }
@@ -1572,7 +1642,7 @@ function applyCropTool() {
         closeCropTool();
     };
     srcImg.onerror = () => {
-        alert("이미지를 불러오지 못해 자르기를 적용하지 못했어요. 다시 시도해주세요.");
+        showToast("이미지를 불러오지 못했어요. 다시 시도해주세요.");
         closeCropTool();
     };
     srcImg.src = originalSrc;
@@ -1729,7 +1799,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const file = e.target.files[0];
             if (!file) return;
             if (!file.type || !file.type.startsWith("image/")) {
-                alert("이미지 파일만 삽입할 수 있어요.");
+                showToast("이미지 파일만 삽입할 수 있어요.");
                 return;
             }
             const reader = new FileReader();
