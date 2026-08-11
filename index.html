@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+        <title>𓏲𝄢 </title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
+            rel="stylesheet" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+        <link rel="stylesheet" href="style.css?v=10" />
+    </head>
+    <body class="mobile-theme">
+        <header class="canvas-header">
+            <div id="captureAreaScaleWrapper">
+                <div id="captureArea">
+                    <div class="bg-image-layer" id="bgImageLayer"></div>
+                    <div class="bg-overlay-layer" id="bgOverlayLayer"></div>
+                    <div id="canvasContentContainer">
+                        <div class="heading-area" id="canvasHeading"></div>
+                        <div id="canvasTextContainer">
+                            <div id="canvasTextWrapper"></div>
+                        </div>
+                        <div class="info-area" id="canvasInfo"></div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="canvas-top-actions">
+            <button type="button" class="icon-fab" id="btnOpenPresets" title="프리셋">☆</button>
+            <button class="btn-export secondary" id="btnCopy">복사</button>
+            <button class="btn-export primary" id="btnSave">저장</button>
+        </div>
+
+        <main class="mobile-main">
+            <section class="editor-card">
+                <div class="editor-header">
+                    <span class="card-title">본문</span>
+                    <div class="editor-toolbar pill-group">
+                        <button id="btnBold" title="굵게">B</button>
+                        <button id="btnItalic" title="기울임">I</button>
+                        <button id="btnQuoteWrap" title="따옴표 감싸기">""</button>
+                        <button id="btnSubText" title="보조 글자색 적용">보조색</button>
+                        <select id="selHighlight" class="toolbar-select" title="형광펜 칠하기">
+                            <option value="" disabled selected>형광펜</option>
+                            <option value="A">형광펜 A</option>
+                            <option value="B">형광펜 B</option>
+                            <option value="C">형광펜 C</option>
+                        </select>
+                        <button id="btnInvertHighlight" title="글자색↔배경색 반전">반전</button>
+                        <button id="btnQuoteLine" class="btn-dialogue-line" title="대사 강조선 바">강조선</button>
+                        <select id="selAlign" class="toolbar-select" title="선택한 문단만 정렬 변경 (전체 정렬과 별개)">
+                            <option value="" disabled selected>정렬</option>
+                            <option value="left">왼쪽</option>
+                            <option value="center">가운데</option>
+                            <option value="right">오른쪽</option>
+                        </select>
+                        <select id="selFontFamily" class="toolbar-select" title="선택한 글자만 서체 변경 (전체 서체와 별개)">
+                            <option value="" disabled selected>폰트</option>
+                            <option value="'Pretendard', sans-serif">프리텐다드</option>
+                            <option value="'MaruBuri', serif">마루부리</option>
+                            <option value="'KoPubWorldDotum', sans-serif">KoPubWorld 돋움체</option>
+                            <option value="'ChosunIlboMyungjo', serif">조선일보명조</option>
+                            <option value="'Ridibatang', serif">리디바탕</option>
+                            <option value="'OnulSusa60', serif">오늘수사60</option>
+                            <option value="'OnulDamso', serif">오늘담소</option>
+                            <option value="'OnulSamhwagothic', sans-serif">오늘삼화고딕</option>
+                            <option value="'OnulDanjo', serif">오늘단조</option>
+                            <option value="OnulHwagang">오늘화강</option>
+                        </select>
+                        <select id="selFontSize" class="toolbar-select" title="선택한 글자만 크기 변경 (전체 크기와 별개)">
+                            <option value="" disabled selected>크기</option>
+                            <option value="12">12px</option>
+                            <option value="13">13px</option>
+                            <option value="14">14px</option>
+                            <option value="15">15px</option>
+                            <option value="16">16px</option>
+                            <option value="17">17px</option>
+                            <option value="18">18px</option>
+                            <option value="20">20px</option>
+                            <option value="22">22px</option>
+                            <option value="24">24px</option>
+                            <option value="28">28px</option>
+                            <option value="32">32px</option>
+                        </select>
+                        <button id="btnClearHighlight" title="선택 효과 지우기" class="text-danger">지우기</button>
+                        <button id="btnInsertImage" title="사진 삽입">사진</button>
+                        <input type="file" id="imageInsertInput" accept="image/*" style="display: none" />
+                    </div>
+                </div>
+                <div class="editor-scroll-x" id="editorScrollX">
+                    <div id="textEditor" contenteditable="true" placeholder="이곳에 발췌할 문구를 입력하거나 드래그 후 상단 효과 버튼을 적용하세요."></div>
+                </div>
+            </section>
+        </main>
+
+        <div class="sheet-overlay" id="sheetOverlay"></div>
+
+        <section class="adaptive-settings-window" id="modalSubWindow">
+            <div class="sheet-grip"></div>
+
+            <div class="tab-panel" id="panel-title">
+                <div class="panel-section-title">제목 · 부제목</div>
+                <div class="meta-input-inline">
+                    <div class="input-minimal">
+                        <label for="headingTitleInput">제목</label>
+                        <input type="text" id="headingTitleInput" placeholder="예: 제목을 입력하세요" />
+                    </div>
+                    <div class="input-minimal">
+                        <label for="headingSubtitleInput">부제목</label>
+                        <input type="text" id="headingSubtitleInput" placeholder="예: 부제목을 입력하세요" />
+                    </div>
+                </div>
+
+                <div class="panel-section-title">제목 서식</div>
+                <div class="control-minimal-row">
+                    <label for="headingTitleFont">서체</label>
+                    <select id="headingTitleFont">
+                        <option value="'Pretendard', sans-serif">프리텐다드 (Pretendard)</option>
+                        <option value="'MaruBuri', serif">마루부리 (MaruBuri)</option>
+                        <option value="'KoPubWorldDotum', sans-serif">KoPubWorld 돋움체</option>
+                        <option value="'ChosunIlboMyungjo', serif">조선일보명조</option>
+                        <option value="'Ridibatang', serif">리디바탕</option>
+                        <option value="'OnulSusa60', serif">오늘수사60</option>
+                        <option value="'OnulDamso', serif">오늘담소</option>
+                        <option value="'OnulSamhwagothic', sans-serif">오늘삼화고딕</option>
+                        <option value="'OnulDanjo', serif">오늘단조</option>
+                        <option value="OnulHwagang">오늘화강</option>
+                    </select>
+                </div>
+                <div class="control-minimal-row">
+                    <label>정렬</label>
+                    <input type="hidden" id="headingTitleAlign" value="left" />
+                    <div class="segmented-control segmented-control-minimal" data-target="headingTitleAlign">
+                        <button type="button" data-value="left" class="active">좌</button>
+                        <button type="button" data-value="center">중</button>
+                        <button type="button" data-value="right">우</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
+                    <label for="headingTitleSize">크기 (px)</label>
+                    <div class="stepper-minimal">
+                        <button onclick="stepInput('headingTitleSize', -1)">-</button>
+                        <input type="number" id="headingTitleSize" value="24" />
+                        <button onclick="stepInput('headingTitleSize', 1)">+</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
+                    <label for="headingTitleBold">굵기</label>
+                    <div class="checkbox-minimal-group">
+                        <label><input type="checkbox" id="headingTitleBold" checked /> 볼드</label>
+                    </div>
+                </div>
+
+                <div class="panel-section-title">부제목 서식</div>
+                <div class="control-minimal-row">
+                    <label for="headingSubtitleFont">서체</label>
+                    <select id="headingSubtitleFont">
+                        <option value="'Pretendard', sans-serif">프리텐다드 (Pretendard)</option>
+                        <option value="'MaruBuri', serif">마루부리 (MaruBuri)</option>
+                        <option value="'KoPubWorldDotum', sans-serif">KoPubWorld 돋움체</option>
+                        <option value="'ChosunIlboMyungjo', serif">조선일보명조</option>
+                        <option value="'Ridibatang', serif">리디바탕</option>
+                        <option value="'OnulSusa60', serif">오늘수사60</option>
+                        <option value="'OnulDamso', serif">오늘담소</option>
+                        <option value="'OnulSamhwagothic', sans-serif">오늘삼화고딕</option>
+                        <option value="'OnulDanjo', serif">오늘단조</option>
+                        <option value="OnulHwagang">오늘화강</option>
+                    </select>
+                </div>
+                <div class="control-minimal-row">
+                    <label>정렬</label>
+                    <input type="hidden" id="headingSubtitleAlign" value="left" />
+                    <div class="segmented-control segmented-control-minimal" data-target="headingSubtitleAlign">
+                        <button type="button" data-value="left" class="active">좌</button>
+                        <button type="button" data-value="center">중</button>
+                        <button type="button" data-value="right">우</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
+                    <label for="headingSubtitleSize">크기 (px)</label>
+                    <div class="stepper-minimal">
+                        <button onclick="stepInput('headingSubtitleSize', -1)">-</button>
+                        <input type="number" id="headingSubtitleSize" value="15" />
+                        <button onclick="stepInput('headingSubtitleSize', 1)">+</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
+                    <label for="headingSubtitleBold">굵기</label>
+                    <div class="checkbox-minimal-group">
+                        <label><input type="checkbox" id="headingSubtitleBold" /> 볼드</label>
+                    </div>
+                </div>
+
+                <div class="panel-section-title">하단 출처 표기</div>
+                <div class="meta-input-inline">
+                    <div class="input-minimal">
+                        <label for="titleInput">타이틀</label>
+                        <input type="text" id="titleInput" placeholder="예: 제목" />
+                    </div>
+                    <div class="input-minimal">
+                        <label for="creatorInput">제작자</label>
+                        <input type="text" id="creatorInput" placeholder="예: 제작자" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-panel" id="panel-text">
+                <div class="panel-section-title">전체 본문 설정</div>
+                <div class="control-minimal-row">
+                    <label>전체 정렬</label>
+                    <input type="hidden" id="alignH" value="left" />
+                    <div class="segmented-control segmented-control-minimal" data-target="alignH">
+                        <button type="button" data-value="left" class="active">좌</button>
+                        <button type="button" data-value="center">중</button>
+                        <button type="button" data-value="right">우</button>
+                        <button type="button" data-value="justify">양쪽</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
+                    <label for="wordBreak">줄바꿈</label>
+                    <select id="wordBreak">
+                        <option value="keep-all" selected>단어 단위</option>
+                        <option value="break-all">글자 단위</option>
+                    </select>
+                </div>
+
+                <div class="panel-section-title">색상 변경</div>
+                <div class="picker-minimal-group">
+                    <div class="picker-cell">
+                        <input type="color" id="globalTextColor" value="#1e293b" />
+                        <span>글자색</span>
+                    </div>
+                    <div class="picker-cell">
+                        <input type="color" id="subTextColor" value="#64748b" />
+                        <span>보조색</span>
+                    </div>
+                    <div class="picker-cell">
+                        <input type="color" id="hlColorA" value="#fef08a" />
+                        <span>형광펜 A</span>
+                    </div>
+                    <div class="picker-cell">
+                        <input type="color" id="hlColorB" value="#bbf7d0" />
+                        <span>형광펜 B</span>
+                    </div>
+                    <div class="picker-cell">
+                        <input type="color" id="hlColorC" value="#bfdbfe" />
+                        <span>형광펜 C</span>
+                    </div>
+                    <div class="picker-cell">
+                        <input type="color" id="quoteLineColor" value="#2563eb" />
+                        <span>강조선</span>
+                    </div>
+                </div>
+
+                <div class="panel-section-title">스마트 하이라이트</div>
+                <div class="control-minimal-row">
+                    <div class="checkbox-minimal-group">
+                        <label><input type="checkbox" id="enableQuoteColor" checked /> 따옴표 감지</label>
+                        <label><input type="checkbox" id="enableParenColor" checked /> 괄호 감지</label>
+                    </div>
+                </div>
+                <div class="picker-minimal-group">
+                    <div class="picker-cell">
+                        <input type="color" id="quoteColor" value="#2563eb" />
+                        <span>따옴표색</span>
+                    </div>
+                    <div class="picker-cell" id="parenColorWrapper">
+                        <input type="color" id="parenColor" value="#ea580c" />
+                        <span>괄호색</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-panel" id="panel-font">
+                <div class="panel-section-title">본문 서체</div>
+                <div class="control-minimal-row">
+                    <label for="fontSelect">서체</label>
+                    <select id="fontSelect">
+                        <option value="'Pretendard', sans-serif">프리텐다드 (Pretendard)</option>
+                        <option value="'MaruBuri', serif">마루부리 (MaruBuri)</option>
+                        <option value="'KoPubWorldDotum', sans-serif">KoPubWorld 돋움체</option>
+                        <option value="'ChosunIlboMyungjo', serif">조선일보명조</option>
+                        <option value="'Ridibatang', serif">리디바탕</option>
+                        <option value="'OnulSusa60', serif">오늘수사60</option>
+                        <option value="'OnulDamso', serif">오늘담소</option>
+                        <option value="'OnulSamhwagothic', sans-serif">오늘삼화고딕</option>
+                        <option value="'OnulDanjo', serif">오늘단조</option>
+                        <option value="OnulHwagang">오늘화강</option>
+                    </select>
+                </div>
+
+                <div class="panel-section-title">간격 디테일</div>
+                <div class="control-minimal-row">
+                    <label for="fontSize">크기 (px)</label>
+                    <div class="stepper-minimal">
+                        <button onclick="stepInput('fontSize', -1)">-</button>
+                        <input type="number" id="fontSize" value="16" />
+                        <button onclick="stepInput('fontSize', 1)">+</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
+                    <label for="letterSpacing">자간 (px)</label>
+                    <div class="stepper-minimal">
+                        <button onclick="stepInput('letterSpacing', -0.5, 2)">-</button>
+                        <input type="number" id="letterSpacing" value="-0.5" />
+                        <button onclick="stepInput('letterSpacing', 0.5, 2)">+</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
+                    <label for="lineHeight">행간 (px)</label>
+                    <div class="stepper-minimal">
+                        <button onclick="stepInput('lineHeight', -2)">-</button>
+                        <input type="number" id="lineHeight" value="28" />
+                        <button onclick="stepInput('lineHeight', 2)">+</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
+                    <label for="paraSpacing">문단 (px)</label>
+                    <div class="stepper-minimal">
+                        <button onclick="stepInput('paraSpacing', -2)">-</button>
+                        <input type="number" id="paraSpacing" value="16" />
+                        <button onclick="stepInput('paraSpacing', 2)">+</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
+                    <label for="fontScaleX">장평 (%)</label>
+                    <div class="stepper-minimal">
+                        <button onclick="stepInput('fontScaleX', -1)">-</button>
+                        <input type="number" id="fontScaleX" value="100" />
+                        <button onclick="stepInput('fontScaleX', 1)">+</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
+                    <label for="infoFontSize">출처 글자 크기 (px)</label>
+                    <div class="stepper-minimal">
+                        <button onclick="stepInput('infoFontSize', -1)">-</button>
+                        <input type="number" id="infoFontSize" value="11" />
+                        <button onclick="stepInput('infoFontSize', 1)">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-panel" id="panel-bg">
+                <div class="panel-section-title">캔버스 설정</div>
+                <div class="control-minimal-row">
+                    <label for="ratioSelect">캔버스 비율</label>
+                    <select id="ratioSelect">
+                        <option value="1:1">1 : 1</option>
+                        <option value="4:5">4 : 5</option>
+                        <option value="16:9">16 : 9</option>
+                        <option value="9:16">9 : 16</option>
+                        <option value="free" selected>자동 조절</option>
+                    </select>
+                </div>
+                <div class="control-minimal-row" id="customWidthArea">
+                    <label for="canvasWidth">지정 너비 (px)</label>
+                    <div class="stepper-minimal">
+                        <button onclick="stepInput('canvasWidth', -50)">-</button>
+                        <input type="number" id="canvasWidth" value="520" />
+                        <button onclick="stepInput('canvasWidth', 50)">+</button>
+                    </div>
+                </div>
+                <div class="field-hint" id="customWidthHint">지정한 값 그대로 미리보기 크기가 바뀝니다. 화면보다 넓게 설정하면 미리보기 영역을 좌우로 스크롤해서 확인할 수 있어요.</div>
+                <div class="control-minimal-row">
+                    <label for="paddingX">가로 여백 (px)</label>
+                    <div class="stepper-minimal">
+                        <button onclick="stepInput('paddingX', -5)">-</button>
+                        <input type="number" id="paddingX" value="50" />
+                        <button onclick="stepInput('paddingX', 5)">+</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
+                    <label for="paddingY">세로 여백 (px)</label>
+                    <div class="stepper-minimal">
+                        <button onclick="stepInput('paddingY', -5)">-</button>
+                        <input type="number" id="paddingY" value="50" />
+                        <button onclick="stepInput('paddingY', 5)">+</button>
+                    </div>
+                </div>
+
+                <div class="panel-section-title">레이아웃</div>
+                <div class="control-minimal-row">
+                    <label for="columnToggle">2단으로 나누기</label>
+                    <div class="checkbox-minimal-group">
+                        <label><input type="checkbox" id="columnToggle" /> 사용</label>
+                    </div>
+                </div>
+                <div class="control-minimal-row" id="columnSplitArea">
+                    <label for="columnSplitIndex">분할 위치 (앞 단 문단 수)</label>
+                    <div class="stepper-minimal">
+                        <button onclick="stepInput('columnSplitIndex', -1)">-</button>
+                        <input type="number" id="columnSplitIndex" value="1" min="1" />
+                        <button onclick="stepInput('columnSplitIndex', 1)">+</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row" id="columnGapArea">
+                    <label for="columnGap">단 간격 (px)</label>
+                    <div class="stepper-minimal">
+                        <button onclick="stepInput('columnGap', -4)">-</button>
+                        <input type="number" id="columnGap" value="32" />
+                        <button onclick="stepInput('columnGap', 4)">+</button>
+                    </div>
+                </div>
+
+                <div class="panel-section-title">배경 커스텀</div>
+                <div class="control-minimal-row">
+                    <label for="bgType">배경 타입</label>
+                    <select id="bgType">
+                        <option value="solid" selected>단색 (Solid)</option>
+                        <option value="gradient">그라데이션 (Gradient)</option>
+                    </select>
+                </div>
+                <div id="solidColorArea" class="picker-minimal-group">
+                    <div class="picker-cell">
+                        <input type="color" id="bgColor1" value="#ffffff" />
+                        <span>배경 색상</span>
+                    </div>
+                </div>
+                <div id="gradientColorArea" class="gradient-config-box">
+                    <div class="control-minimal-row">
+                        <label>그라데이션 모드</label>
+                        <div class="radio-minimal-group">
+                            <label><input type="radio" name="gradMode" value="2" checked /> 2색</label>
+                            <label><input type="radio" name="gradMode" value="3" /> 3색</label>
+                        </div>
+                    </div>
+                    <div id="gradientSettingsArea">
+                        <div class="gradient-picker-container">
+                            <div class="picker-cell">
+                                <input type="color" id="gradColor1" value="#fbc2eb" />
+                                <span>색상 A</span>
+                            </div>
+                            <div class="picker-cell">
+                                <input type="color" id="gradColor2" value="#a6c1ee" />
+                                <span>색상 B</span>
+                            </div>
+                            <div class="picker-cell" id="grad3Wrapper">
+                                <input type="color" id="gradColor3" value="#fad0c4" />
+                                <span>색상 C</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="control-minimal-row">
+                        <label>방향 선택</label>
+                        <select id="gradientDir">
+                            <option value="to right">▶ 가로</option>
+                            <option value="to bottom" selected>▼ 세로</option>
+                            <option value="135deg">빗각 (135°)</option>
+                            <option value="45deg">빗각 (45°)</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="bgImageControls" class="image-upload-config-box">
+                    <div class="control-minimal-row">
+                        <label>이미지</label>
+                        <input type="file" id="bgImageInput" accept="image/*" />
+                    </div>
+                    <div class="control-minimal-row">
+                        <label>크기</label>
+                        <input type="range" id="bgImageSize" min="10" max="200" value="100" />
+                    </div>
+                    <div class="control-minimal-row">
+                        <label>가로 위치</label>
+                        <input type="range" id="bgImageX" min="0" max="100" value="50" />
+                    </div>
+                    <div class="control-minimal-row">
+                        <label>세로 위치</label>
+                        <input type="range" id="bgImageY" min="0" max="100" value="50" />
+                    </div>
+                    <div class="control-minimal-row">
+                        <label>블러</label>
+                        <input type="range" id="bgImageBlur" min="0" max="20" value="0" />
+                    </div>
+                    <div class="control-minimal-row">
+                        <label>오버레이색</label>
+                        <select id="bgOverlayColor">
+                            <option value="0,0,0">블랙</option>
+                            <option value="255,255,255">화이트</option>
+                        </select>
+                    </div>
+                    <div class="control-minimal-row">
+                        <label>투명도</label>
+                        <input type="range" id="bgOverlayOpacity" min="0" max="1" step="0.05" value="0" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-panel" id="panel-image">
+                <div id="imageBlockEmptyHint" class="field-hint">본문 안에 넣은 사진을 탭해서 선택하면 여기서 조절할 수 있어요. 아직 선택된 사진이 없어요.</div>
+                <div id="imageBlockPanel" class="image-block-panel" style="display: none">
+                    <div class="image-block-panel-header">
+                        <span>선택한 사진 설정</span>
+                        <button type="button" id="btnRemoveImageBlock" class="text-danger">삭제</button>
+                    </div>
+                    <div class="control-minimal-row">
+                        <label for="imgBlockSize">크기 (px)</label>
+                        <div class="stepper-minimal">
+                            <button type="button" data-img-step="size" data-step="-10">-</button>
+                            <input type="number" id="imgBlockSize" value="240" />
+                            <button type="button" data-img-step="size" data-step="10">+</button>
+                        </div>
+                    </div>
+                    <div class="field-hint">사진 비율은 자른 모양 그대로 고정돼요. 숫자로 전체 크기만 키우거나 줄일 수 있어요.</div>
+                    <div class="panel-section-title" style="margin-top: 10px; padding-top: 0; border-top: none">사진 자르기</div>
+                    <div class="field-hint">사진 전체를 보면서 모서리를 끌어 자를 영역을 조절하고, 안쪽을 끌어 위치를 옮기세요.</div>
+                    <div class="control-minimal-row">
+                        <button type="button" id="btnOpenCrop" class="btn-minimal-save" style="width: 100%">사진 자르기</button>
+                    </div>
+                    <div class="control-minimal-row">
+                        <button type="button" id="btnResetCrop" class="text-danger" style="width: 100%">원본으로 되돌리기</button>
+                    </div>
+                    <div class="control-minimal-row">
+                        <label>정렬</label>
+                        <div class="segmented-control" id="imgBlockAlignGroup">
+                            <button type="button" data-value="left">좌</button>
+                            <button type="button" data-value="center" class="active">중</button>
+                            <button type="button" data-value="right">우</button>
+                        </div>
+                    </div>
+                    <div class="field-hint">좌/우를 선택하면 글자가 사진 옆으로 자연스럽게 흐르고, 중앙을 선택하면 사진이 혼자 한 줄을 차지해요.</div>
+                    <div class="control-minimal-row">
+                        <label for="imgBlockRadius">모서리 둥글기 (px)</label>
+                        <div class="stepper-minimal">
+                            <button type="button" data-img-step="radius" data-step="-2">-</button>
+                            <input type="number" id="imgBlockRadius" value="0" />
+                            <button type="button" data-img-step="radius" data-step="2">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-panel" id="panel-presets">
+                <div class="panel-section-title">디자인 프리셋</div>
+                <div class="preset-save-box-minimal">
+                    <input type="text" id="presetNameInput" placeholder="프리셋 이름 입력" />
+                    <button class="btn-minimal-save" onclick="savePreset()">저장</button>
+                </div>
+                <div class="preset-list-scroll" id="presetList"></div>
+            </div>
+        </section>
+
+        <nav class="bottom-tab-bar">
+            <div class="dock-action-group">
+                <button class="dock-btn tab-btn" data-target="panel-title" title="제목 · 부제목">
+                    <span class="dock-btn-label">제목</span>
+                </button>
+                <button class="dock-btn tab-btn" data-target="panel-text" title="텍스트 색상 · 정렬">
+                    <span class="dock-btn-label">텍스트</span>
+                </button>
+                <button class="dock-btn tab-btn" data-target="panel-font" title="서체 · 크기 · 간격">
+                    <span class="dock-btn-label">폰트</span>
+                </button>
+                <button class="dock-btn tab-btn" data-target="panel-bg" title="캔버스 및 배경">
+                    <span class="dock-btn-label">배경</span>
+                </button>
+                <button class="dock-btn tab-btn" data-target="panel-image" title="본문 사진 설정">
+                    <span class="dock-btn-label">사진</span>
+                </button>
+            </div>
+        </nav>
+
+        <div class="crop-overlay" id="cropOverlay" style="display: none">
+            <div class="crop-overlay-header">
+                <button type="button" id="btnCropCancel" class="crop-header-btn">취소</button>
+                <span>사진 자르기</span>
+                <button type="button" id="btnCropApply" class="crop-header-btn crop-header-btn-primary">적용</button>
+            </div>
+            <div class="crop-stage" id="cropStage">
+                <img id="cropStageImg" alt="" draggable="false" />
+                <div class="crop-dim crop-dim-top"></div>
+                <div class="crop-dim crop-dim-bottom"></div>
+                <div class="crop-dim crop-dim-left"></div>
+                <div class="crop-dim crop-dim-right"></div>
+                <div class="crop-box" id="cropBox">
+                    <div class="crop-grid-line crop-grid-v1"></div>
+                    <div class="crop-grid-line crop-grid-v2"></div>
+                    <div class="crop-grid-line crop-grid-h1"></div>
+                    <div class="crop-grid-line crop-grid-h2"></div>
+                    <div class="crop-handle crop-handle-tl" data-handle="tl"></div>
+                    <div class="crop-handle crop-handle-tr" data-handle="tr"></div>
+                    <div class="crop-handle crop-handle-bl" data-handle="bl"></div>
+                    <div class="crop-handle crop-handle-br" data-handle="br"></div>
+                </div>
+            </div>
+            <div class="crop-overlay-footer">
+                <div class="segmented-control" id="cropAspectGroup">
+                    <button type="button" data-aspect="free" class="active">자유</button>
+                    <button type="button" data-aspect="1:1">정사각형</button>
+                    <button type="button" data-aspect="original">원본</button>
+                </div>
+            </div>
+        </div>
+
+        <script src="presets.js?v=10"></script>
+        <script src="script.js?v=10"></script>
+    </body>
+</html>
