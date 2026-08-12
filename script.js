@@ -19,6 +19,7 @@ const els = {
     hlColorC: document.getElementById("hlColorC"),
     quoteLineColor: document.getElementById("quoteLineColor"),
     boxQuoteColor: document.getElementById("boxQuoteColor"),
+    boxQuoteWidth: document.getElementById("boxQuoteWidth"),
     dividerColor: document.getElementById("dividerColor"),
     fadeToggle: document.getElementById("fadeToggle"),
     fadeStart: document.getElementById("fadeStart"),
@@ -242,6 +243,9 @@ function updateCanvas() {
         if (els.editor) els.editor.style.setProperty("--quote-line-color", els.quoteLineColor.value);
         textWrapper.style.setProperty("--box-quote-color", els.boxQuoteColor?.value || "#000000");
         if (els.editor) els.editor.style.setProperty("--box-quote-color", els.boxQuoteColor?.value || "#000000");
+        const boxQuoteW = parseFloat(els.boxQuoteWidth?.value);
+        textWrapper.style.setProperty("--box-quote-width", `${isNaN(boxQuoteW) ? 2 : boxQuoteW}px`);
+        if (els.editor) els.editor.style.setProperty("--box-quote-width", `${isNaN(boxQuoteW) ? 2 : boxQuoteW}px`);
         textWrapper.style.setProperty("--divider-color", els.dividerColor?.value || "#94a3b8");
         if (els.editor) els.editor.style.setProperty("--divider-color", els.dividerColor?.value || "#94a3b8");
         const indentEm = parseFloat(els.indentSize?.value);
@@ -1065,7 +1069,7 @@ document.addEventListener("DOMContentLoaded", () => {
         els.bgType, els.bgColor1, els.gradColor1, els.gradColor2, els.gradColor3, els.gradientDir,
         els.globalTextColor, els.subTextColor, els.hlColorA, els.hlColorB, els.hlColorC,
         els.quoteLineColor, els.enableQuoteColor, els.quoteColor, els.enableParenColor, els.parenColor,
-        els.boxQuoteColor, els.dividerColor, els.fadeStart, els.indentSize,
+        els.boxQuoteColor, els.boxQuoteWidth, els.dividerColor, els.fadeStart, els.indentSize,
         els.fontSelect, els.wordBreak, els.fontSize, els.letterSpacing, els.lineHeight,
         els.paraSpacing, els.fontScaleX, els.infoFontSize,
         els.columnSplitIndex, els.columnGap,

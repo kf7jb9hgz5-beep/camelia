@@ -1271,7 +1271,7 @@ input[type="file"]::file-selector-button {
 
 .box-quote {
     display: block !important;
-    border: 2px solid var(--box-quote-color, #000000) !important;
+    border: var(--box-quote-width, 2px) solid var(--box-quote-color, #000000) !important;
     border-radius: 0 !important;
     padding: 14px 16px !important;
     margin-bottom: inherit;

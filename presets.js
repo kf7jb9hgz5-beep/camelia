@@ -47,6 +47,7 @@ function getPresetSnapshot() {
         hlColorC: els.hlColorC.value,
         quoteLineColor: els.quoteLineColor.value,
         boxQuoteColor: els.boxQuoteColor?.value,
+        boxQuoteWidth: els.boxQuoteWidth?.value,
         dividerColor: els.dividerColor?.value,
         fadeToggle: els.fadeToggle?.checked,
         fadeStart: els.fadeStart?.value,
@@ -115,6 +116,7 @@ function applyPresetSnapshot(data) {
     els.hlColorC.value = data.hlColorC ?? els.hlColorC.value;
     els.quoteLineColor.value = data.quoteLineColor ?? els.quoteLineColor.value;
     if (els.boxQuoteColor) els.boxQuoteColor.value = data.boxQuoteColor ?? els.boxQuoteColor.value;
+    if (els.boxQuoteWidth) els.boxQuoteWidth.value = data.boxQuoteWidth ?? els.boxQuoteWidth.value;
     if (els.dividerColor) els.dividerColor.value = data.dividerColor ?? els.dividerColor.value;
     if (els.fadeToggle) els.fadeToggle.checked = data.fadeToggle ?? els.fadeToggle.checked;
     if (els.fadeStart) els.fadeStart.value = data.fadeStart ?? els.fadeStart.value;
