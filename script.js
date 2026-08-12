@@ -821,7 +821,12 @@ if (selFontSizeEl) {
     });
 }
 
-document.getElementById("btnQuoteLine").addEventListener("click", () => {
+function onClick(id, handler) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", handler);
+}
+
+onClick("btnQuoteLine", () => {
     let selection = window.getSelection();
     if (!selection.rangeCount) return;
     let range = selection.getRangeAt(0);
@@ -838,7 +843,7 @@ document.getElementById("btnQuoteLine").addEventListener("click", () => {
     updateCanvas();
 });
 
-document.getElementById("btnBoxQuote").addEventListener("click", () => {
+onClick("btnBoxQuote", () => {
     let selection = window.getSelection();
     if (!selection.rangeCount) return;
     let range = selection.getRangeAt(0);
@@ -855,7 +860,7 @@ document.getElementById("btnBoxQuote").addEventListener("click", () => {
     updateCanvas();
 });
 
-document.getElementById("btnInsertDivider").addEventListener("click", () => {
+onClick("btnInsertDivider", () => {
     let selection = window.getSelection();
     if (!selection.rangeCount) return;
     let range = selection.getRangeAt(0);
@@ -878,7 +883,17 @@ document.getElementById("btnInsertDivider").addEventListener("click", () => {
     updateCanvas();
 });
 
+onClick("btnClearAll", () => {
+    if (!els.editor) return;
+    const hasContent = els.editor.textContent.trim().length > 0 || els.editor.querySelector(".editor-image-block, .template-block");
+    if (hasContent && !window.confirm("본문 내용을 전부 지울까요? 되돌릴 수 없어요.")) return;
+    els.editor.innerHTML = "";
+    updateCanvas();
+    showToast("본문을 전체 삭제했어요.");
+});
+
 function insertTemplateBlock(html) {
+    if (!els.editor) return;
     const wrapper = document.createElement("div");
     wrapper.innerHTML = html.trim();
     const node = wrapper.firstElementChild;
@@ -889,49 +904,63 @@ function insertTemplateBlock(html) {
     els.editor.appendChild(trailer);
     closeSheetPanel();
     updateCanvas();
-    showToast("템플릿을 추가했어요. 예시 문구를 지우고 내용을 채워주세요.");
+    showToast("템플릿을 추가했어요. 빈 칸을 탭해서 내용을 입력해 주세요.");
+
+    const firstField = node.querySelector(".tpl-field");
+    if (firstField) {
+        setTimeout(() => {
+            els.editor.focus();
+            const range = document.createRange();
+            range.selectNodeContents(firstField);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            firstField.scrollIntoView({ block: "center", behavior: "smooth" });
+        }, 50);
+    }
 }
 
-document.getElementById("btnTemplateVerticalMix").addEventListener("click", () => {
+onClick("btnTemplateVerticalMix", () => {
     insertTemplateBlock(`
         <div class="template-block template-vertical-mix">
-            <div class="vertical-mix-source">첫 번째 원문 문장.<br>두 번째 원문 문장.</div>
+            <div class="vertical-mix-source tpl-field" data-placeholder="원문을 입력하세요"></div>
             <div class="vertical-mix-divider"></div>
-            <div class="vertical-mix-translation">번역문을 이곳에 입력하세요.</div>
+            <div class="vertical-mix-translation tpl-field" data-placeholder="번역문을 입력하세요"></div>
         </div>
     `);
 });
 
-document.getElementById("btnTemplateSpeaker").addEventListener("click", () => {
+onClick("btnTemplateSpeaker", () => {
     insertTemplateBlock(`
         <div class="template-block template-speaker">
-            <div class="speaker-row"><div class="speaker-name">이름</div><div class="speaker-line">대사를 입력하세요.</div></div>
-            <div class="speaker-row"><div class="speaker-name">이름</div><div class="speaker-line">대사를 입력하세요.</div></div>
+            <div class="speaker-row"><div class="speaker-name tpl-field" data-placeholder="이름"></div><div class="speaker-line tpl-field" data-placeholder="대사를 입력하세요"></div></div>
+            <div class="speaker-row"><div class="speaker-name tpl-field" data-placeholder="이름"></div><div class="speaker-line tpl-field" data-placeholder="대사를 입력하세요"></div></div>
         </div>
     `);
 });
 
-document.getElementById("btnTemplateHeading").addEventListener("click", () => {
+onClick("btnTemplateHeading", () => {
     insertTemplateBlock(`
         <div class="template-block template-heading-section">
-            <div class="section-heading">— 소제목을 입력하세요</div>
-            <div class="section-body">본문 내용을 입력하세요.</div>
+            <div class="section-heading tpl-field" data-placeholder="— 소제목을 입력하세요"></div>
+            <div class="section-body tpl-field" data-placeholder="본문 내용을 입력하세요"></div>
             <div class="section-asterisk">＊</div>
-            <div class="section-heading">— 소제목을 입력하세요</div>
-            <div class="section-body">본문 내용을 입력하세요.</div>
+            <div class="section-heading tpl-field" data-placeholder="— 소제목을 입력하세요"></div>
+            <div class="section-body tpl-field" data-placeholder="본문 내용을 입력하세요"></div>
         </div>
     `);
 });
 
-document.getElementById("btnTemplateSideNote").addEventListener("click", () => {
+onClick("btnTemplateSideNote", () => {
     insertTemplateBlock(`
         <div class="template-block template-sidenote">
-            <div class="sidenote-main">본문 내용을 입력하세요.</div>
+            <div class="sidenote-main tpl-field" data-placeholder="본문 내용을 입력하세요"></div>
             <div class="sidenote-aside">
-                <div class="sidenote-row"><span class="sidenote-label">DATE.</span>00/00</div>
-                <div class="sidenote-row"><span class="sidenote-label">TIME.</span>00:00</div>
-                <div class="sidenote-row"><span class="sidenote-label">PLACE.</span>장소</div>
-                <div class="sidenote-row"><span class="sidenote-label">NOTE.</span>메모</div>
+                <div class="sidenote-row"><span class="sidenote-label">DATE.</span><span class="sidenote-value tpl-field" data-placeholder="00/00"></span></div>
+                <div class="sidenote-row"><span class="sidenote-label">TIME.</span><span class="sidenote-value tpl-field" data-placeholder="00:00"></span></div>
+                <div class="sidenote-row"><span class="sidenote-label">PLACE.</span><span class="sidenote-value tpl-field" data-placeholder="장소"></span></div>
+                <div class="sidenote-row"><span class="sidenote-label">NOTE.</span><span class="sidenote-value tpl-field" data-placeholder="메모"></span></div>
             </div>
         </div>
     `);
@@ -942,7 +971,31 @@ els.editor.addEventListener("keydown", function (e) {
         const selection = window.getSelection();
         if (!selection.rangeCount) return;
         const node = selection.anchorNode;
-        const inDialogue = (node.nodeType === 3 ? node.parentNode : node).closest(".dialogue-line, .box-quote");
+        const el = node.nodeType === 3 ? node.parentNode : node;
+
+        const currentField = el.closest ? el.closest(".tpl-field") : null;
+        if (currentField) {
+            const templateBlock = currentField.closest(".template-block");
+            if (templateBlock) {
+                const fields = Array.from(templateBlock.querySelectorAll(".tpl-field"));
+                const idx = fields.indexOf(currentField);
+                const nextField = fields[idx + 1];
+                e.preventDefault();
+                if (nextField) {
+                    const range = document.createRange();
+                    range.selectNodeContents(nextField);
+                    range.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    nextField.scrollIntoView({ block: "center", behavior: "smooth" });
+                } else {
+                    els.editor.blur();
+                }
+                return;
+            }
+        }
+
+        const inDialogue = el.closest(".dialogue-line, .box-quote");
         if (inDialogue) { e.preventDefault(); document.execCommand("insertLineBreak"); }
     }
 });

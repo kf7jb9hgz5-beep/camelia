@@ -1325,7 +1325,7 @@ input[type="file"]::file-selector-button {
 }
 
 .vertical-mix-source {
-    writing-mode: vertical-rl;
+    writing-mode: vertical-lr;
     text-orientation: mixed;
     white-space: pre-wrap;
     flex: 0 0 auto;
@@ -1407,6 +1407,16 @@ input[type="file"]::file-selector-button {
 .sidenote-label {
     font-weight: 700;
     display: block;
+}
+
+.tpl-field {
+    min-height: 1.4em;
+}
+
+.tpl-field:empty::before {
+    content: attr(data-placeholder);
+    color: #9ca3af;
+    pointer-events: none;
 }
 
 .gradient-config-box {
