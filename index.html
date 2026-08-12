@@ -8,7 +8,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=11" />
+        <link rel="stylesheet" href="style.css?v=13" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -94,20 +94,19 @@
                     </div>
                 </div>
                 <div class="editor-scroll-x" id="editorScrollX">
-                    <div id="textEditor" contenteditable="true" placeholder="이곳에 발췌할 문구를 입력하거나 드래그 후 상단 효과 버튼을 적용하세요."></div>
+                    <div id="textEditor" contenteditable="true"></div>
                 </div>
                 <div class="editor-meta" id="editorMeta">0자</div>
 
                 <div class="editor-bottom-name">
-                    <span class="card-title">하단 네임</span>
                     <div class="meta-input-inline">
                         <div class="input-minimal">
-                            <label for="titleInput">타이틀</label>
-                            <input type="text" id="titleInput" placeholder="예: 제목" />
+                            <label for="titleInput">A¹</label>
+                            <input type="text" id="titleInput" />
                         </div>
                         <div class="input-minimal">
-                            <label for="creatorInput">제작자</label>
-                            <input type="text" id="creatorInput" placeholder="예: 제작자" />
+                            <label for="creatorInput">B²</label>
+                            <input type="text" id="creatorInput" />
                         </div>
                     </div>
                 </div>
@@ -645,7 +644,7 @@
 
         <div class="toast" id="toast"></div>
 
-        <script src="presets.js?v=12"></script>
-        <script src="script.js?v=12"></script>
+        <script src="presets.js?v=13"></script>
+        <script src="script.js?v=13"></script>
     </body>
 </html>
