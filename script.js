@@ -18,6 +18,11 @@ const els = {
     hlColorB: document.getElementById("hlColorB"),
     hlColorC: document.getElementById("hlColorC"),
     quoteLineColor: document.getElementById("quoteLineColor"),
+    boxQuoteColor: document.getElementById("boxQuoteColor"),
+    dividerColor: document.getElementById("dividerColor"),
+    fadeToggle: document.getElementById("fadeToggle"),
+    fadeStart: document.getElementById("fadeStart"),
+    indentSize: document.getElementById("indentSize"),
     enableQuoteColor: document.getElementById("enableQuoteColor"),
     quoteColor: document.getElementById("quoteColor"),
     enableParenColor: document.getElementById("enableParenColor"),
@@ -234,6 +239,13 @@ function updateCanvas() {
 
         textWrapper.style.setProperty("--quote-line-color", els.quoteLineColor.value);
         if (els.editor) els.editor.style.setProperty("--quote-line-color", els.quoteLineColor.value);
+        textWrapper.style.setProperty("--box-quote-color", els.boxQuoteColor?.value || "#2563eb");
+        if (els.editor) els.editor.style.setProperty("--box-quote-color", els.boxQuoteColor?.value || "#2563eb");
+        textWrapper.style.setProperty("--divider-color", els.dividerColor?.value || "#94a3b8");
+        if (els.editor) els.editor.style.setProperty("--divider-color", els.dividerColor?.value || "#94a3b8");
+        const indentEm = parseFloat(els.indentSize?.value);
+        textWrapper.style.setProperty("--indent-size", `${isNaN(indentEm) ? 1 : indentEm}em`);
+        if (els.editor) els.editor.style.setProperty("--indent-size", `${isNaN(indentEm) ? 1 : indentEm}em`);
 
         applySmartHighlighting(textWrapper);
 
@@ -306,9 +318,12 @@ function updateCanvas() {
     const columnsActive = !!(els.columnToggle && els.columnToggle.checked && textWrapper.querySelector(".canvas-column"));
     const paragraphGroups = columnsActive
         ? Array.from(textWrapper.querySelectorAll(".canvas-column")).map((col) =>
-              Array.from(col.querySelectorAll(":scope > div, :scope > p, :scope > .dialogue-line"))
+              Array.from(col.querySelectorAll(":scope > div, :scope > p, :scope > .dialogue-line, :scope > .box-quote, :scope > .hr-divider"))
           )
-        : [Array.from(textWrapper.querySelectorAll("#canvasTextWrapper > div, #canvasTextWrapper > p, #canvasTextWrapper > .dialogue-line"))];
+        : [Array.from(textWrapper.querySelectorAll("#canvasTextWrapper > div, #canvasTextWrapper > p, #canvasTextWrapper > .dialogue-line, #canvasTextWrapper > .box-quote, #canvasTextWrapper > .hr-divider"))];
+
+    const fadeEnabled = !!(els.fadeToggle && els.fadeToggle.checked);
+    const fadeStartPct = Math.min(Math.max(parseFloat(els.fadeStart?.value) || 60, 0), 99);
 
     paragraphGroups.forEach((group) => {
         group.forEach((p, idx) => {
@@ -317,6 +332,19 @@ function updateCanvas() {
                 p.style.paddingBottom = "0px";
             } else {
                 p.style.marginBottom = `${els.paraSpacing.value}px`;
+            }
+
+            if (fadeEnabled && group.length > 1) {
+                const posPct = (idx / (group.length - 1)) * 100;
+                if (posPct >= fadeStartPct) {
+                    const range = 100 - fadeStartPct;
+                    const progress = range > 0 ? (posPct - fadeStartPct) / range : 1;
+                    p.style.opacity = String(Math.max(0, 1 - progress));
+                } else {
+                    p.style.opacity = "1";
+                }
+            } else {
+                p.style.opacity = "1";
             }
         });
     });
@@ -800,12 +828,64 @@ document.getElementById("btnQuoteLine").addEventListener("click", () => {
     updateCanvas();
 });
 
+document.getElementById("btnBoxQuote").addEventListener("click", () => {
+    let selection = window.getSelection();
+    if (!selection.rangeCount) return;
+    let range = selection.getRangeAt(0);
+    let block = range.commonAncestorContainer;
+    while (block && block.nodeType !== Node.ELEMENT_NODE) block = block.parentNode;
+    if (block && block.id !== "textEditor") {
+        block.classList.toggle("box-quote");
+    } else {
+        let div = document.createElement("div");
+        div.classList.add("box-quote");
+        div.appendChild(range.extractContents());
+        range.insertNode(div);
+    }
+    updateCanvas();
+});
+
+document.getElementById("btnIndent").addEventListener("click", () => {
+    let selection = window.getSelection();
+    if (!selection.rangeCount) return;
+    let range = selection.getRangeAt(0);
+    let block = range.commonAncestorContainer;
+    while (block && block.nodeType !== Node.ELEMENT_NODE) block = block.parentNode;
+    if (block && block.id !== "textEditor") {
+        block.classList.toggle("indent-para");
+    }
+    updateCanvas();
+});
+
+document.getElementById("btnInsertDivider").addEventListener("click", () => {
+    let selection = window.getSelection();
+    if (!selection.rangeCount) return;
+    let range = selection.getRangeAt(0);
+    let divider = document.createElement("div");
+    divider.classList.add("hr-divider");
+    divider.contentEditable = "false";
+    range.deleteContents();
+    range.insertNode(divider);
+
+    let newLine = document.createElement("div");
+    newLine.appendChild(document.createElement("br"));
+    divider.after(newLine);
+
+    const newRange = document.createRange();
+    newRange.setStart(newLine, 0);
+    newRange.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(newRange);
+
+    updateCanvas();
+});
+
 els.editor.addEventListener("keydown", function (e) {
     if (e.key === "Enter") {
         const selection = window.getSelection();
         if (!selection.rangeCount) return;
         const node = selection.anchorNode;
-        const inDialogue = (node.nodeType === 3 ? node.parentNode : node).closest(".dialogue-line");
+        const inDialogue = (node.nodeType === 3 ? node.parentNode : node).closest(".dialogue-line, .box-quote");
         if (inDialogue) { e.preventDefault(); document.execCommand("insertLineBreak"); }
     }
 });
@@ -957,6 +1037,18 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    if (els.fadeToggle) {
+        const toggleFadeRow = () => {
+            const fadeStartArea = document.getElementById("fadeStartArea");
+            if (fadeStartArea) fadeStartArea.style.display = els.fadeToggle.checked ? "flex" : "none";
+        };
+        toggleFadeRow();
+        els.fadeToggle.addEventListener("change", () => {
+            toggleFadeRow();
+            updateCanvas();
+        });
+    }
+
     // 제목/글자크기 등을 빠르게 여러 번 건드릴 때(타이핑, 슬라이더 드래그)
     // updateCanvas()가 매 입력마다 동기적으로 강제 레이아웃을 발생시켜서
     // 캔버스가 순간적으로 흔들리거나 깨져 보이는 것처럼 느껴지는 문제가 있었다.
@@ -975,6 +1067,7 @@ document.addEventListener("DOMContentLoaded", () => {
         els.bgType, els.bgColor1, els.gradColor1, els.gradColor2, els.gradColor3, els.gradientDir,
         els.globalTextColor, els.subTextColor, els.hlColorA, els.hlColorB, els.hlColorC,
         els.quoteLineColor, els.enableQuoteColor, els.quoteColor, els.enableParenColor, els.parenColor,
+        els.boxQuoteColor, els.dividerColor, els.fadeStart, els.indentSize,
         els.fontSelect, els.wordBreak, els.fontSize, els.letterSpacing, els.lineHeight,
         els.paraSpacing, els.fontScaleX, els.infoFontSize,
         els.columnSplitIndex, els.columnGap,
@@ -1117,13 +1210,16 @@ document.getElementById("textEditor").addEventListener("paste", function (e) {
 function normalizeParagraphs(container) {
     const paragraphs = [];
     const paragraphAligns = [];
+    const paragraphIndents = [];
     let currentParagraphNodes = [];
     let currentAlign = null;
+    let currentIndent = false;
 
     function flushParagraph() {
         if (currentParagraphNodes.length > 0) {
             paragraphs.push(currentParagraphNodes);
             paragraphAligns.push(currentAlign);
+            paragraphIndents.push(currentIndent);
             currentParagraphNodes = [];
         }
     }
@@ -1135,11 +1231,24 @@ function normalizeParagraphs(container) {
             const tagName = node.tagName;
             if (tagName === "BR") {
                 if (currentParagraphNodes.length > 0) flushParagraph();
-                else { paragraphs.push([]); paragraphAligns.push(currentAlign); }
+                else { paragraphs.push([]); paragraphAligns.push(currentAlign); paragraphIndents.push(currentIndent); }
             } else if (node.classList.contains("dialogue-line")) {
                 flushParagraph();
                 paragraphs.push(node.cloneNode(true));
                 paragraphAligns.push(node.style.textAlign || null);
+                paragraphIndents.push(false);
+                flushParagraph();
+            } else if (node.classList.contains("box-quote")) {
+                flushParagraph();
+                paragraphs.push(node.cloneNode(true));
+                paragraphAligns.push(node.style.textAlign || null);
+                paragraphIndents.push(false);
+                flushParagraph();
+            } else if (node.classList.contains("hr-divider")) {
+                flushParagraph();
+                paragraphs.push(node.cloneNode(true));
+                paragraphAligns.push(null);
+                paragraphIndents.push(false);
                 flushParagraph();
             } else if (node.classList.contains("editor-image-block")) {
                 flushParagraph();
@@ -1148,16 +1257,20 @@ function normalizeParagraphs(container) {
                 imgClone.querySelectorAll(".no-export").forEach((el) => el.remove());
                 paragraphs.push(imgClone);
                 paragraphAligns.push(null);
+                paragraphIndents.push(false);
                 flushParagraph();
             } else if (tagName === "DIV" || tagName === "P" || /^H[1-6]$/.test(tagName)) {
                 flushParagraph();
                 const prevAlign = currentAlign;
+                const prevIndent = currentIndent;
                 if (node.style.textAlign) currentAlign = node.style.textAlign;
+                if (node.classList.contains("indent-para")) currentIndent = true;
                 Array.from(node.childNodes).forEach(parseNodes);
                 flushParagraph();
                 currentAlign = prevAlign;
+                currentIndent = prevIndent;
             } else {
-                if (node.querySelector("div, p, br, .dialogue-line")) Array.from(node.childNodes).forEach(parseNodes);
+                if (node.querySelector("div, p, br, .dialogue-line, .box-quote")) Array.from(node.childNodes).forEach(parseNodes);
                 else currentParagraphNodes.push(node.cloneNode(true));
             }
         }
@@ -1169,7 +1282,7 @@ function normalizeParagraphs(container) {
     while (paragraphs.length > 0) {
         const lastPara = paragraphs[paragraphs.length - 1];
         if (!(lastPara instanceof HTMLElement)) {
-            if (lastPara.every((node) => node.textContent.trim() === "")) { paragraphs.pop(); paragraphAligns.pop(); continue; }
+            if (lastPara.every((node) => node.textContent.trim() === "")) { paragraphs.pop(); paragraphAligns.pop(); paragraphIndents.pop(); continue; }
         }
         break;
     }
@@ -1177,12 +1290,14 @@ function normalizeParagraphs(container) {
     container.innerHTML = "";
     paragraphs.forEach((pNodes, idx) => {
         const align = paragraphAligns[idx];
-        if (pNodes instanceof HTMLElement && (pNodes.classList.contains("dialogue-line") || pNodes.classList.contains("editor-image-block"))) {
-            if (align && !pNodes.classList.contains("editor-image-block")) pNodes.style.textAlign = align;
+        const indented = paragraphIndents[idx];
+        if (pNodes instanceof HTMLElement && (pNodes.classList.contains("dialogue-line") || pNodes.classList.contains("box-quote") || pNodes.classList.contains("hr-divider") || pNodes.classList.contains("editor-image-block"))) {
+            if (align && !pNodes.classList.contains("editor-image-block") && !pNodes.classList.contains("hr-divider")) pNodes.style.textAlign = align;
             container.appendChild(pNodes);
         } else {
             const newDiv = document.createElement("div");
             if (align) newDiv.style.textAlign = align;
+            if (indented) newDiv.classList.add("indent-para");
             if (pNodes.length === 0) newDiv.appendChild(document.createElement("br"));
             else pNodes.forEach((n) => newDiv.appendChild(n));
             container.appendChild(newDiv);

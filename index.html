@@ -8,7 +8,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=13" />
+        <link rel="stylesheet" href="style.css?v=14" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -50,6 +50,9 @@
                         </select>
                         <button id="btnInvertHighlight" title="글자색↔배경색 반전">반전</button>
                         <button id="btnQuoteLine" class="btn-dialogue-line" title="대사 강조선 바">강조선</button>
+                        <button id="btnBoxQuote" class="btn-box-quote" title="박스로 감싸 인용 강조">박스인용</button>
+                        <button id="btnIndent" class="btn-indent" title="선택한 문단 첫 줄 들여쓰기">들여쓰기</button>
+                        <button id="btnInsertDivider" title="구분용 가로선 삽입">가로선</button>
                         <select id="selAlign" class="toolbar-select" title="선택한 문단만 정렬 변경 (전체 정렬과 별개)">
                             <option value="" disabled selected>정렬</option>
                             <option value="left">왼쪽</option>
@@ -294,6 +297,14 @@
                     </div>
                 </div>
                 <div class="control-minimal-row">
+                    <label for="indentSize">들여쓰기 폭 (em)</label>
+                    <div class="stepper-minimal">
+                        <button onclick="stepInput('indentSize', -0.5, 1)">-</button>
+                        <input type="number" id="indentSize" value="1" step="0.5" />
+                        <button onclick="stepInput('indentSize', 0.5, 1)">+</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
                     <label for="fontScaleX">장평 (%)</label>
                     <div class="stepper-minimal">
                         <button onclick="stepInput('fontScaleX', -1)">-</button>
@@ -481,6 +492,29 @@
                         <input type="color" id="quoteLineColor" value="#2563eb" />
                         <span>강조선</span>
                     </div>
+                    <div class="picker-cell">
+                        <input type="color" id="boxQuoteColor" value="#2563eb" />
+                        <span>박스인용</span>
+                    </div>
+                    <div class="picker-cell">
+                        <input type="color" id="dividerColor" value="#94a3b8" />
+                        <span>가로선</span>
+                    </div>
+                </div>
+
+                <div class="panel-section-title">텍스트 사라짐 효과</div>
+                <div class="control-minimal-row">
+                    <div class="checkbox-minimal-group">
+                        <label><input type="checkbox" id="fadeToggle" /> 그라데이션으로 사라지게</label>
+                    </div>
+                </div>
+                <div class="control-minimal-row" id="fadeStartArea" style="display:none;">
+                    <label for="fadeStart">시작 지점 (%)</label>
+                    <div class="stepper-minimal">
+                        <button onclick="stepInput('fadeStart', -5)">-</button>
+                        <input type="number" id="fadeStart" value="60" min="0" max="95" />
+                        <button onclick="stepInput('fadeStart', 5)">+</button>
+                    </div>
                 </div>
 
                 <div class="panel-section-title">스마트 하이라이트</div>
@@ -644,7 +678,7 @@
 
         <div class="toast" id="toast"></div>
 
-        <script src="presets.js?v=13"></script>
-        <script src="script.js?v=13"></script>
+        <script src="presets.js?v=14"></script>
+        <script src="script.js?v=14"></script>
     </body>
 </html>

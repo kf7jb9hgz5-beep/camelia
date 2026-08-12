@@ -46,6 +46,11 @@ function getPresetSnapshot() {
         hlColorB: els.hlColorB.value,
         hlColorC: els.hlColorC.value,
         quoteLineColor: els.quoteLineColor.value,
+        boxQuoteColor: els.boxQuoteColor?.value,
+        dividerColor: els.dividerColor?.value,
+        fadeToggle: els.fadeToggle?.checked,
+        fadeStart: els.fadeStart?.value,
+        indentSize: els.indentSize?.value,
         enableQuoteColor: els.enableQuoteColor.checked,
         quoteColor: els.quoteColor.value,
         enableParenColor: els.enableParenColor.checked,
@@ -108,6 +113,15 @@ function applyPresetSnapshot(data) {
     els.hlColorB.value = data.hlColorB ?? els.hlColorB.value;
     els.hlColorC.value = data.hlColorC ?? els.hlColorC.value;
     els.quoteLineColor.value = data.quoteLineColor ?? els.quoteLineColor.value;
+    if (els.boxQuoteColor) els.boxQuoteColor.value = data.boxQuoteColor ?? els.boxQuoteColor.value;
+    if (els.dividerColor) els.dividerColor.value = data.dividerColor ?? els.dividerColor.value;
+    if (els.fadeToggle) els.fadeToggle.checked = data.fadeToggle ?? els.fadeToggle.checked;
+    if (els.fadeStart) els.fadeStart.value = data.fadeStart ?? els.fadeStart.value;
+    if (els.indentSize) els.indentSize.value = data.indentSize ?? els.indentSize.value;
+    if (els.fadeToggle) {
+        const fadeStartArea = document.getElementById("fadeStartArea");
+        if (fadeStartArea) fadeStartArea.style.display = els.fadeToggle.checked ? "flex" : "none";
+    }
     els.enableQuoteColor.checked = data.enableQuoteColor ?? els.enableQuoteColor.checked;
     els.quoteColor.value = data.quoteColor ?? els.quoteColor.value;
     els.enableParenColor.checked = data.enableParenColor ?? els.enableParenColor.checked;
@@ -255,6 +269,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 const dialogueLine = node && node.closest ? node.closest(".dialogue-line") : null;
                 if (dialogueLine) {
                     dialogueLine.classList.remove("dialogue-line");
+                }
+                const boxQuote = node && node.closest ? node.closest(".box-quote") : null;
+                if (boxQuote) {
+                    boxQuote.classList.remove("box-quote");
+                }
+                const indentPara = node && node.closest ? node.closest(".indent-para") : null;
+                if (indentPara) {
+                    indentPara.classList.remove("indent-para");
                 }
             }
 
