@@ -187,6 +187,38 @@
     font-style: normal;
 }
 
+@font-face {
+    font-family: 'Vxywave';
+    src: url('./Fonts/Vxywave.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'DeltaGlassKR';
+    src: url('./Fonts/DeltaGlassKR.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'DeltaDotumKR';
+    src: url('./Fonts/DeltaDotumKR.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'DreamHeumulKR';
+    src: url('./Fonts/DreamHeumulKR.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
 html,
 body.mobile-theme {
     margin: 0;
@@ -390,6 +422,14 @@ body.mobile-theme {
     font-size: 11px;
     color: var(--text-muted);
     padding-top: 2px;
+}
+
+.editor-bottom-name {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-color);
 }
 
 /* ==========================================================================

@@ -68,6 +68,10 @@
                             <option value="'OnulSamhwagothic', sans-serif">오늘삼화고딕</option>
                             <option value="'OnulDanjo', serif">오늘단조</option>
                             <option value="OnulHwagang">오늘화강</option>
+                            <option value="DeltaGlassKR">델타글래스</option>
+                            <option value="DeltaDotumKR">델타돋움</option>
+                            <option value="DreamHeumulKR">드림흐물</option>
+                            <option value="Vxywave">브이엑스와이웨이브</option>
                         </select>
                         <select id="selFontSize" class="toolbar-select" title="선택한 글자만 크기 변경 (전체 크기와 별개)">
                             <option value="" disabled selected>크기</option>
@@ -93,6 +97,20 @@
                     <div id="textEditor" contenteditable="true" placeholder="이곳에 발췌할 문구를 입력하거나 드래그 후 상단 효과 버튼을 적용하세요."></div>
                 </div>
                 <div class="editor-meta" id="editorMeta">0자</div>
+
+                <div class="editor-bottom-name">
+                    <span class="card-title">하단 네임</span>
+                    <div class="meta-input-inline">
+                        <div class="input-minimal">
+                            <label for="titleInput">타이틀</label>
+                            <input type="text" id="titleInput" placeholder="예: 제목" />
+                        </div>
+                        <div class="input-minimal">
+                            <label for="creatorInput">제작자</label>
+                            <input type="text" id="creatorInput" placeholder="예: 제작자" />
+                        </div>
+                    </div>
+                </div>
             </section>
         </main>
 
@@ -129,6 +147,10 @@
                         <option value="'OnulSamhwagothic', sans-serif">오늘삼화고딕</option>
                         <option value="'OnulDanjo', serif">오늘단조</option>
                         <option value="OnulHwagang">오늘화강</option>
+                        <option value="DeltaGlassKR">델타글래스 (DeltaGlassKR)</option>
+                        <option value="DeltaDotumKR">델타돋움 (DeltaDotumKR)</option>
+                        <option value="DreamHeumulKR">드림흐물 (DreamHeumulKR)</option>
+                        <option value="Vxywave">브이엑스와이웨이브 (Vxywave)</option>
                     </select>
                 </div>
                 <div class="control-minimal-row">
@@ -169,6 +191,10 @@
                         <option value="'OnulSamhwagothic', sans-serif">오늘삼화고딕</option>
                         <option value="'OnulDanjo', serif">오늘단조</option>
                         <option value="OnulHwagang">오늘화강</option>
+                        <option value="DeltaGlassKR">델타글래스 (DeltaGlassKR)</option>
+                        <option value="DeltaDotumKR">델타돋움 (DeltaDotumKR)</option>
+                        <option value="DreamHeumulKR">드림흐물 (DreamHeumulKR)</option>
+                        <option value="Vxywave">브이엑스와이웨이브 (Vxywave)</option>
                     </select>
                 </div>
                 <div class="control-minimal-row">
@@ -194,87 +220,7 @@
                         <label><input type="checkbox" id="headingSubtitleBold" /> 볼드</label>
                     </div>
                 </div>
-
-                <div class="panel-section-title">하단 출처 표기</div>
-                <div class="meta-input-inline">
-                    <div class="input-minimal">
-                        <label for="titleInput">타이틀</label>
-                        <input type="text" id="titleInput" placeholder="예: 제목" />
-                    </div>
-                    <div class="input-minimal">
-                        <label for="creatorInput">제작자</label>
-                        <input type="text" id="creatorInput" placeholder="예: 제작자" />
-                    </div>
-                </div>
             </div>
-
-            <div class="tab-panel" id="panel-text">
-                <div class="panel-section-title">전체 본문 설정</div>
-                <div class="control-minimal-row">
-                    <label>전체 정렬</label>
-                    <input type="hidden" id="alignH" value="left" />
-                    <div class="segmented-control segmented-control-minimal" data-target="alignH">
-                        <button type="button" data-value="left" class="active">좌</button>
-                        <button type="button" data-value="center">중</button>
-                        <button type="button" data-value="right">우</button>
-                        <button type="button" data-value="justify">양쪽</button>
-                    </div>
-                </div>
-                <div class="control-minimal-row">
-                    <label for="wordBreak">줄바꿈</label>
-                    <select id="wordBreak">
-                        <option value="keep-all" selected>단어 단위</option>
-                        <option value="break-all">글자 단위</option>
-                    </select>
-                </div>
-
-                <div class="panel-section-title">색상 변경</div>
-                <div class="picker-minimal-group">
-                    <div class="picker-cell">
-                        <input type="color" id="globalTextColor" value="#1e293b" />
-                        <span>글자색</span>
-                    </div>
-                    <div class="picker-cell">
-                        <input type="color" id="subTextColor" value="#64748b" />
-                        <span>보조색</span>
-                    </div>
-                    <div class="picker-cell">
-                        <input type="color" id="hlColorA" value="#fef08a" />
-                        <span>형광펜 A</span>
-                    </div>
-                    <div class="picker-cell">
-                        <input type="color" id="hlColorB" value="#bbf7d0" />
-                        <span>형광펜 B</span>
-                    </div>
-                    <div class="picker-cell">
-                        <input type="color" id="hlColorC" value="#bfdbfe" />
-                        <span>형광펜 C</span>
-                    </div>
-                    <div class="picker-cell">
-                        <input type="color" id="quoteLineColor" value="#2563eb" />
-                        <span>강조선</span>
-                    </div>
-                </div>
-
-                <div class="panel-section-title">스마트 하이라이트</div>
-                <div class="control-minimal-row">
-                    <div class="checkbox-minimal-group">
-                        <label><input type="checkbox" id="enableQuoteColor" checked /> 따옴표 감지</label>
-                        <label><input type="checkbox" id="enableParenColor" checked /> 괄호 감지</label>
-                    </div>
-                </div>
-                <div class="picker-minimal-group">
-                    <div class="picker-cell">
-                        <input type="color" id="quoteColor" value="#2563eb" />
-                        <span>따옴표색</span>
-                    </div>
-                    <div class="picker-cell" id="parenColorWrapper">
-                        <input type="color" id="parenColor" value="#ea580c" />
-                        <span>괄호색</span>
-                    </div>
-                </div>
-            </div>
-
             <div class="tab-panel" id="panel-font">
                 <div class="panel-section-title">본문 서체</div>
                 <div class="control-minimal-row">
@@ -290,6 +236,28 @@
                         <option value="'OnulSamhwagothic', sans-serif">오늘삼화고딕</option>
                         <option value="'OnulDanjo', serif">오늘단조</option>
                         <option value="OnulHwagang">오늘화강</option>
+                        <option value="DeltaGlassKR">델타글래스 (DeltaGlassKR)</option>
+                        <option value="DeltaDotumKR">델타돋움 (DeltaDotumKR)</option>
+                        <option value="DreamHeumulKR">드림흐물 (DreamHeumulKR)</option>
+                        <option value="Vxywave">브이엑스와이웨이브 (Vxywave)</option>
+                    </select>
+                </div>
+
+                <div class="control-minimal-row">
+                    <label>전체 정렬</label>
+                    <input type="hidden" id="alignH" value="left" />
+                    <div class="segmented-control segmented-control-minimal" data-target="alignH">
+                        <button type="button" data-value="left" class="active">좌</button>
+                        <button type="button" data-value="center">중</button>
+                        <button type="button" data-value="right">우</button>
+                        <button type="button" data-value="justify">양쪽</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
+                    <label for="wordBreak">줄바꿈</label>
+                    <select id="wordBreak">
+                        <option value="keep-all" selected>단어 단위</option>
+                        <option value="break-all">글자 단위</option>
                     </select>
                 </div>
 
@@ -343,7 +311,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="tab-panel" id="panel-bg">
                 <div class="panel-section-title">캔버스 설정</div>
                 <div class="control-minimal-row">
@@ -488,7 +455,53 @@
                     </div>
                 </div>
             </div>
+            <div class="tab-panel" id="panel-text">
+                <div class="panel-section-title">색상 변경</div>
+                <div class="picker-minimal-group">
+                    <div class="picker-cell">
+                        <input type="color" id="globalTextColor" value="#1e293b" />
+                        <span>글자색</span>
+                    </div>
+                    <div class="picker-cell">
+                        <input type="color" id="subTextColor" value="#64748b" />
+                        <span>보조색</span>
+                    </div>
+                    <div class="picker-cell">
+                        <input type="color" id="hlColorA" value="#fef08a" />
+                        <span>형광펜 A</span>
+                    </div>
+                    <div class="picker-cell">
+                        <input type="color" id="hlColorB" value="#bbf7d0" />
+                        <span>형광펜 B</span>
+                    </div>
+                    <div class="picker-cell">
+                        <input type="color" id="hlColorC" value="#bfdbfe" />
+                        <span>형광펜 C</span>
+                    </div>
+                    <div class="picker-cell">
+                        <input type="color" id="quoteLineColor" value="#2563eb" />
+                        <span>강조선</span>
+                    </div>
+                </div>
 
+                <div class="panel-section-title">스마트 하이라이트</div>
+                <div class="control-minimal-row">
+                    <div class="checkbox-minimal-group">
+                        <label><input type="checkbox" id="enableQuoteColor" checked /> 따옴표 감지</label>
+                        <label><input type="checkbox" id="enableParenColor" checked /> 괄호 감지</label>
+                    </div>
+                </div>
+                <div class="picker-minimal-group">
+                    <div class="picker-cell">
+                        <input type="color" id="quoteColor" value="#2563eb" />
+                        <span>따옴표색</span>
+                    </div>
+                    <div class="picker-cell" id="parenColorWrapper">
+                        <input type="color" id="parenColor" value="#ea580c" />
+                        <span>괄호색</span>
+                    </div>
+                </div>
+            </div>
             <div class="tab-panel" id="panel-image">
                 <div id="imageBlockEmptyHint" class="field-hint">본문 안에 넣은 사진을 탭해서 선택하면 여기서 조절할 수 있어요. 아직 선택된 사진이 없어요.</div>
                 <div id="imageBlockPanel" class="image-block-panel" style="display: none">
@@ -532,7 +545,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="tab-panel" id="panel-presets">
                 <div class="panel-section-title">디자인 프리셋</div>
                 <div class="preset-save-box-minimal">
@@ -556,14 +568,6 @@
                     </span>
                     <span class="dock-btn-label">제목</span>
                 </button>
-                <button class="dock-btn tab-btn" data-target="panel-text" title="텍스트 색상 · 정렬">
-                    <svg class="dock-icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="4" y1="6" x2="20" y2="6"></line>
-                        <line x1="4" y1="12" x2="16" y2="12"></line>
-                        <line x1="4" y1="18" x2="12" y2="18"></line>
-                    </svg>
-                    <span class="dock-btn-label">텍스트</span>
-                </button>
                 <button class="dock-btn tab-btn" data-target="panel-font" title="서체 · 크기 · 간격">
                     <svg class="dock-icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 20 L9 6 L14 20"></path>
@@ -579,6 +583,14 @@
                         <path d="M21 15 L15 9 L4 20"></path>
                     </svg>
                     <span class="dock-btn-label">배경</span>
+                </button>
+                <button class="dock-btn tab-btn" data-target="panel-text" title="디자인 · 색상 · 하이라이트">
+                    <svg class="dock-icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="4" y1="6" x2="20" y2="6"></line>
+                        <line x1="4" y1="12" x2="16" y2="12"></line>
+                        <line x1="4" y1="18" x2="12" y2="18"></line>
+                    </svg>
+                    <span class="dock-btn-label">디자인</span>
                 </button>
                 <button class="dock-btn tab-btn" data-target="panel-image" title="본문 사진 설정">
                     <span class="dock-icon-wrap">
