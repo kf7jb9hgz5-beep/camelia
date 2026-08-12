@@ -8,7 +8,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=14" />
+        <link rel="stylesheet" href="style.css?v=16" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -51,7 +51,6 @@
                         <button id="btnInvertHighlight" title="글자색↔배경색 반전">반전</button>
                         <button id="btnQuoteLine" class="btn-dialogue-line" title="대사 강조선 바">강조선</button>
                         <button id="btnBoxQuote" class="btn-box-quote" title="박스로 감싸 인용 강조">박스인용</button>
-                        <button id="btnIndent" class="btn-indent" title="선택한 문단 첫 줄 들여쓰기">들여쓰기</button>
                         <button id="btnInsertDivider" title="구분용 가로선 삽입">가로선</button>
                         <select id="selAlign" class="toolbar-select" title="선택한 문단만 정렬 변경 (전체 정렬과 별개)">
                             <option value="" disabled selected>정렬</option>
@@ -97,7 +96,7 @@
                     </div>
                 </div>
                 <div class="editor-scroll-x" id="editorScrollX">
-                    <div id="textEditor" contenteditable="true"></div>
+                    <div id="textEditor" contenteditable="true" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off" data-gramm="false"></div>
                 </div>
                 <div class="editor-meta" id="editorMeta">0자</div>
 
@@ -493,7 +492,7 @@
                         <span>강조선</span>
                     </div>
                     <div class="picker-cell">
-                        <input type="color" id="boxQuoteColor" value="#2563eb" />
+                        <input type="color" id="boxQuoteColor" value="#000000" />
                         <span>박스인용</span>
                     </div>
                     <div class="picker-cell">
@@ -514,6 +513,11 @@
                         <button onclick="stepInput('fadeStart', -5)">-</button>
                         <input type="number" id="fadeStart" value="60" min="0" max="95" />
                         <button onclick="stepInput('fadeStart', 5)">+</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
+                    <div class="checkbox-minimal-group">
+                        <label><input type="checkbox" id="indentToggle" /> 모든 문단 첫 줄 들여쓰기</label>
                     </div>
                 </div>
 
@@ -678,7 +682,7 @@
 
         <div class="toast" id="toast"></div>
 
-        <script src="presets.js?v=14"></script>
-        <script src="script.js?v=14"></script>
+        <script src="presets.js?v=16"></script>
+        <script src="script.js?v=16"></script>
     </body>
 </html>

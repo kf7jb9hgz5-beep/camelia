@@ -253,7 +253,7 @@ body.mobile-theme {
     box-sizing: border-box;
     overflow-x: hidden; /* 캔버스가 잠깐이라도 화면보다 넓어져도 헤더 폭 측정이 흔들리지 않도록 */
     background-color: var(--bg-main);
-    padding: 14px 16px 12px;
+    padding: calc(64px + env(safe-area-inset-top, 0px)) 16px 12px;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
     display: flex;
     justify-content: center;
@@ -1271,8 +1271,8 @@ input[type="file"]::file-selector-button {
 
 .box-quote {
     display: block !important;
-    border: 1.5px solid var(--box-quote-color, #2563eb) !important;
-    border-radius: 8px;
+    border: 2px solid var(--box-quote-color, #000000) !important;
+    border-radius: 0 !important;
     padding: 14px 16px !important;
     margin-bottom: inherit;
     text-align: inherit;

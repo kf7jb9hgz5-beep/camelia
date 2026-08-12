@@ -51,6 +51,7 @@ function getPresetSnapshot() {
         fadeToggle: els.fadeToggle?.checked,
         fadeStart: els.fadeStart?.value,
         indentSize: els.indentSize?.value,
+        indentToggle: els.indentToggle?.checked,
         enableQuoteColor: els.enableQuoteColor.checked,
         quoteColor: els.quoteColor.value,
         enableParenColor: els.enableParenColor.checked,
@@ -118,6 +119,7 @@ function applyPresetSnapshot(data) {
     if (els.fadeToggle) els.fadeToggle.checked = data.fadeToggle ?? els.fadeToggle.checked;
     if (els.fadeStart) els.fadeStart.value = data.fadeStart ?? els.fadeStart.value;
     if (els.indentSize) els.indentSize.value = data.indentSize ?? els.indentSize.value;
+    if (els.indentToggle) els.indentToggle.checked = data.indentToggle ?? els.indentToggle.checked;
     if (els.fadeToggle) {
         const fadeStartArea = document.getElementById("fadeStartArea");
         if (fadeStartArea) fadeStartArea.style.display = els.fadeToggle.checked ? "flex" : "none";
@@ -273,10 +275,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 const boxQuote = node && node.closest ? node.closest(".box-quote") : null;
                 if (boxQuote) {
                     boxQuote.classList.remove("box-quote");
-                }
-                const indentPara = node && node.closest ? node.closest(".indent-para") : null;
-                if (indentPara) {
-                    indentPara.classList.remove("indent-para");
                 }
             }
 

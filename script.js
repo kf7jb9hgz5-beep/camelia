@@ -23,6 +23,7 @@ const els = {
     fadeToggle: document.getElementById("fadeToggle"),
     fadeStart: document.getElementById("fadeStart"),
     indentSize: document.getElementById("indentSize"),
+    indentToggle: document.getElementById("indentToggle"),
     enableQuoteColor: document.getElementById("enableQuoteColor"),
     quoteColor: document.getElementById("quoteColor"),
     enableParenColor: document.getElementById("enableParenColor"),
@@ -239,13 +240,18 @@ function updateCanvas() {
 
         textWrapper.style.setProperty("--quote-line-color", els.quoteLineColor.value);
         if (els.editor) els.editor.style.setProperty("--quote-line-color", els.quoteLineColor.value);
-        textWrapper.style.setProperty("--box-quote-color", els.boxQuoteColor?.value || "#2563eb");
-        if (els.editor) els.editor.style.setProperty("--box-quote-color", els.boxQuoteColor?.value || "#2563eb");
+        textWrapper.style.setProperty("--box-quote-color", els.boxQuoteColor?.value || "#000000");
+        if (els.editor) els.editor.style.setProperty("--box-quote-color", els.boxQuoteColor?.value || "#000000");
         textWrapper.style.setProperty("--divider-color", els.dividerColor?.value || "#94a3b8");
         if (els.editor) els.editor.style.setProperty("--divider-color", els.dividerColor?.value || "#94a3b8");
         const indentEm = parseFloat(els.indentSize?.value);
-        textWrapper.style.setProperty("--indent-size", `${isNaN(indentEm) ? 1 : indentEm}em`);
-        if (els.editor) els.editor.style.setProperty("--indent-size", `${isNaN(indentEm) ? 1 : indentEm}em`);
+        const indentValue = (els.indentToggle && els.indentToggle.checked) ? `${isNaN(indentEm) ? 1 : indentEm}em` : "0";
+        textWrapper.style.setProperty("--indent-size", indentValue);
+        textWrapper.style.textIndent = indentValue;
+        if (els.editor) {
+            els.editor.style.setProperty("--indent-size", indentValue);
+            els.editor.style.textIndent = indentValue;
+        }
 
         applySmartHighlighting(textWrapper);
 
@@ -845,18 +851,6 @@ document.getElementById("btnBoxQuote").addEventListener("click", () => {
     updateCanvas();
 });
 
-document.getElementById("btnIndent").addEventListener("click", () => {
-    let selection = window.getSelection();
-    if (!selection.rangeCount) return;
-    let range = selection.getRangeAt(0);
-    let block = range.commonAncestorContainer;
-    while (block && block.nodeType !== Node.ELEMENT_NODE) block = block.parentNode;
-    if (block && block.id !== "textEditor") {
-        block.classList.toggle("indent-para");
-    }
-    updateCanvas();
-});
-
 document.getElementById("btnInsertDivider").addEventListener("click", () => {
     let selection = window.getSelection();
     if (!selection.rangeCount) return;
@@ -1047,6 +1041,10 @@ document.addEventListener("DOMContentLoaded", () => {
             toggleFadeRow();
             updateCanvas();
         });
+    }
+
+    if (els.indentToggle) {
+        els.indentToggle.addEventListener("change", () => updateCanvas());
     }
 
     // 제목/글자크기 등을 빠르게 여러 번 건드릴 때(타이핑, 슬라이더 드래그)
