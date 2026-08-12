@@ -878,6 +878,65 @@ document.getElementById("btnInsertDivider").addEventListener("click", () => {
     updateCanvas();
 });
 
+function insertTemplateBlock(html) {
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = html.trim();
+    const node = wrapper.firstElementChild;
+    if (!node) return;
+    els.editor.appendChild(node);
+    const trailer = document.createElement("div");
+    trailer.appendChild(document.createElement("br"));
+    els.editor.appendChild(trailer);
+    closeSheetPanel();
+    updateCanvas();
+    showToast("템플릿을 추가했어요. 예시 문구를 지우고 내용을 채워주세요.");
+}
+
+document.getElementById("btnTemplateVerticalMix").addEventListener("click", () => {
+    insertTemplateBlock(`
+        <div class="template-block template-vertical-mix">
+            <div class="vertical-mix-source">첫 번째 원문 문장.<br>두 번째 원문 문장.</div>
+            <div class="vertical-mix-divider"></div>
+            <div class="vertical-mix-translation">번역문을 이곳에 입력하세요.</div>
+        </div>
+    `);
+});
+
+document.getElementById("btnTemplateSpeaker").addEventListener("click", () => {
+    insertTemplateBlock(`
+        <div class="template-block template-speaker">
+            <div class="speaker-row"><div class="speaker-name">이름</div><div class="speaker-line">대사를 입력하세요.</div></div>
+            <div class="speaker-row"><div class="speaker-name">이름</div><div class="speaker-line">대사를 입력하세요.</div></div>
+        </div>
+    `);
+});
+
+document.getElementById("btnTemplateHeading").addEventListener("click", () => {
+    insertTemplateBlock(`
+        <div class="template-block template-heading-section">
+            <div class="section-heading">— 소제목을 입력하세요</div>
+            <div class="section-body">본문 내용을 입력하세요.</div>
+            <div class="section-asterisk">＊</div>
+            <div class="section-heading">— 소제목을 입력하세요</div>
+            <div class="section-body">본문 내용을 입력하세요.</div>
+        </div>
+    `);
+});
+
+document.getElementById("btnTemplateSideNote").addEventListener("click", () => {
+    insertTemplateBlock(`
+        <div class="template-block template-sidenote">
+            <div class="sidenote-main">본문 내용을 입력하세요.</div>
+            <div class="sidenote-aside">
+                <div class="sidenote-row"><span class="sidenote-label">DATE.</span>00/00</div>
+                <div class="sidenote-row"><span class="sidenote-label">TIME.</span>00:00</div>
+                <div class="sidenote-row"><span class="sidenote-label">PLACE.</span>장소</div>
+                <div class="sidenote-row"><span class="sidenote-label">NOTE.</span>메모</div>
+            </div>
+        </div>
+    `);
+});
+
 els.editor.addEventListener("keydown", function (e) {
     if (e.key === "Enter") {
         const selection = window.getSelection();
@@ -1252,6 +1311,12 @@ function normalizeParagraphs(container) {
                 paragraphAligns.push(null);
                 paragraphIndents.push(false);
                 flushParagraph();
+            } else if (node.classList.contains("template-block")) {
+                flushParagraph();
+                paragraphs.push(node.cloneNode(true));
+                paragraphAligns.push(null);
+                paragraphIndents.push(false);
+                flushParagraph();
             } else if (node.classList.contains("editor-image-block")) {
                 flushParagraph();
                 const imgClone = node.cloneNode(true);
@@ -1272,7 +1337,7 @@ function normalizeParagraphs(container) {
                 currentAlign = prevAlign;
                 currentIndent = prevIndent;
             } else {
-                if (node.querySelector("div, p, br, .dialogue-line, .box-quote")) Array.from(node.childNodes).forEach(parseNodes);
+                if (node.querySelector("div, p, br, .dialogue-line, .box-quote, .template-block")) Array.from(node.childNodes).forEach(parseNodes);
                 else currentParagraphNodes.push(node.cloneNode(true));
             }
         }
@@ -1293,7 +1358,7 @@ function normalizeParagraphs(container) {
     paragraphs.forEach((pNodes, idx) => {
         const align = paragraphAligns[idx];
         const indented = paragraphIndents[idx];
-        if (pNodes instanceof HTMLElement && (pNodes.classList.contains("dialogue-line") || pNodes.classList.contains("box-quote") || pNodes.classList.contains("hr-divider") || pNodes.classList.contains("editor-image-block"))) {
+        if (pNodes instanceof HTMLElement && (pNodes.classList.contains("dialogue-line") || pNodes.classList.contains("box-quote") || pNodes.classList.contains("hr-divider") || pNodes.classList.contains("template-block") || pNodes.classList.contains("editor-image-block"))) {
             if (align && !pNodes.classList.contains("editor-image-block") && !pNodes.classList.contains("hr-divider")) pNodes.style.textAlign = align;
             container.appendChild(pNodes);
         } else {
