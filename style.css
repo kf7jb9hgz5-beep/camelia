@@ -1409,6 +1409,23 @@ input[type="file"]::file-selector-button {
     display: block;
 }
 
+/* ---- 템플릿: 페이지 번호 디자인화 ---- */
+.page-number-big {
+    font-size: 3.4em;
+    font-weight: 800;
+    line-height: 1;
+    opacity: 0.25;
+    margin-bottom: 8px;
+}
+
+.page-number-body {
+    margin-bottom: 16px;
+}
+
+.template-page-number .hr-divider {
+    margin: 18px 0 !important;
+}
+
 .tpl-field {
     min-height: 1.4em;
 }
@@ -1417,6 +1434,59 @@ input[type="file"]::file-selector-button {
     content: attr(data-placeholder);
     color: #9ca3af;
     pointer-events: none;
+}
+
+.multi-item-row {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85em;
+    opacity: 0.75;
+}
+
+.mir-cell {
+    min-width: 1.2em;
+    min-height: 1.2em;
+    white-space: nowrap;
+}
+
+/* ---- 템플릿: 페이지 번호 디자인화 ---- */
+.template-page-number .page-number-group {
+    margin-bottom: 20px;
+}
+
+.template-page-number .page-number-group:last-child {
+    margin-bottom: 0;
+}
+
+.page-number-big {
+    font-size: 3.6em;
+    font-weight: 800;
+    line-height: 1;
+    opacity: 0.22;
+    margin-bottom: 0.15em;
+}
+
+.page-number-body {
+    line-height: 1.6;
+}
+
+/* ---- 템플릿: 하단 각주 줄 ---- */
+.footer-row {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.75em;
+    opacity: 0.7;
+    margin-top: 10px;
+}
+
+.footer-item {
+    flex: 0 0 auto;
+    min-width: 1.2em;
+    white-space: nowrap;
 }
 
 .gradient-config-box {

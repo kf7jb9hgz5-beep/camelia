@@ -22,7 +22,7 @@ const els = {
     boxQuoteWidth: document.getElementById("boxQuoteWidth"),
     dividerColor: document.getElementById("dividerColor"),
     fadeToggle: document.getElementById("fadeToggle"),
-    fadeStart: document.getElementById("fadeStart"),
+    fadeCount: document.getElementById("fadeCount"),
     indentSize: document.getElementById("indentSize"),
     indentToggle: document.getElementById("indentToggle"),
     enableQuoteColor: document.getElementById("enableQuoteColor"),
@@ -41,6 +41,9 @@ const els = {
     fontScaleX: document.getElementById("fontScaleX"),
     infoFontSize: document.getElementById("infoFontSize"),
     columnToggle: document.getElementById("columnToggle"),
+    textVerticalAlign: document.getElementById("textVerticalAlign"),
+    textHorizontalAnchor: document.getElementById("textHorizontalAnchor"),
+    textBlockWidth: document.getElementById("textBlockWidth"),
     columnSplitIndex: document.getElementById("columnSplitIndex"),
     columnGap: document.getElementById("columnGap"),
     captureArea: document.getElementById("captureArea"),
@@ -333,9 +336,11 @@ function updateCanvas() {
         : [Array.from(textWrapper.querySelectorAll("#canvasTextWrapper > div, #canvasTextWrapper > p, #canvasTextWrapper > .dialogue-line, #canvasTextWrapper > .box-quote, #canvasTextWrapper > .hr-divider"))];
 
     const fadeEnabled = !!(els.fadeToggle && els.fadeToggle.checked);
-    const fadeStartPct = Math.min(Math.max(parseFloat(els.fadeStart?.value) || 60, 0), 99);
+    const fadeCountVal = Math.max(1, Math.min(parseInt(els.fadeCount?.value) || 3, 10));
+    const FADE_MIN_OPACITY = 0.25; // 마지막 문장도 완전히 사라지지 않도록 남겨두는 최소 밝기
 
     paragraphGroups.forEach((group) => {
+        const fadeCount = Math.min(fadeCountVal, group.length);
         group.forEach((p, idx) => {
             if (idx === group.length - 1) {
                 p.style.marginBottom = "0px";
@@ -344,12 +349,12 @@ function updateCanvas() {
                 p.style.marginBottom = `${els.paraSpacing.value}px`;
             }
 
-            if (fadeEnabled && group.length > 1) {
-                const posPct = (idx / (group.length - 1)) * 100;
-                if (posPct >= fadeStartPct) {
-                    const range = 100 - fadeStartPct;
-                    const progress = range > 0 ? (posPct - fadeStartPct) / range : 1;
-                    p.style.opacity = String(Math.max(0, 1 - progress));
+            if (fadeEnabled && group.length > 1 && fadeCount > 0) {
+                const fadeStartIdx = group.length - fadeCount;
+                if (idx >= fadeStartIdx) {
+                    const stepPosition = idx - fadeStartIdx + 1; // 1..fadeCount
+                    const progress = stepPosition / fadeCount;
+                    p.style.opacity = String(1 - progress * (1 - FADE_MIN_OPACITY));
                 } else {
                     p.style.opacity = "1";
                 }
@@ -361,6 +366,13 @@ function updateCanvas() {
 
     const infoContainer = document.getElementById("canvasInfo");
     const textContainer = document.getElementById("canvasTextContainer");
+
+    if (textContainer) {
+        textContainer.style.justifyContent = els.textVerticalAlign?.value || "center";
+        textContainer.style.alignItems = els.textHorizontalAnchor?.value || "center";
+        const blockWidth = Math.min(Math.max(parseFloat(els.textBlockWidth?.value) || 100, 30), 100);
+        textWrapper.style.width = `${blockWidth}%`;
+    }
 
     if (infoContainer && textContainer) {
         if (infoContainer.parentNode !== textContainer) textContainer.appendChild(infoContainer);
@@ -892,6 +904,17 @@ onClick("btnClearAll", () => {
     showToast("본문을 전체 삭제했어요.");
 });
 
+onClick("btnInsertMultiRow", () => {
+    insertTemplateBlock(`
+        <div class="template-block multi-item-row">
+            <span class="tpl-field mir-cell" data-placeholder="항목1"></span>
+            <span class="tpl-field mir-cell" data-placeholder="항목2"></span>
+            <span class="tpl-field mir-cell" data-placeholder="항목3"></span>
+            <span class="tpl-field mir-cell" data-placeholder="항목4"></span>
+        </div>
+    `);
+});
+
 function insertTemplateBlock(html) {
     if (!els.editor) return;
     const wrapper = document.createElement("div");
@@ -962,6 +985,18 @@ onClick("btnTemplateSideNote", () => {
                 <div class="sidenote-row"><span class="sidenote-label">PLACE.</span><span class="sidenote-value tpl-field" data-placeholder="장소"></span></div>
                 <div class="sidenote-row"><span class="sidenote-label">NOTE.</span><span class="sidenote-value tpl-field" data-placeholder="메모"></span></div>
             </div>
+        </div>
+    `);
+});
+
+onClick("btnTemplatePageNumber", () => {
+    insertTemplateBlock(`
+        <div class="template-block template-page-number">
+            <div class="page-number-big tpl-field" data-placeholder="07"></div>
+            <div class="page-number-body tpl-field" data-placeholder="본문 내용을 입력하세요."></div>
+            <div class="hr-divider" contenteditable="false"></div>
+            <div class="page-number-big tpl-field" data-placeholder="08"></div>
+            <div class="page-number-body tpl-field" data-placeholder="본문 내용을 입력하세요."></div>
         </div>
     `);
 });
@@ -1181,10 +1216,10 @@ document.addEventListener("DOMContentLoaded", () => {
         els.bgType, els.bgColor1, els.gradColor1, els.gradColor2, els.gradColor3, els.gradientDir,
         els.globalTextColor, els.subTextColor, els.hlColorA, els.hlColorB, els.hlColorC,
         els.quoteLineColor, els.enableQuoteColor, els.quoteColor, els.enableParenColor, els.parenColor,
-        els.boxQuoteColor, els.boxQuoteWidth, els.dividerColor, els.fadeStart, els.indentSize,
+        els.boxQuoteColor, els.boxQuoteWidth, els.dividerColor, els.fadeCount, els.indentSize,
         els.fontSelect, els.wordBreak, els.fontSize, els.letterSpacing, els.lineHeight,
         els.paraSpacing, els.fontScaleX, els.infoFontSize,
-        els.columnSplitIndex, els.columnGap,
+        els.columnSplitIndex, els.columnGap, els.textVerticalAlign, els.textHorizontalAnchor, els.textBlockWidth,
         els.headingTitleInput, els.headingSubtitleInput,
         els.headingTitleFont, els.headingTitleSize, els.headingTitleBold,
         els.headingSubtitleFont, els.headingSubtitleSize, els.headingSubtitleBold

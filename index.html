@@ -8,7 +8,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=19" />
+        <link rel="stylesheet" href="style.css?v=20" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -52,6 +52,7 @@
                         <button id="btnQuoteLine" class="btn-dialogue-line" title="대사 강조선 바">강조선</button>
                         <button id="btnBoxQuote" class="btn-box-quote" title="박스로 감싸 인용 강조">박스인용</button>
                         <button id="btnInsertDivider" title="구분용 가로선 삽입">가로선</button>
+                        <button id="btnInsertMultiRow" title="여러 항목을 균등한 간격으로 한 줄에 배치">항목 줄</button>
                         <select id="selAlign" class="toolbar-select" title="선택한 문단만 정렬 변경 (전체 정렬과 별개)">
                             <option value="" disabled selected>정렬</option>
                             <option value="left">왼쪽</option>
@@ -361,6 +362,30 @@
 
                 <div class="panel-section-title">레이아웃</div>
                 <div class="control-minimal-row">
+                    <label for="textVerticalAlign">텍스트 세로 위치</label>
+                    <select id="textVerticalAlign">
+                        <option value="flex-start">위</option>
+                        <option value="center" selected>중앙</option>
+                        <option value="flex-end">아래</option>
+                    </select>
+                </div>
+                <div class="control-minimal-row">
+                    <label for="textHorizontalAnchor">텍스트 가로 위치</label>
+                    <select id="textHorizontalAnchor">
+                        <option value="flex-start">왼쪽</option>
+                        <option value="center" selected>중앙</option>
+                        <option value="flex-end">오른쪽</option>
+                    </select>
+                </div>
+                <div class="control-minimal-row">
+                    <label for="textBlockWidth">텍스트 블록 너비 (%)</label>
+                    <div class="stepper-minimal">
+                        <button onclick="stepInput('textBlockWidth', -5)">-</button>
+                        <input type="number" id="textBlockWidth" value="100" min="30" max="100" />
+                        <button onclick="stepInput('textBlockWidth', 5)">+</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
                     <label for="columnToggle">2단으로 나누기</label>
                     <div class="checkbox-minimal-group">
                         <label><input type="checkbox" id="columnToggle" /> 사용</label>
@@ -517,11 +542,11 @@
                     </div>
                 </div>
                 <div class="control-minimal-row" id="fadeStartArea" style="display:none;">
-                    <label for="fadeStart">시작 지점 (%)</label>
+                    <label for="fadeCount">흐려지는 문단 수</label>
                     <div class="stepper-minimal">
-                        <button onclick="stepInput('fadeStart', -5)">-</button>
-                        <input type="number" id="fadeStart" value="60" min="0" max="95" />
-                        <button onclick="stepInput('fadeStart', 5)">+</button>
+                        <button onclick="stepInput('fadeCount', -1)">-</button>
+                        <input type="number" id="fadeCount" value="3" min="1" max="10" />
+                        <button onclick="stepInput('fadeCount', 1)">+</button>
                     </div>
                 </div>
                 <div class="control-minimal-row">
@@ -598,6 +623,7 @@
                     <button type="button" class="btn-template" id="btnTemplateSpeaker">인물 대사 구분</button>
                     <button type="button" class="btn-template" id="btnTemplateHeading">머리말/항목 구분</button>
                     <button type="button" class="btn-template" id="btnTemplateSideNote">2단 + 사이드노트</button>
+                    <button type="button" class="btn-template" id="btnTemplatePageNumber">페이지 번호 디자인</button>
                 </div>
 
                 <div class="panel-section-title">디자인 프리셋</div>
@@ -699,7 +725,7 @@
 
         <div class="toast" id="toast"></div>
 
-        <script src="presets.js?v=19"></script>
-        <script src="script.js?v=19"></script>
+        <script src="presets.js?v=20"></script>
+        <script src="script.js?v=20"></script>
     </body>
 </html>

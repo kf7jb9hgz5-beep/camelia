@@ -50,9 +50,12 @@ function getPresetSnapshot() {
         boxQuoteWidth: els.boxQuoteWidth?.value,
         dividerColor: els.dividerColor?.value,
         fadeToggle: els.fadeToggle?.checked,
-        fadeStart: els.fadeStart?.value,
+        fadeCount: els.fadeCount?.value,
         indentSize: els.indentSize?.value,
         indentToggle: els.indentToggle?.checked,
+        textVerticalAlign: els.textVerticalAlign?.value,
+        textHorizontalAnchor: els.textHorizontalAnchor?.value,
+        textBlockWidth: els.textBlockWidth?.value,
         enableQuoteColor: els.enableQuoteColor.checked,
         quoteColor: els.quoteColor.value,
         enableParenColor: els.enableParenColor.checked,
@@ -119,9 +122,12 @@ function applyPresetSnapshot(data) {
     if (els.boxQuoteWidth) els.boxQuoteWidth.value = data.boxQuoteWidth ?? els.boxQuoteWidth.value;
     if (els.dividerColor) els.dividerColor.value = data.dividerColor ?? els.dividerColor.value;
     if (els.fadeToggle) els.fadeToggle.checked = data.fadeToggle ?? els.fadeToggle.checked;
-    if (els.fadeStart) els.fadeStart.value = data.fadeStart ?? els.fadeStart.value;
+    if (els.fadeCount) els.fadeCount.value = data.fadeCount ?? els.fadeCount.value;
     if (els.indentSize) els.indentSize.value = data.indentSize ?? els.indentSize.value;
     if (els.indentToggle) els.indentToggle.checked = data.indentToggle ?? els.indentToggle.checked;
+    if (els.textVerticalAlign) els.textVerticalAlign.value = data.textVerticalAlign ?? els.textVerticalAlign.value;
+    if (els.textHorizontalAnchor) els.textHorizontalAnchor.value = data.textHorizontalAnchor ?? els.textHorizontalAnchor.value;
+    if (els.textBlockWidth) els.textBlockWidth.value = data.textBlockWidth ?? els.textBlockWidth.value;
     if (els.fadeToggle) {
         const fadeStartArea = document.getElementById("fadeStartArea");
         if (fadeStartArea) fadeStartArea.style.display = els.fadeToggle.checked ? "flex" : "none";
