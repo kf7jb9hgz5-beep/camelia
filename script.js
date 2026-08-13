@@ -947,9 +947,9 @@ function insertTemplateBlock(html) {
 onClick("btnTemplateVerticalMix", () => {
     insertTemplateBlock(`
         <div class="template-block template-vertical-mix">
-            <div class="vertical-mix-source tpl-field" data-placeholder="원문을 입력하세요"></div>
+            <div class="vertical-mix-source tpl-field tpl-multiline" data-placeholder="원문을 입력하세요"></div>
             <div class="vertical-mix-divider"></div>
-            <div class="vertical-mix-translation tpl-field" data-placeholder="번역문을 입력하세요"></div>
+            <div class="vertical-mix-translation tpl-field tpl-multiline" data-placeholder="번역문을 입력하세요"></div>
         </div>
     `);
 });
@@ -957,8 +957,8 @@ onClick("btnTemplateVerticalMix", () => {
 onClick("btnTemplateSpeaker", () => {
     insertTemplateBlock(`
         <div class="template-block template-speaker">
-            <div class="speaker-row"><div class="speaker-name tpl-field" data-placeholder="이름"></div><div class="speaker-line tpl-field" data-placeholder="대사를 입력하세요"></div></div>
-            <div class="speaker-row"><div class="speaker-name tpl-field" data-placeholder="이름"></div><div class="speaker-line tpl-field" data-placeholder="대사를 입력하세요"></div></div>
+            <div class="speaker-row"><div class="speaker-name tpl-field" data-placeholder="이름"></div><div class="speaker-line tpl-field tpl-multiline" data-placeholder="대사를 입력하세요"></div></div>
+            <div class="speaker-row"><div class="speaker-name tpl-field" data-placeholder="이름"></div><div class="speaker-line tpl-field tpl-multiline" data-placeholder="대사를 입력하세요"></div></div>
         </div>
     `);
 });
@@ -967,10 +967,10 @@ onClick("btnTemplateHeading", () => {
     insertTemplateBlock(`
         <div class="template-block template-heading-section">
             <div class="section-heading tpl-field" data-placeholder="— 소제목을 입력하세요"></div>
-            <div class="section-body tpl-field" data-placeholder="본문 내용을 입력하세요"></div>
+            <div class="section-body tpl-field tpl-multiline" data-placeholder="본문 내용을 입력하세요"></div>
             <div class="section-asterisk">＊</div>
             <div class="section-heading tpl-field" data-placeholder="— 소제목을 입력하세요"></div>
-            <div class="section-body tpl-field" data-placeholder="본문 내용을 입력하세요"></div>
+            <div class="section-body tpl-field tpl-multiline" data-placeholder="본문 내용을 입력하세요"></div>
         </div>
     `);
 });
@@ -978,7 +978,7 @@ onClick("btnTemplateHeading", () => {
 onClick("btnTemplateSideNote", () => {
     insertTemplateBlock(`
         <div class="template-block template-sidenote">
-            <div class="sidenote-main tpl-field" data-placeholder="본문 내용을 입력하세요"></div>
+            <div class="sidenote-main tpl-field tpl-multiline" data-placeholder="본문 내용을 입력하세요"></div>
             <div class="sidenote-aside">
                 <div class="sidenote-row"><span class="sidenote-label">DATE.</span><span class="sidenote-value tpl-field" data-placeholder="00/00"></span></div>
                 <div class="sidenote-row"><span class="sidenote-label">TIME.</span><span class="sidenote-value tpl-field" data-placeholder="00:00"></span></div>
@@ -993,10 +993,10 @@ onClick("btnTemplatePageNumber", () => {
     insertTemplateBlock(`
         <div class="template-block template-page-number">
             <div class="page-number-big tpl-field" data-placeholder="07"></div>
-            <div class="page-number-body tpl-field" data-placeholder="본문 내용을 입력하세요."></div>
+            <div class="page-number-body tpl-field tpl-multiline" data-placeholder="본문 내용을 입력하세요."></div>
             <div class="hr-divider" contenteditable="false"></div>
             <div class="page-number-big tpl-field" data-placeholder="08"></div>
-            <div class="page-number-body tpl-field" data-placeholder="본문 내용을 입력하세요."></div>
+            <div class="page-number-body tpl-field tpl-multiline" data-placeholder="본문 내용을 입력하세요."></div>
         </div>
     `);
 });
@@ -1010,6 +1010,12 @@ els.editor.addEventListener("keydown", function (e) {
 
         const currentField = el.closest ? el.closest(".tpl-field") : null;
         if (currentField) {
+            // 여러 줄이 필요한 칸(본문, 대사 등)은 줄바꿈만 넣고 칸 밖으로 나가지 않게 함
+            if (currentField.classList.contains("tpl-multiline")) {
+                e.preventDefault();
+                document.execCommand("insertLineBreak");
+                return;
+            }
             const templateBlock = currentField.closest(".template-block");
             if (templateBlock) {
                 const fields = Array.from(templateBlock.querySelectorAll(".tpl-field"));
@@ -1024,10 +1030,19 @@ els.editor.addEventListener("keydown", function (e) {
                     selection.addRange(range);
                     nextField.scrollIntoView({ block: "center", behavior: "smooth" });
                 } else {
-                    els.editor.blur();
+                    document.execCommand("insertLineBreak");
                 }
                 return;
             }
+        }
+
+        // 칸(tpl-field) 밖이라도 템플릿 블록 내부라면, 기본 Enter 동작이 구조를 쪼개 형식을
+        // 무너뜨리지 않도록 줄바꿈만 삽입한다.
+        const insideTemplate = el.closest ? el.closest(".template-block") : null;
+        if (insideTemplate) {
+            e.preventDefault();
+            document.execCommand("insertLineBreak");
+            return;
         }
 
         const inDialogue = el.closest(".dialogue-line, .box-quote");
@@ -1063,6 +1078,7 @@ function closeSheetPanel() {
     const subWindow = document.querySelector(".adaptive-settings-window");
     const overlay = document.getElementById("sheetOverlay");
     els.tabs.forEach((t) => t.classList.remove("active"));
+    els.panels.forEach((p) => p.classList.remove("active"));
     if (subWindow) subWindow.classList.remove("active");
     if (overlay) overlay.classList.remove("active");
 }
