@@ -853,6 +853,7 @@ onClick("btnQuoteLine", () => {
         range.insertNode(div);
     }
     updateCanvas();
+    pushHistory(true);
 });
 
 onClick("btnBoxQuote", () => {
@@ -870,6 +871,7 @@ onClick("btnBoxQuote", () => {
         range.insertNode(div);
     }
     updateCanvas();
+    pushHistory(true);
 });
 
 onClick("btnInsertDivider", () => {
@@ -893,6 +895,7 @@ onClick("btnInsertDivider", () => {
     selection.addRange(newRange);
 
     updateCanvas();
+    pushHistory(true);
 });
 
 onClick("btnClearAll", () => {
@@ -901,6 +904,7 @@ onClick("btnClearAll", () => {
     if (hasContent && !window.confirm("본문 내용을 전부 지울까요? 되돌릴 수 없어요.")) return;
     els.editor.innerHTML = "";
     updateCanvas();
+    pushHistory(true);
     showToast("본문을 전체 삭제했어요.");
 });
 
@@ -915,6 +919,53 @@ onClick("btnInsertMultiRow", () => {
     `);
 });
 
+// ==== 실행취소 / 다시실행 ====
+let editorHistory = [];
+let historyIndex = -1;
+let historyPushTimer = null;
+
+function updateHistoryButtons() {
+    const undoBtn = document.getElementById("btnUndo");
+    const redoBtn = document.getElementById("btnRedo");
+    if (undoBtn) undoBtn.disabled = historyIndex <= 0;
+    if (redoBtn) redoBtn.disabled = historyIndex >= editorHistory.length - 1;
+}
+
+function pushHistory(immediate) {
+    if (!els.editor) return;
+    const commit = () => {
+        const html = els.editor.innerHTML;
+        if (editorHistory[historyIndex] === html) return;
+        editorHistory = editorHistory.slice(0, historyIndex + 1);
+        editorHistory.push(html);
+        if (editorHistory.length > 60) editorHistory.shift();
+        historyIndex = editorHistory.length - 1;
+        updateHistoryButtons();
+    };
+    clearTimeout(historyPushTimer);
+    if (immediate) commit();
+    else historyPushTimer = setTimeout(commit, 500);
+}
+
+function undoEdit() {
+    if (historyIndex <= 0) return;
+    historyIndex--;
+    els.editor.innerHTML = editorHistory[historyIndex];
+    updateCanvas();
+    updateHistoryButtons();
+}
+
+function redoEdit() {
+    if (historyIndex >= editorHistory.length - 1) return;
+    historyIndex++;
+    els.editor.innerHTML = editorHistory[historyIndex];
+    updateCanvas();
+    updateHistoryButtons();
+}
+
+onClick("btnUndo", undoEdit);
+onClick("btnRedo", redoEdit);
+
 function insertTemplateBlock(html) {
     if (!els.editor) return;
     const wrapper = document.createElement("div");
@@ -927,6 +978,7 @@ function insertTemplateBlock(html) {
     els.editor.appendChild(trailer);
     closeSheetPanel();
     updateCanvas();
+    pushHistory(true);
     showToast("템플릿을 추가했어요. 빈 칸을 탭해서 내용을 입력해 주세요.");
 
     const firstField = node.querySelector(".tpl-field");
@@ -1180,8 +1232,11 @@ document.addEventListener("DOMContentLoaded", () => {
             deselectImageBlock();
         }
         updateCanvas();
+        pushHistory();
     });
+    pushHistory(true);
     if (typeof renderPresets === "function") renderPresets();
+    if (typeof renderCustomTemplates === "function") renderCustomTemplates();
 
     if (els.columnToggle) {
         const toggleColumnRows = () => {
@@ -1337,6 +1392,93 @@ document.getElementById("btnSave").addEventListener("click", () => {
             els.captureArea.style.transform = originalTransform;
             applyPreviewScale();
         });
+});
+
+// ==== 여러 장 한번에 저장 (가로선 기준으로 카드 분할) ====
+function captureCanvasAsPNG(filename) {
+    return new Promise((resolve) => {
+        if (!els.captureArea) { resolve(); return; }
+        const originalHeight = els.captureArea.style.height;
+        const originalOverflow = els.captureArea.style.overflow;
+        const originalTransform = els.captureArea.style.transform;
+        els.captureArea.style.transform = "none";
+        if (els.ratioSelect.value === "free") {
+            els.captureArea.style.height = els.captureArea.scrollHeight + "px";
+        }
+        els.captureArea.style.overflow = "visible";
+        prepareCanvasForCapture(els.captureArea);
+        html2canvas(els.captureArea, { useCORS: true, allowTaint: true, backgroundColor: null, scale: 2 })
+            .then((canvas) => {
+                restoreCanvasAfterCapture(els.captureArea);
+                els.captureArea.style.height = originalHeight;
+                els.captureArea.style.overflow = originalOverflow;
+                els.captureArea.style.transform = originalTransform;
+                applyPreviewScale();
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        const blobURL = URL.createObjectURL(blob);
+                        const link = document.createElement("a");
+                        link.href = blobURL;
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        setTimeout(() => URL.revokeObjectURL(blobURL), 1000);
+                    }
+                    resolve();
+                }, "image/png");
+            })
+            .catch(() => {
+                restoreCanvasAfterCapture(els.captureArea);
+                els.captureArea.style.height = originalHeight;
+                els.captureArea.style.overflow = originalOverflow;
+                els.captureArea.style.transform = originalTransform;
+                applyPreviewScale();
+                resolve();
+            });
+    });
+}
+
+function wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+onClick("btnExportMulti", async () => {
+    if (!els.editor) return;
+    const originalHTML = els.editor.innerHTML;
+
+    const groups = [[]];
+    Array.from(els.editor.childNodes).forEach((node) => {
+        if (node.nodeType === 1 && node.classList && node.classList.contains("hr-divider")) {
+            groups.push([]);
+        } else {
+            groups[groups.length - 1].push(node);
+        }
+    });
+    const nonEmptyGroups = groups.filter((g) =>
+        g.some((n) => (n.textContent || "").trim().length > 0 || (n.nodeType === 1 && n.querySelector && n.querySelector(".editor-image-block, .template-block")))
+    );
+
+    if (nonEmptyGroups.length < 2) {
+        showToast("가로선으로 나눌 지점을 먼저 표시해 주세요.");
+        return;
+    }
+
+    showToast(`${nonEmptyGroups.length}장을 순서대로 저장할게요.`);
+
+    for (let i = 0; i < nonEmptyGroups.length; i++) {
+        const wrapper = document.createElement("div");
+        nonEmptyGroups[i].forEach((n) => wrapper.appendChild(n.cloneNode(true)));
+        els.editor.innerHTML = wrapper.innerHTML || "<div><br></div>";
+        updateCanvas();
+        await wait(80);
+        await captureCanvasAsPNG(`excerpt_${i + 1}.png`);
+        await wait(350);
+    }
+
+    els.editor.innerHTML = originalHTML;
+    updateCanvas();
+    showToast("전체 저장이 끝났어요.");
 });
 
 document.getElementById("bgImageInput").addEventListener("change", function (e) {

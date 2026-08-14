@@ -683,6 +683,11 @@ body.mobile-theme {
     transition: var(--transition-base);
 }
 
+.editor-toolbar.pill-group button:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
 .editor-toolbar.pill-group button:active {
     background-color: rgba(0, 0, 0, 0.06);
     color: var(--text-main);

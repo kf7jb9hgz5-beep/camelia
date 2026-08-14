@@ -8,7 +8,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=21" />
+        <link rel="stylesheet" href="style.css?v=22" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -29,6 +29,7 @@
 
         <div class="canvas-top-actions">
             <button type="button" class="icon-fab" id="btnOpenPresets" title="프리셋">☆</button>
+            <button class="btn-export secondary" id="btnExportMulti" title="가로선으로 나눠서 여러 장 한번에 저장">여러장</button>
             <button class="btn-export secondary" id="btnCopy">복사</button>
             <button class="btn-export primary" id="btnSave">저장</button>
         </div>
@@ -38,6 +39,8 @@
                 <div class="editor-header">
                     <span class="card-title">본문</span>
                     <div class="editor-toolbar pill-group">
+                        <button id="btnUndo" title="실행 취소" disabled>↺</button>
+                        <button id="btnRedo" title="다시 실행" disabled>↻</button>
                         <button id="btnBold" title="굵게">B</button>
                         <button id="btnItalic" title="기울임">I</button>
                         <button id="btnQuoteWrap" title="따옴표 감싸기">""</button>
@@ -626,6 +629,14 @@
                     <button type="button" class="btn-template" id="btnTemplatePageNumber">페이지 번호 디자인</button>
                 </div>
 
+                <div class="panel-section-title">내 템플릿</div>
+                <div class="field-hint">지금 본문에 있는 레이아웃(구조)을 그대로 저장해뒀다가 나중에 다시 불러올 수 있어요.</div>
+                <div class="preset-save-box-minimal">
+                    <input type="text" id="customTemplateNameInput" placeholder="템플릿 이름 입력" />
+                    <button class="btn-minimal-save" onclick="saveCustomTemplate()">저장</button>
+                </div>
+                <div class="preset-list-scroll" id="customTemplateList"></div>
+
                 <div class="panel-section-title">디자인 프리셋</div>
                 <div class="preset-save-box-minimal">
                     <input type="text" id="presetNameInput" placeholder="프리셋 이름 입력" />
@@ -725,7 +736,7 @@
 
         <div class="toast" id="toast"></div>
 
-        <script src="presets.js?v=21"></script>
-        <script src="script.js?v=21"></script>
+        <script src="presets.js?v=22"></script>
+        <script src="script.js?v=22"></script>
     </body>
 </html>

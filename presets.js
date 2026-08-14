@@ -200,6 +200,109 @@ function savePresetsToStorage(list) {
     }
 }
 
+// ==== 내 템플릿 (현재 본문 구조 저장) ====
+function getCustomTemplatesFromStorage() {
+    try {
+        const raw = localStorage.getItem("quoteStudioCustomTemplates");
+        return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveCustomTemplatesToStorage(list) {
+    try {
+        localStorage.setItem("quoteStudioCustomTemplates", JSON.stringify(list));
+    } catch (e) {
+        console.warn("내 템플릿 저장 실패:", e);
+    }
+}
+
+function saveCustomTemplate() {
+    const nameInput = document.getElementById("customTemplateNameInput");
+    const name = (nameInput.value || "").trim();
+    if (!name) {
+        alert("템플릿 이름을 입력해주세요.");
+        return;
+    }
+    const editor = document.getElementById("textEditor");
+    const html = editor ? editor.innerHTML.trim() : "";
+    if (!html || html === "<div><br></div>") {
+        alert("저장할 본문 내용이 없어요. 먼저 레이아웃을 만들어주세요.");
+        return;
+    }
+
+    const list = getCustomTemplatesFromStorage();
+    list.push({ name, html });
+    saveCustomTemplatesToStorage(list);
+    nameInput.value = "";
+    renderCustomTemplates();
+    if (typeof showToast === "function") showToast("내 템플릿으로 저장했어요.");
+}
+
+function deleteCustomTemplate(index) {
+    const list = getCustomTemplatesFromStorage();
+    list.splice(index, 1);
+    saveCustomTemplatesToStorage(list);
+    renderCustomTemplates();
+}
+
+function applyCustomTemplate(html) {
+    const editor = document.getElementById("textEditor");
+    if (!editor) return;
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = html;
+    Array.from(wrapper.childNodes).forEach((n) => editor.appendChild(n));
+    const trailer = document.createElement("div");
+    trailer.appendChild(document.createElement("br"));
+    editor.appendChild(trailer);
+    if (typeof closeSheetPanel === "function") closeSheetPanel();
+    if (typeof updateCanvas === "function") updateCanvas();
+    if (typeof pushHistory === "function") pushHistory(true);
+    if (typeof showToast === "function") showToast("내 템플릿을 추가했어요.");
+}
+
+function renderCustomTemplates() {
+    const container = document.getElementById("customTemplateList");
+    if (!container) return;
+
+    const list = getCustomTemplatesFromStorage();
+    container.innerHTML = "";
+
+    if (list.length === 0) {
+        const empty = document.createElement("div");
+        empty.style.textAlign = "center";
+        empty.style.fontSize = "12px";
+        empty.style.color = "var(--text-muted)";
+        empty.style.padding = "12px 0";
+        empty.textContent = "저장된 내 템플릿이 없어요.";
+        container.appendChild(empty);
+        return;
+    }
+
+    list.forEach((tpl, index) => {
+        const item = document.createElement("div");
+        item.className = "preset-item";
+
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "preset-name";
+        nameSpan.textContent = tpl.name;
+
+        const delBtn = document.createElement("button");
+        delBtn.className = "preset-delete-btn";
+        delBtn.textContent = "✕";
+        delBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            deleteCustomTemplate(index);
+        });
+
+        item.appendChild(nameSpan);
+        item.appendChild(delBtn);
+        item.addEventListener("click", () => applyCustomTemplate(tpl.html));
+        container.appendChild(item);
+    });
+}
+
 // "저장" 버튼(프리셋 패널)에서 호출
 function savePreset() {
     const nameInput = document.getElementById("presetNameInput");
