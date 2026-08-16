@@ -1,4 +1,5 @@
 @import url("https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/static/complete/WantedSans.min.css");
+@import url("https://cdn.jsdelivr.net/gh/cartax/webfont-nanum/dist/NanumMyeongjoEco/subset/kr/font.css");
 
 :root {
     --bg-main: #f3f3f1;
@@ -222,6 +223,22 @@
 }
 
 @font-face {
+    font-family: 'DX고딕';
+    src: url('./Fonts/DX 고딕.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: '학교안심바른돋움';
+    src: url('./Fonts/학교안심바른돋움.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
     font-family: 'SUIT';
     src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Regular.woff2') format('woff2');
     font-weight: normal;
@@ -253,30 +270,6 @@
     font-family: 'JoseonShinmyeongjo';
     src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-04@1.1/ChosunSm.woff') format('woff');
     font-weight: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'NanumMyeongjoEco';
-    src: url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumEco/NanumMyeongjoEco/NanumMyeongjoEcoBold.woff') format('woff'),
-         url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumEco/NanumMyeongjoEco/NanumMyeongjoEcoBold.ttf') format('truetype');
-    font-weight: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'NanumMyeongjoEco';
-    src: url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumEco/NanumMyeongjoEco/NanumMyeongjoEcoBold.woff') format('woff'),
-         url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumEco/NanumMyeongjoEco/NanumMyeongjoEcoBold.ttf') format('truetype');
-    font-weight: 700;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'NanumMyeongjoEco';
-    src: url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumEco/NanumMyeongjoEco/NanumMyeongjoEcoExtraBold.woff') format('woff'),
-         url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumEco/NanumMyeongjoEco/NanumMyeongjoEcoExtraBold.ttf') format('truetype');
-    font-weight: 800;
     font-display: swap;
 }
 
