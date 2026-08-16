@@ -1,3 +1,5 @@
+@import url("https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/static/complete/WantedSans.min.css");
+
 :root {
     --bg-main: #f3f3f1;
     --bg-card: #ffffff;
@@ -216,6 +218,57 @@
     src: url('./Fonts/DreamHeumulKR.woff2') format('woff2');
     font-weight: normal;
     font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'SUIT';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Regular.woff2') format('woff2');
+    font-weight: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'BookkMyungjo';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302@1.0/BookkMyungjo-Lt.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'BookkMyungjo';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302@1.0/BookkMyungjo-Bd.woff2') format('woff2');
+    font-weight: 700;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'JoseonGulim';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-04@1.0/ChosunGu.woff') format('woff');
+    font-weight: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'JoseonShinmyeongjo';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-04@1.1/ChosunSm.woff') format('woff');
+    font-weight: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'NanumMyeongjoEco';
+    src: url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumEco/NanumMyeongjoEco/NanumMyeongjoEcoBold.woff') format('woff'),
+         url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumEco/NanumMyeongjoEco/NanumMyeongjoEcoBold.ttf') format('truetype');
+    font-weight: 700;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'NanumMyeongjoEco';
+    src: url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumEco/NanumMyeongjoEco/NanumMyeongjoEcoExtraBold.woff') format('woff'),
+         url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumEco/NanumMyeongjoEco/NanumMyeongjoEcoExtraBold.ttf') format('truetype');
+    font-weight: 800;
     font-display: swap;
 }
 
@@ -1439,21 +1492,6 @@ input[type="file"]::file-selector-button {
     content: attr(data-placeholder);
     color: #9ca3af;
     pointer-events: none;
-}
-
-.multi-item-row {
-    display: flex !important;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.85em;
-    opacity: 0.75;
-}
-
-.mir-cell {
-    min-width: 1.2em;
-    min-height: 1.2em;
-    white-space: nowrap;
 }
 
 /* ---- 템플릿: 페이지 번호 디자인화 ---- */

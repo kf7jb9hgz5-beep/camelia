@@ -908,17 +908,6 @@ onClick("btnClearAll", () => {
     showToast("본문을 전체 삭제했어요.");
 });
 
-onClick("btnInsertMultiRow", () => {
-    insertTemplateBlock(`
-        <div class="template-block multi-item-row">
-            <span class="tpl-field mir-cell" data-placeholder="항목1"></span>
-            <span class="tpl-field mir-cell" data-placeholder="항목2"></span>
-            <span class="tpl-field mir-cell" data-placeholder="항목3"></span>
-            <span class="tpl-field mir-cell" data-placeholder="항목4"></span>
-        </div>
-    `);
-});
-
 // ==== 실행취소 / 다시실행 ====
 let editorHistory = [];
 let historyIndex = -1;
@@ -1447,8 +1436,14 @@ onClick("btnExportMulti", async () => {
     if (!els.editor) return;
     const originalHTML = els.editor.innerHTML;
 
+    // 가로선이 문단 중간에 삽입돼 있어도(최상위가 아니어도) 정확히 찾도록
+    // 캔버스 렌더링과 동일한 평탄화 로직을 거쳐서 최상위 블록 목록을 얻는다.
+    const flatContainer = document.createElement("div");
+    flatContainer.innerHTML = originalHTML;
+    normalizeParagraphs(flatContainer);
+
     const groups = [[]];
-    Array.from(els.editor.childNodes).forEach((node) => {
+    Array.from(flatContainer.childNodes).forEach((node) => {
         if (node.nodeType === 1 && node.classList && node.classList.contains("hr-divider")) {
             groups.push([]);
         } else {
