@@ -797,7 +797,7 @@ if (selAlignEl) {
 // execCommand("fontSize", false, "7")로 선택 영역을 <font size="7"> 로 감싼 뒤,
 // 그 마커를 원하는 CSS가 적용된 <span>으로 치환한다. (여러 블록/노드에 걸친
 // 선택에도 안정적으로 동작하도록 브라우저 내장 로직을 활용)
-function applyStyleToSelection(cssProp, cssValue) {
+function applyStylesToSelection(styles) {
     const selection = window.getSelection();
     if (!selection.rangeCount || selection.isCollapsed) return false;
     if (!els.editor.contains(selection.anchorNode)) return false;
@@ -807,11 +807,15 @@ function applyStyleToSelection(cssProp, cssValue) {
     const markers = els.editor.querySelectorAll('font[size="7"]');
     markers.forEach((marker) => {
         const span = document.createElement("span");
-        span.style[cssProp] = cssValue;
+        Object.keys(styles).forEach((prop) => { span.style[prop] = styles[prop]; });
         while (marker.firstChild) span.appendChild(marker.firstChild);
         marker.parentNode.replaceChild(span, marker);
     });
     return true;
+}
+
+function applyStyleToSelection(cssProp, cssValue) {
+    return applyStylesToSelection({ [cssProp]: cssValue });
 }
 
 const selFontFamilyEl = document.getElementById("selFontFamily");
@@ -820,7 +824,10 @@ if (selFontFamilyEl) {
         const val = this.value;
         this.value = "";
         if (!val) return;
-        if (applyStyleToSelection("fontFamily", val)) updateCanvas();
+        // 나눔명조에코는 포인트용으로 쓸 때 항상 가장 굵은(800) 스타일로 고정
+        const styles = { fontFamily: val };
+        if (val === "NanumMyeongjoEco") styles.fontWeight = "800";
+        if (applyStylesToSelection(styles)) updateCanvas();
         else showToast("먼저 본문에서 글자를 드래그해 선택해 주세요.");
     });
 }
