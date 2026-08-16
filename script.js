@@ -30,6 +30,7 @@ const els = {
     enableParenColor: document.getElementById("enableParenColor"),
     parenColor: document.getElementById("parenColor"),
     fontSelect: document.getElementById("fontSelect"),
+    fontWeightSelect: document.getElementById("fontWeightSelect"),
     alignH: document.getElementById("alignH"),
     wordBreak: document.getElementById("wordBreak"),
     tabs: document.querySelectorAll(".tab-btn"),
@@ -103,6 +104,7 @@ function syncEditorTypography() {
     const realSize = Math.max(IOS_ZOOM_SAFE_MIN, desiredSize);
 
     editor.style.fontFamily = els.fontSelect.value;
+    editor.style.fontWeight = els.fontWeightSelect?.value || "400";
     editor.style.fontSize = `${realSize}px`;
     // 폰트 크기를 16px로 올려야 했던 만큼 줄간격/자간도 같은 비율로 늘려서
     // (편집창 안에서의) 상대적인 느낌이 캔버스와 비슷하게 유지되도록 함
@@ -272,6 +274,7 @@ function updateCanvas() {
         }
 
         textWrapper.style.fontFamily = els.fontSelect.value;
+        textWrapper.style.fontWeight = els.fontWeightSelect?.value || "400";
         textWrapper.style.textAlign = els.alignH.value;
         textWrapper.style.whiteSpace = "pre-wrap";
         textWrapper.style.wordBreak = els.wordBreak.value;
@@ -1277,7 +1280,7 @@ document.addEventListener("DOMContentLoaded", () => {
         els.globalTextColor, els.subTextColor, els.hlColorA, els.hlColorB, els.hlColorC,
         els.quoteLineColor, els.enableQuoteColor, els.quoteColor, els.enableParenColor, els.parenColor,
         els.boxQuoteColor, els.boxQuoteWidth, els.dividerColor, els.fadeCount, els.indentSize,
-        els.fontSelect, els.wordBreak, els.fontSize, els.letterSpacing, els.lineHeight,
+        els.fontSelect, els.fontWeightSelect, els.wordBreak, els.fontSize, els.letterSpacing, els.lineHeight,
         els.paraSpacing, els.fontScaleX, els.infoFontSize,
         els.columnSplitIndex, els.columnGap, els.textVerticalAlign, els.textHorizontalAnchor, els.textBlockWidth,
         els.headingTitleInput, els.headingSubtitleInput,

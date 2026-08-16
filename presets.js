@@ -29,6 +29,7 @@ function getPresetSnapshot() {
         gradientDir: els.gradientDir.value,
         gradMode: document.querySelector('input[name="gradMode"]:checked')?.value || "2",
         fontSelect: els.fontSelect.value,
+        fontWeightSelect: els.fontWeightSelect?.value,
         alignH: els.alignH.value,
         wordBreak: els.wordBreak.value,
         fontSize: els.fontSize.value,
@@ -92,6 +93,7 @@ function applyPresetSnapshot(data) {
     }
 
     els.fontSelect.value = data.fontSelect ?? els.fontSelect.value;
+    if (els.fontWeightSelect) els.fontWeightSelect.value = data.fontWeightSelect ?? els.fontWeightSelect.value;
     els.wordBreak.value = data.wordBreak ?? els.wordBreak.value;
     els.fontSize.value = data.fontSize ?? els.fontSize.value;
     els.letterSpacing.value = data.letterSpacing ?? els.letterSpacing.value;

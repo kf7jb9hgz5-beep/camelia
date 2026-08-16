@@ -260,6 +260,14 @@
     font-family: 'NanumMyeongjoEco';
     src: url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumEco/NanumMyeongjoEco/NanumMyeongjoEcoBold.woff') format('woff'),
          url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumEco/NanumMyeongjoEco/NanumMyeongjoEcoBold.ttf') format('truetype');
+    font-weight: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'NanumMyeongjoEco';
+    src: url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumEco/NanumMyeongjoEco/NanumMyeongjoEcoBold.woff') format('woff'),
+         url('https://hangeul.pstatic.net/hangeul_static/webfont/NanumEco/NanumMyeongjoEco/NanumMyeongjoEcoBold.ttf') format('truetype');
     font-weight: 700;
     font-display: swap;
 }
