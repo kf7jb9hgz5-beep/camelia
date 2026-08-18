@@ -8,7 +8,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=33" />
+        <link rel="stylesheet" href="style.css?v=34" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -55,7 +55,9 @@
                         <button id="btnQuoteLine" class="btn-dialogue-line" title="대사 강조선 바">강조선</button>
                         <button id="btnBoxQuote" class="btn-box-quote" title="박스로 감싸 인용 강조">박스인용</button>
                         <button id="btnInsertDivider" title="구분용 가로선 삽입">가로선</button>
-                        <button id="btnInsertSpeaker" title="캐릭터 목록에서 말풍선 추가">화자</button>
+                        <button id="btnInsertSpeakerLine" title="화자 이름 + 지문 + 대사 (글줄 형태, 말풍선 없음)">화자글줄</button>
+                        <button id="btnInsertLogTurn" title="이름 + 원문 대사 + 번역 대사 (로그 형태, 말풍선 없음)">로그대사</button>
+                        <button id="btnInsertSpeaker" title="캐릭터 목록에서 말풍선 추가">말풍선</button>
                         <select id="selAlign" class="toolbar-select" title="선택한 문단만 정렬 변경 (전체 정렬과 별개)">
                             <option value="" disabled selected>정렬</option>
                             <option value="left">왼쪽</option>
@@ -867,7 +869,7 @@
 
         <div class="toast" id="toast"></div>
 
-        <script src="presets.js?v=33"></script>
-        <script src="script.js?v=33"></script>
+        <script src="presets.js?v=34"></script>
+        <script src="script.js?v=34"></script>
     </body>
 </html>

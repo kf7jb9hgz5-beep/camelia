@@ -1728,6 +1728,60 @@ input[type="file"]::file-selector-button {
     color: var(--danger-color);
 }
 
+/* ---- 화자 글줄 (말풍선 없이 이름+지문+대사, "shoong 발췌기" 글줄 스타일) ---- */
+.speaker-line-block {
+    display: block !important;
+    margin-bottom: inherit;
+    text-align: inherit;
+}
+
+.sl-header {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 2px;
+}
+
+.sl-name {
+    font-weight: 700;
+}
+
+.sl-name:empty::before {
+    font-weight: 700;
+}
+
+.sl-stage {
+    font-style: italic;
+    opacity: 0.65;
+    font-size: 0.92em;
+}
+
+.sl-dialogue {
+    display: block;
+}
+
+/* ---- 로그 대사 (말풍선 없이 이름+원문+번역, "mok0999" 로그 스타일) ---- */
+.log-turn-block {
+    display: block !important;
+    margin-bottom: inherit;
+    text-align: inherit;
+}
+
+.log-name {
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.log-line {
+    display: block;
+}
+
+.log-translation {
+    opacity: 0.65;
+    font-size: 0.94em;
+}
+
 .tpl-field {
     min-height: 1.4em;
 }

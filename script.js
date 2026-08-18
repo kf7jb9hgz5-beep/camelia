@@ -927,6 +927,63 @@ onClick("btnInsertDivider", () => {
     pushHistory(true);
 });
 
+function insertInlineBlock(html) {
+    if (!els.editor) return;
+    els.editor.focus();
+
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = html.trim();
+    const node = wrapper.firstElementChild;
+    if (!node) return;
+
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount && els.editor.contains(selection.anchorNode)) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(node);
+    } else {
+        els.editor.appendChild(node);
+    }
+
+    const trailer = document.createElement("div");
+    trailer.appendChild(document.createElement("br"));
+    node.after(trailer);
+
+    const field = node.querySelector(".tpl-field");
+    if (field && selection) {
+        const newRange = document.createRange();
+        newRange.selectNodeContents(field);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+    }
+
+    updateCanvas();
+    pushHistory(true);
+}
+
+onClick("btnInsertSpeakerLine", () => {
+    insertInlineBlock(`
+        <div class="template-block speaker-line-block">
+            <div class="sl-header">
+                <span class="sl-name tpl-field" data-placeholder="화자"></span>
+                <span class="sl-stage tpl-field tpl-multiline" data-placeholder="지문(선택)"></span>
+            </div>
+            <div class="sl-dialogue tpl-field tpl-multiline" data-placeholder="대사를 입력하세요"></div>
+        </div>
+    `);
+});
+
+onClick("btnInsertLogTurn", () => {
+    insertInlineBlock(`
+        <div class="template-block log-turn-block">
+            <div class="log-name tpl-field" data-placeholder="이름"></div>
+            <div class="log-line tpl-field tpl-multiline" data-placeholder="원문 대사를 입력하세요"></div>
+            <div class="log-line log-translation tpl-field tpl-multiline" data-placeholder="번역 (선택)"></div>
+        </div>
+    `);
+});
+
 onClick("btnInsertSpeaker", () => {
     openSheetPanel("panel-bubble");
 });
