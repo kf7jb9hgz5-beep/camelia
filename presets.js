@@ -7,10 +7,32 @@ window.stepInput = function (id, step, precision) {
     val = precision ? parseFloat(val.toFixed(precision)) : Math.round(val);
     input.value = val;
 
+    const pairedSlider = document.getElementById(`${id}Slider`);
+    if (pairedSlider) pairedSlider.value = val;
+
     if (typeof updateCanvas === "function") {
         updateCanvas();
     }
 };
+
+// 슬라이더를 움직였을 때 짝을 이루는 숫자 입력칸에도 값을 반영
+window.syncRangeToNumber = function (sliderId, numberId) {
+    const slider = document.getElementById(sliderId);
+    const number = document.getElementById(numberId);
+    if (!slider || !number) return;
+    number.value = slider.value;
+    if (typeof updateCanvas === "function") {
+        updateCanvas();
+    }
+};
+
+// 숫자 입력칸을 직접 타이핑했을 때도 슬라이더 위치를 맞춤
+document.addEventListener("input", (e) => {
+    const target = e.target;
+    if (!target || target.tagName !== "INPUT" || target.type !== "number") return;
+    const pairedSlider = document.getElementById(`${target.id}Slider`);
+    if (pairedSlider) pairedSlider.value = target.value;
+});
 
 // 현재 모든 설정값을 하나의 객체로 캡처
 // 주의: 발췌문/타이틀/저자 등 "내용(텍스트)"은 절대 포함하지 않는다. (els.editor, els.titleInput,
@@ -19,8 +41,10 @@ function getPresetSnapshot() {
     return {
         ratioSelect: els.ratioSelect.value,
         canvasWidth: els.canvasWidth.value,
-        paddingX: els.paddingX.value,
-        paddingY: els.paddingY.value,
+        paddingTop: els.paddingTop.value,
+        paddingBottom: els.paddingBottom.value,
+        paddingLeft: els.paddingLeft.value,
+        paddingRight: els.paddingRight.value,
         bgType: els.bgType.value,
         bgColor1: els.bgColor1.value,
         gradColor1: els.gradColor1.value,
@@ -30,6 +54,10 @@ function getPresetSnapshot() {
         gradMode: document.querySelector('input[name="gradMode"]:checked')?.value || "2",
         fontSelect: els.fontSelect.value,
         fontWeightSelect: els.fontWeightSelect?.value,
+        bubbleShowAvatar: els.bubbleShowAvatar?.checked,
+        bubbleShowName: els.bubbleShowName?.checked,
+        bubbleShowTail: els.bubbleShowTail?.checked,
+        bubbleShape: els.bubbleShape?.value,
         alignH: els.alignH.value,
         wordBreak: els.wordBreak.value,
         fontSize: els.fontSize.value,
@@ -78,8 +106,15 @@ function applyPresetSnapshot(data) {
 
     els.ratioSelect.value = data.ratioSelect ?? els.ratioSelect.value;
     els.canvasWidth.value = data.canvasWidth ?? els.canvasWidth.value;
-    els.paddingX.value = data.paddingX ?? els.paddingX.value;
-    els.paddingY.value = data.paddingY ?? els.paddingY.value;
+    els.paddingTop.value = data.paddingTop ?? data.paddingY ?? els.paddingTop.value;
+    els.paddingBottom.value = data.paddingBottom ?? data.paddingY ?? els.paddingBottom.value;
+    els.paddingLeft.value = data.paddingLeft ?? data.paddingX ?? els.paddingLeft.value;
+    els.paddingRight.value = data.paddingRight ?? data.paddingX ?? els.paddingRight.value;
+    ["paddingTop", "paddingBottom", "paddingLeft", "paddingRight"].forEach((id) => {
+        const slider = document.getElementById(`${id}Slider`);
+        const number = document.getElementById(id);
+        if (slider && number) slider.value = number.value;
+    });
     els.bgType.value = data.bgType ?? els.bgType.value;
     els.bgColor1.value = data.bgColor1 ?? els.bgColor1.value;
     els.gradColor1.value = data.gradColor1 ?? els.gradColor1.value;
@@ -94,6 +129,10 @@ function applyPresetSnapshot(data) {
 
     els.fontSelect.value = data.fontSelect ?? els.fontSelect.value;
     if (els.fontWeightSelect) els.fontWeightSelect.value = data.fontWeightSelect ?? els.fontWeightSelect.value;
+    if (els.bubbleShowAvatar) els.bubbleShowAvatar.checked = data.bubbleShowAvatar ?? els.bubbleShowAvatar.checked;
+    if (els.bubbleShowName) els.bubbleShowName.checked = data.bubbleShowName ?? els.bubbleShowName.checked;
+    if (els.bubbleShowTail) els.bubbleShowTail.checked = data.bubbleShowTail ?? els.bubbleShowTail.checked;
+    if (els.bubbleShape) els.bubbleShape.value = data.bubbleShape ?? els.bubbleShape.value;
     els.wordBreak.value = data.wordBreak ?? els.wordBreak.value;
     els.fontSize.value = data.fontSize ?? els.fontSize.value;
     els.letterSpacing.value = data.letterSpacing ?? els.letterSpacing.value;

@@ -8,7 +8,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=29" />
+        <link rel="stylesheet" href="style.css?v=33" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -55,6 +55,7 @@
                         <button id="btnQuoteLine" class="btn-dialogue-line" title="대사 강조선 바">강조선</button>
                         <button id="btnBoxQuote" class="btn-box-quote" title="박스로 감싸 인용 강조">박스인용</button>
                         <button id="btnInsertDivider" title="구분용 가로선 삽입">가로선</button>
+                        <button id="btnInsertSpeaker" title="캐릭터 목록에서 말풍선 추가">화자</button>
                         <select id="selAlign" class="toolbar-select" title="선택한 문단만 정렬 변경 (전체 정렬과 별개)">
                             <option value="" disabled selected>정렬</option>
                             <option value="left">왼쪽</option>
@@ -386,21 +387,44 @@
                 </div>
                 <div class="field-hint" id="customWidthHint">지정한 값 그대로 미리보기 크기가 바뀝니다. 화면보다 넓게 설정하면 미리보기 영역을 좌우로 스크롤해서 확인할 수 있어요.</div>
                 <div class="control-minimal-row">
-                    <label for="paddingX">가로 여백 (px)</label>
+                    <label for="paddingTop">위 여백 (px)</label>
                     <div class="stepper-minimal">
-                        <button onclick="stepInput('paddingX', -5)">-</button>
-                        <input type="number" id="paddingX" value="50" />
-                        <button onclick="stepInput('paddingX', 5)">+</button>
+                        <button onclick="stepInput('paddingTop', -5)">-</button>
+                        <input type="number" id="paddingTop" value="50" />
+                        <button onclick="stepInput('paddingTop', 5)">+</button>
                     </div>
                 </div>
+                <input type="range" id="paddingTopSlider" class="range-slider" min="0" max="200" value="50" oninput="syncRangeToNumber('paddingTopSlider','paddingTop')" />
+
                 <div class="control-minimal-row">
-                    <label for="paddingY">세로 여백 (px)</label>
+                    <label for="paddingBottom">아래 여백 (px)</label>
                     <div class="stepper-minimal">
-                        <button onclick="stepInput('paddingY', -5)">-</button>
-                        <input type="number" id="paddingY" value="50" />
-                        <button onclick="stepInput('paddingY', 5)">+</button>
+                        <button onclick="stepInput('paddingBottom', -5)">-</button>
+                        <input type="number" id="paddingBottom" value="50" />
+                        <button onclick="stepInput('paddingBottom', 5)">+</button>
                     </div>
                 </div>
+                <input type="range" id="paddingBottomSlider" class="range-slider" min="0" max="200" value="50" oninput="syncRangeToNumber('paddingBottomSlider','paddingBottom')" />
+
+                <div class="control-minimal-row">
+                    <label for="paddingLeft">왼쪽 여백 (px)</label>
+                    <div class="stepper-minimal">
+                        <button onclick="stepInput('paddingLeft', -5)">-</button>
+                        <input type="number" id="paddingLeft" value="50" />
+                        <button onclick="stepInput('paddingLeft', 5)">+</button>
+                    </div>
+                </div>
+                <input type="range" id="paddingLeftSlider" class="range-slider" min="0" max="200" value="50" oninput="syncRangeToNumber('paddingLeftSlider','paddingLeft')" />
+
+                <div class="control-minimal-row">
+                    <label for="paddingRight">오른쪽 여백 (px)</label>
+                    <div class="stepper-minimal">
+                        <button onclick="stepInput('paddingRight', -5)">-</button>
+                        <input type="number" id="paddingRight" value="50" />
+                        <button onclick="stepInput('paddingRight', 5)">+</button>
+                    </div>
+                </div>
+                <input type="range" id="paddingRightSlider" class="range-slider" min="0" max="200" value="50" oninput="syncRangeToNumber('paddingRightSlider','paddingRight')" />
 
                 <div class="panel-section-title">레이아웃</div>
                 <div class="control-minimal-row">
@@ -658,6 +682,68 @@
                     </div>
                 </div>
             </div>
+            <div class="tab-panel" id="panel-bubble">
+                <div class="panel-section-title">말풍선 전역 설정</div>
+                <div class="control-minimal-row">
+                    <div class="checkbox-minimal-group">
+                        <label><input type="checkbox" id="bubbleShowAvatar" checked /> 프로필 사진 표시</label>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
+                    <div class="checkbox-minimal-group">
+                        <label><input type="checkbox" id="bubbleShowName" checked /> 이름 표시</label>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
+                    <div class="checkbox-minimal-group">
+                        <label><input type="checkbox" id="bubbleShowTail" checked /> 말풍선 꼬리</label>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
+                    <label for="bubbleShape">말풍선 모양</label>
+                    <select id="bubbleShape">
+                        <option value="round" selected>둥글게</option>
+                        <option value="square">각지게</option>
+                    </select>
+                </div>
+
+                <div class="panel-section-title">캐릭터</div>
+                <div class="field-hint">캐릭터를 등록해두면 목록에서 탭 한 번으로 그 캐릭터의 말풍선(이름·프로필·색)을 바로 추가할 수 있어요.</div>
+                <div id="characterList" class="character-list"></div>
+                <button type="button" class="btn-template" id="btnAddCharacter" style="width: 100%; margin-top: 10px">+ 캐릭터 추가</button>
+
+                <div id="characterEditor" class="character-editor-box" style="display: none">
+                    <div class="char-editor-avatar-row">
+                        <div class="char-editor-avatar" id="charEditorAvatar" contenteditable="false" title="탭해서 사진 선택"></div>
+                        <input type="text" id="charEditorName" placeholder="캐릭터 이름" class="input-minimal-plain" />
+                    </div>
+                    <input type="file" id="charAvatarInput" accept="image/*" style="display: none" />
+                    <div class="control-minimal-row">
+                        <label>말풍선 위치</label>
+                        <input type="hidden" id="charEditorAlign" value="left" />
+                        <div class="segmented-control segmented-control-minimal" data-target="charEditorAlign">
+                            <button type="button" data-value="left" class="active">왼쪽</button>
+                            <button type="button" data-value="right">오른쪽</button>
+                        </div>
+                    </div>
+                    <div class="picker-minimal-group">
+                        <div class="picker-cell">
+                            <input type="color" id="charEditorBubbleColor" value="#e5e5ea" />
+                            <span>말풍선색</span>
+                        </div>
+                        <div class="picker-cell">
+                            <input type="color" id="charEditorTextColor" value="#111111" />
+                            <span>글자색</span>
+                        </div>
+                    </div>
+                    <div class="char-editor-btn-row">
+                        <button type="button" class="btn-minimal-save" id="btnSaveCharacter">저장</button>
+                        <button type="button" class="text-danger" id="btnDeleteCharacter" style="display: none">삭제</button>
+                        <button type="button" id="btnCancelCharacterEdit">취소</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="tab-panel" id="panel-presets">
                 <div class="panel-section-title">레이아웃 템플릿</div>
                 <div class="template-btn-grid">
@@ -733,6 +819,12 @@
                     </span>
                     <span class="dock-btn-label">사진</span>
                 </button>
+                <button class="dock-btn tab-btn" data-target="panel-bubble" title="말풍선 · 캐릭터">
+                    <svg class="dock-icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4 H20 V16 H8 L4 20 Z"></path>
+                    </svg>
+                    <span class="dock-btn-label">말풍선</span>
+                </button>
             </div>
         </nav>
 
@@ -775,7 +867,7 @@
 
         <div class="toast" id="toast"></div>
 
-        <script src="presets.js?v=29"></script>
-        <script src="script.js?v=29"></script>
+        <script src="presets.js?v=33"></script>
+        <script src="script.js?v=33"></script>
     </body>
 </html>

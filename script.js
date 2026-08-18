@@ -4,8 +4,14 @@ const els = {
     creatorInput: document.getElementById("creatorInput"),
     ratioSelect: document.getElementById("ratioSelect"),
     canvasWidth: document.getElementById("canvasWidth"),
-    paddingY: document.getElementById("paddingY"),
-    paddingX: document.getElementById("paddingX"),
+    paddingTop: document.getElementById("paddingTop"),
+    paddingBottom: document.getElementById("paddingBottom"),
+    paddingLeft: document.getElementById("paddingLeft"),
+    paddingRight: document.getElementById("paddingRight"),
+    bubbleShowAvatar: document.getElementById("bubbleShowAvatar"),
+    bubbleShowName: document.getElementById("bubbleShowName"),
+    bubbleShowTail: document.getElementById("bubbleShowTail"),
+    bubbleShape: document.getElementById("bubbleShape"),
     bgType: document.getElementById("bgType"),
     bgColor1: document.getElementById("bgColor1"),
     gradColor1: document.getElementById("gradColor1"),
@@ -118,14 +124,15 @@ function syncEditorTypography() {
 
     // --- 여기서부터 "폭"을 캔버스 내용 폭과 정확히 동일하게 맞춘다 ---
     const ratioMode = els.ratioSelect ? els.ratioSelect.value : "free";
-    const paddingX = parseFloat(els.paddingX?.value) || 0;
+    const paddingLeft = parseFloat(els.paddingLeft?.value) || 0;
+    const paddingRight = parseFloat(els.paddingRight?.value) || 0;
     let canvasContentWidth;
     if (ratioMode === "free") {
         const customW = parseFloat(els.canvasWidth?.value) || 520;
-        canvasContentWidth = customW - paddingX * 2;
+        canvasContentWidth = customW - paddingLeft - paddingRight;
     } else {
         const targetWidth = Math.min(420, getAvailableHeaderWidth(420));
-        canvasContentWidth = targetWidth - paddingX * 2;
+        canvasContentWidth = targetWidth - paddingLeft - paddingRight;
     }
     canvasContentWidth = Math.max(60, Math.round(canvasContentWidth));
 
@@ -216,7 +223,7 @@ function updateCanvas() {
         delete els.captureArea.dataset.customWidthTarget;
     }
 
-    els.captureArea.style.padding = `${els.paddingY.value}px ${els.paddingX.value}px`;
+    els.captureArea.style.padding = `${els.paddingTop.value}px ${els.paddingRight.value}px ${els.paddingBottom.value}px ${els.paddingLeft.value}px`;
 
     if (els.bgType.value === "solid") {
         document.getElementById("solidColorArea").style.display = "grid";
@@ -253,6 +260,18 @@ function updateCanvas() {
         if (els.editor) els.editor.style.setProperty("--box-quote-width", `${isNaN(boxQuoteW) ? 2 : boxQuoteW}px`);
         textWrapper.style.setProperty("--divider-color", els.dividerColor?.value || "#94a3b8");
         if (els.editor) els.editor.style.setProperty("--divider-color", els.dividerColor?.value || "#94a3b8");
+        const bubbleAvatarDisplay = (els.bubbleShowAvatar && !els.bubbleShowAvatar.checked) ? "none" : "flex";
+        textWrapper.style.setProperty("--bubble-avatar-display", bubbleAvatarDisplay);
+        if (els.editor) els.editor.style.setProperty("--bubble-avatar-display", bubbleAvatarDisplay);
+        const bubbleNameDisplay = (els.bubbleShowName && !els.bubbleShowName.checked) ? "none" : "block";
+        textWrapper.style.setProperty("--bubble-name-display", bubbleNameDisplay);
+        if (els.editor) els.editor.style.setProperty("--bubble-name-display", bubbleNameDisplay);
+        const bubbleTailDisplay = (els.bubbleShowTail && !els.bubbleShowTail.checked) ? "none" : "block";
+        textWrapper.style.setProperty("--bubble-tail-display", bubbleTailDisplay);
+        if (els.editor) els.editor.style.setProperty("--bubble-tail-display", bubbleTailDisplay);
+        const bubbleRadius = (els.bubbleShape && els.bubbleShape.value === "square") ? "4px" : "16px";
+        textWrapper.style.setProperty("--bubble-radius", bubbleRadius);
+        if (els.editor) els.editor.style.setProperty("--bubble-radius", bubbleRadius);
         const indentEm = parseFloat(els.indentSize?.value);
         const indentValue = (els.indentToggle && els.indentToggle.checked) ? `${isNaN(indentEm) ? 1 : indentEm}em` : "0";
         textWrapper.style.setProperty("--indent-size", indentValue);
@@ -908,6 +927,277 @@ onClick("btnInsertDivider", () => {
     pushHistory(true);
 });
 
+onClick("btnInsertSpeaker", () => {
+    openSheetPanel("panel-bubble");
+});
+
+// ==== 말풍선 캐릭터 관리 ====
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+function uid() {
+    return "c" + Math.random().toString(36).slice(2, 9);
+}
+
+let characters = [];
+let editingCharacterId = null;
+let pendingCharAvatarData = null;
+
+function saveCharactersToStorage() {
+    try {
+        localStorage.setItem("quoteStudioCharacters", JSON.stringify(characters));
+    } catch (e) {
+        console.warn("캐릭터 저장 실패:", e);
+    }
+}
+
+function loadCharactersFromStorage() {
+    try {
+        const raw = localStorage.getItem("quoteStudioCharacters");
+        characters = raw ? JSON.parse(raw) : [];
+    } catch (e) {
+        characters = [];
+    }
+}
+
+function renderCharacterList() {
+    const container = document.getElementById("characterList");
+    if (!container) return;
+    container.innerHTML = "";
+
+    if (characters.length === 0) {
+        const empty = document.createElement("div");
+        empty.style.cssText = "text-align:center;font-size:12px;color:var(--text-muted);padding:12px 0;";
+        empty.textContent = "등록된 캐릭터가 없어요.";
+        container.appendChild(empty);
+        return;
+    }
+
+    characters.forEach((c) => {
+        const row = document.createElement("div");
+        row.className = "char-chip-row";
+
+        const avatar = document.createElement("div");
+        avatar.className = "char-chip-avatar";
+        if (c.avatarData) avatar.style.backgroundImage = `url(${c.avatarData})`;
+
+        const name = document.createElement("div");
+        name.className = "char-chip-name";
+        name.textContent = c.name || "이름 없음";
+
+        const insertBtn = document.createElement("button");
+        insertBtn.type = "button";
+        insertBtn.className = "char-chip-insert";
+        insertBtn.textContent = "대사 추가";
+        insertBtn.addEventListener("click", () => insertBubbleForCharacter(c.id));
+
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "char-chip-edit";
+        editBtn.textContent = "편집";
+        editBtn.addEventListener("click", () => openCharacterEditor(c.id));
+
+        row.appendChild(avatar);
+        row.appendChild(name);
+        row.appendChild(insertBtn);
+        row.appendChild(editBtn);
+        container.appendChild(row);
+    });
+}
+
+function openCharacterEditor(id) {
+    editingCharacterId = id || null;
+    pendingCharAvatarData = null;
+
+    const editor = document.getElementById("characterEditor");
+    const nameInput = document.getElementById("charEditorName");
+    const avatarBox = document.getElementById("charEditorAvatar");
+    const alignInput = document.getElementById("charEditorAlign");
+    const bubbleColor = document.getElementById("charEditorBubbleColor");
+    const textColor = document.getElementById("charEditorTextColor");
+    const deleteBtn = document.getElementById("btnDeleteCharacter");
+    if (!editor || !nameInput || !avatarBox || !alignInput || !bubbleColor || !textColor || !deleteBtn) return;
+
+    if (id) {
+        const c = characters.find((x) => x.id === id);
+        if (!c) return;
+        nameInput.value = c.name || "";
+        avatarBox.style.backgroundImage = c.avatarData ? `url(${c.avatarData})` : "none";
+        avatarBox.dataset.hasImage = c.avatarData ? "true" : "false";
+        alignInput.value = c.align || "left";
+        bubbleColor.value = c.bubbleColor || "#e5e5ea";
+        textColor.value = c.textColor || "#111111";
+        deleteBtn.style.display = "block";
+    } else {
+        nameInput.value = "";
+        avatarBox.style.backgroundImage = "none";
+        avatarBox.dataset.hasImage = "false";
+        alignInput.value = "left";
+        bubbleColor.value = "#e5e5ea";
+        textColor.value = "#111111";
+        deleteBtn.style.display = "none";
+    }
+
+    const seg = editor.querySelector('.segmented-control[data-target="charEditorAlign"]');
+    if (seg) {
+        seg.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b.dataset.value === alignInput.value));
+    }
+
+    editor.style.display = "flex";
+    editor.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+function closeCharacterEditor() {
+    const editor = document.getElementById("characterEditor");
+    if (editor) editor.style.display = "none";
+    editingCharacterId = null;
+    pendingCharAvatarData = null;
+}
+
+function updateExistingBubbles(charId) {
+    const c = characters.find((x) => x.id === charId);
+    if (!c || !els.editor) return;
+    els.editor.querySelectorAll(`.chat-bubble-row[data-char-id="${charId}"]`).forEach((row) => {
+        row.classList.remove("align-left", "align-right");
+        row.classList.add(`align-${c.align}`);
+        const avatar = row.querySelector(".bubble-avatar");
+        if (avatar) avatar.style.backgroundImage = c.avatarData ? `url(${c.avatarData})` : "none";
+        const nameEl = row.querySelector(".bubble-name");
+        if (nameEl) nameEl.textContent = c.name;
+        const bubble = row.querySelector(".bubble");
+        if (bubble) {
+            bubble.style.backgroundColor = c.bubbleColor;
+            bubble.style.color = c.textColor;
+            bubble.style.setProperty("--bubble-own-color", c.bubbleColor);
+        }
+    });
+}
+
+function insertBubbleForCharacter(charId) {
+    const c = characters.find((x) => x.id === charId);
+    if (!c || !els.editor) return;
+    els.editor.focus();
+
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = `
+        <div class="template-block chat-bubble-row align-${c.align}" data-char-id="${c.id}">
+            <div class="bubble-avatar" contenteditable="false"${c.avatarData ? ` style="background-image:url(${c.avatarData})"` : ""}></div>
+            <div class="bubble-col">
+                <div class="bubble-name">${escapeHtml(c.name)}</div>
+                <div class="bubble tpl-field tpl-multiline" data-placeholder="대사를 입력하세요" style="background-color:${c.bubbleColor};color:${c.textColor};--bubble-own-color:${c.bubbleColor};"></div>
+            </div>
+        </div>
+    `.trim();
+    const node = wrapper.firstElementChild;
+
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount && els.editor.contains(selection.anchorNode)) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(node);
+    } else {
+        els.editor.appendChild(node);
+    }
+
+    const trailer = document.createElement("div");
+    trailer.appendChild(document.createElement("br"));
+    node.after(trailer);
+
+    const field = node.querySelector(".tpl-field");
+    if (field && selection) {
+        const newRange = document.createRange();
+        newRange.selectNodeContents(field);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+    }
+
+    closeSheetPanel();
+    updateCanvas();
+    pushHistory(true);
+}
+
+onClick("btnAddCharacter", () => openCharacterEditor(null));
+onClick("btnCancelCharacterEdit", closeCharacterEditor);
+
+onClick("btnSaveCharacter", () => {
+    const nameInput = document.getElementById("charEditorName");
+    const alignInput = document.getElementById("charEditorAlign");
+    const bubbleColorInput = document.getElementById("charEditorBubbleColor");
+    const textColorInput = document.getElementById("charEditorTextColor");
+    if (!nameInput || !alignInput || !bubbleColorInput || !textColorInput) return;
+
+    const name = nameInput.value.trim() || "이름 없음";
+    const align = alignInput.value || "left";
+    const bubbleColor = bubbleColorInput.value;
+    const textColor = textColorInput.value;
+    const existing = editingCharacterId ? characters.find((x) => x.id === editingCharacterId) : null;
+    const avatarData = pendingCharAvatarData !== null ? pendingCharAvatarData : (existing ? existing.avatarData : null);
+
+    if (existing) {
+        existing.name = name;
+        existing.align = align;
+        existing.bubbleColor = bubbleColor;
+        existing.textColor = textColor;
+        existing.avatarData = avatarData;
+        updateExistingBubbles(existing.id);
+    } else {
+        characters.push({ id: uid(), name, align, bubbleColor, textColor, avatarData });
+    }
+
+    renderCharacterList();
+    closeCharacterEditor();
+    saveCharactersToStorage();
+    updateCanvas();
+    pushHistory(true);
+});
+
+onClick("btnDeleteCharacter", () => {
+    if (!editingCharacterId) return;
+    if (!window.confirm("이 캐릭터를 삭제할까요? 이미 넣은 말풍선은 그대로 남아요.")) return;
+    characters = characters.filter((c) => c.id !== editingCharacterId);
+    renderCharacterList();
+    closeCharacterEditor();
+    saveCharactersToStorage();
+});
+
+const charEditorAvatarEl = document.getElementById("charEditorAvatar");
+if (charEditorAvatarEl) {
+    charEditorAvatarEl.addEventListener("click", () => {
+        const input = document.getElementById("charAvatarInput");
+        if (input) {
+            input.value = "";
+            input.click();
+        }
+    });
+}
+
+const charAvatarInputEl = document.getElementById("charAvatarInput");
+if (charAvatarInputEl) {
+    charAvatarInputEl.addEventListener("change", function (e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+            pendingCharAvatarData = ev.target.result;
+            const avatarBox = document.getElementById("charEditorAvatar");
+            if (avatarBox) {
+                avatarBox.style.backgroundImage = `url(${ev.target.result})`;
+                avatarBox.dataset.hasImage = "true";
+            }
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+loadCharactersFromStorage();
+renderCharacterList();
+
 onClick("btnClearAll", () => {
     if (!els.editor) return;
     const hasContent = els.editor.textContent.trim().length > 0 || els.editor.querySelector(".editor-image-block, .template-block");
@@ -1282,7 +1572,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const autoTriggers = [
-        els.titleInput, els.creatorInput, els.canvasWidth, els.paddingY, els.paddingX,
+        els.titleInput, els.creatorInput, els.canvasWidth, els.paddingTop, els.paddingBottom, els.paddingLeft, els.paddingRight,
         els.bgType, els.bgColor1, els.gradColor1, els.gradColor2, els.gradColor3, els.gradientDir,
         els.globalTextColor, els.subTextColor, els.hlColorA, els.hlColorB, els.hlColorC,
         els.quoteLineColor, els.enableQuoteColor, els.quoteColor, els.enableParenColor, els.parenColor,
@@ -1292,7 +1582,8 @@ document.addEventListener("DOMContentLoaded", () => {
         els.columnSplitIndex, els.columnGap, els.textVerticalAlign, els.textHorizontalAnchor, els.textBlockWidth,
         els.headingTitleInput, els.headingSubtitleInput,
         els.headingTitleFont, els.headingTitleSize, els.headingTitleBold,
-        els.headingSubtitleFont, els.headingSubtitleSize, els.headingSubtitleBold
+        els.headingSubtitleFont, els.headingSubtitleSize, els.headingSubtitleBold,
+        els.bubbleShowAvatar, els.bubbleShowName, els.bubbleShowTail, els.bubbleShape
     ];
     autoTriggers.forEach((el) => {
         if (el) { el.addEventListener("input", scheduleUpdateCanvas); el.addEventListener("change", scheduleUpdateCanvas); }
