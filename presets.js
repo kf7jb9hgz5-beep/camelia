@@ -54,10 +54,10 @@ function getPresetSnapshot() {
         gradMode: document.querySelector('input[name="gradMode"]:checked')?.value || "2",
         fontSelect: els.fontSelect.value,
         fontWeightSelect: els.fontWeightSelect?.value,
-        bubbleShowAvatar: els.bubbleShowAvatar?.checked,
-        bubbleShowName: els.bubbleShowName?.checked,
-        bubbleShowTail: els.bubbleShowTail?.checked,
-        bubbleShape: els.bubbleShape?.value,
+        dlgNameSuffix: els.dlgNameSuffix?.value,
+        dlgQuoteStyle: els.dlgQuoteStyle?.value,
+        dlgShowTranslation: els.dlgShowTranslation?.checked,
+        dlgUseStage: els.dlgUseStage?.checked,
         alignH: els.alignH.value,
         wordBreak: els.wordBreak.value,
         fontSize: els.fontSize.value,
@@ -129,10 +129,10 @@ function applyPresetSnapshot(data) {
 
     els.fontSelect.value = data.fontSelect ?? els.fontSelect.value;
     if (els.fontWeightSelect) els.fontWeightSelect.value = data.fontWeightSelect ?? els.fontWeightSelect.value;
-    if (els.bubbleShowAvatar) els.bubbleShowAvatar.checked = data.bubbleShowAvatar ?? els.bubbleShowAvatar.checked;
-    if (els.bubbleShowName) els.bubbleShowName.checked = data.bubbleShowName ?? els.bubbleShowName.checked;
-    if (els.bubbleShowTail) els.bubbleShowTail.checked = data.bubbleShowTail ?? els.bubbleShowTail.checked;
-    if (els.bubbleShape) els.bubbleShape.value = data.bubbleShape ?? els.bubbleShape.value;
+    if (els.dlgNameSuffix) els.dlgNameSuffix.value = data.dlgNameSuffix ?? els.dlgNameSuffix.value;
+    if (els.dlgQuoteStyle) els.dlgQuoteStyle.value = data.dlgQuoteStyle ?? els.dlgQuoteStyle.value;
+    if (els.dlgShowTranslation) els.dlgShowTranslation.checked = data.dlgShowTranslation ?? els.dlgShowTranslation.checked;
+    if (els.dlgUseStage) els.dlgUseStage.checked = data.dlgUseStage ?? els.dlgUseStage.checked;
     els.wordBreak.value = data.wordBreak ?? els.wordBreak.value;
     els.fontSize.value = data.fontSize ?? els.fontSize.value;
     els.letterSpacing.value = data.letterSpacing ?? els.letterSpacing.value;

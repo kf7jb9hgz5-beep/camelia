@@ -8,10 +8,10 @@ const els = {
     paddingBottom: document.getElementById("paddingBottom"),
     paddingLeft: document.getElementById("paddingLeft"),
     paddingRight: document.getElementById("paddingRight"),
-    bubbleShowAvatar: document.getElementById("bubbleShowAvatar"),
-    bubbleShowName: document.getElementById("bubbleShowName"),
-    bubbleShowTail: document.getElementById("bubbleShowTail"),
-    bubbleShape: document.getElementById("bubbleShape"),
+    dlgNameSuffix: document.getElementById("dlgNameSuffix"),
+    dlgQuoteStyle: document.getElementById("dlgQuoteStyle"),
+    dlgShowTranslation: document.getElementById("dlgShowTranslation"),
+    dlgUseStage: document.getElementById("dlgUseStage"),
     bgType: document.getElementById("bgType"),
     bgColor1: document.getElementById("bgColor1"),
     gradColor1: document.getElementById("gradColor1"),
@@ -260,18 +260,26 @@ function updateCanvas() {
         if (els.editor) els.editor.style.setProperty("--box-quote-width", `${isNaN(boxQuoteW) ? 2 : boxQuoteW}px`);
         textWrapper.style.setProperty("--divider-color", els.dividerColor?.value || "#94a3b8");
         if (els.editor) els.editor.style.setProperty("--divider-color", els.dividerColor?.value || "#94a3b8");
-        const bubbleAvatarDisplay = (els.bubbleShowAvatar && !els.bubbleShowAvatar.checked) ? "none" : "flex";
-        textWrapper.style.setProperty("--bubble-avatar-display", bubbleAvatarDisplay);
-        if (els.editor) els.editor.style.setProperty("--bubble-avatar-display", bubbleAvatarDisplay);
-        const bubbleNameDisplay = (els.bubbleShowName && !els.bubbleShowName.checked) ? "none" : "block";
-        textWrapper.style.setProperty("--bubble-name-display", bubbleNameDisplay);
-        if (els.editor) els.editor.style.setProperty("--bubble-name-display", bubbleNameDisplay);
-        const bubbleTailDisplay = (els.bubbleShowTail && !els.bubbleShowTail.checked) ? "none" : "block";
-        textWrapper.style.setProperty("--bubble-tail-display", bubbleTailDisplay);
-        if (els.editor) els.editor.style.setProperty("--bubble-tail-display", bubbleTailDisplay);
-        const bubbleRadius = (els.bubbleShape && els.bubbleShape.value === "square") ? "4px" : "16px";
-        textWrapper.style.setProperty("--bubble-radius", bubbleRadius);
-        if (els.editor) els.editor.style.setProperty("--bubble-radius", bubbleRadius);
+
+        const dlgNameSuffixVal = `"${document.getElementById("dlgNameSuffix")?.value ?? ":"}"`;
+        textWrapper.style.setProperty("--dlg-name-suffix", dlgNameSuffixVal);
+        if (els.editor) els.editor.style.setProperty("--dlg-name-suffix", dlgNameSuffixVal);
+
+        const quoteChars = getQuoteChars(document.getElementById("dlgQuoteStyle")?.value || "dquote");
+        textWrapper.style.setProperty("--dlg-quote-open", `"${quoteChars.open}"`);
+        textWrapper.style.setProperty("--dlg-quote-close", `"${quoteChars.close}"`);
+        if (els.editor) {
+            els.editor.style.setProperty("--dlg-quote-open", `"${quoteChars.open}"`);
+            els.editor.style.setProperty("--dlg-quote-close", `"${quoteChars.close}"`);
+        }
+
+        const translationDisplay = (document.getElementById("dlgShowTranslation")?.checked === false) ? "none" : "block";
+        textWrapper.style.setProperty("--dlg-translation-display", translationDisplay);
+        if (els.editor) els.editor.style.setProperty("--dlg-translation-display", translationDisplay);
+
+        const stageDisplay = (document.getElementById("dlgUseStage")?.checked === false) ? "none" : "inline";
+        textWrapper.style.setProperty("--dlg-stage-display", stageDisplay);
+        if (els.editor) els.editor.style.setProperty("--dlg-stage-display", stageDisplay);
         const indentEm = parseFloat(els.indentSize?.value);
         const indentValue = (els.indentToggle && els.indentToggle.checked) ? `${isNaN(indentEm) ? 1 : indentEm}em` : "0";
         textWrapper.style.setProperty("--indent-size", indentValue);
@@ -958,37 +966,12 @@ function insertInlineBlock(html) {
         selection.addRange(newRange);
     }
 
+    closeSheetPanel();
     updateCanvas();
     pushHistory(true);
 }
 
-onClick("btnInsertSpeakerLine", () => {
-    insertInlineBlock(`
-        <div class="template-block speaker-line-block">
-            <div class="sl-header">
-                <span class="sl-name tpl-field" data-placeholder="화자"></span>
-                <span class="sl-stage tpl-field tpl-multiline" data-placeholder="지문(선택)"></span>
-            </div>
-            <div class="sl-dialogue tpl-field tpl-multiline" data-placeholder="대사를 입력하세요"></div>
-        </div>
-    `);
-});
-
-onClick("btnInsertLogTurn", () => {
-    insertInlineBlock(`
-        <div class="template-block log-turn-block">
-            <div class="log-name tpl-field" data-placeholder="이름"></div>
-            <div class="log-line tpl-field tpl-multiline" data-placeholder="원문 대사를 입력하세요"></div>
-            <div class="log-line log-translation tpl-field tpl-multiline" data-placeholder="번역 (선택)"></div>
-        </div>
-    `);
-});
-
-onClick("btnInsertSpeaker", () => {
-    openSheetPanel("panel-bubble");
-});
-
-// ==== 말풍선 캐릭터 관리 ====
+// ==== 대사 탭: 캐릭터 관리 ====
 function escapeHtml(str) {
     return String(str)
         .replace(/&/g, "&amp;")
@@ -1051,7 +1034,7 @@ function renderCharacterList() {
         insertBtn.type = "button";
         insertBtn.className = "char-chip-insert";
         insertBtn.textContent = "대사 추가";
-        insertBtn.addEventListener("click", () => insertBubbleForCharacter(c.id));
+        insertBtn.addEventListener("click", () => insertDialogueForCharacter(c.id));
 
         const editBtn = document.createElement("button");
         editBtn.type = "button";
@@ -1074,11 +1057,8 @@ function openCharacterEditor(id) {
     const editor = document.getElementById("characterEditor");
     const nameInput = document.getElementById("charEditorName");
     const avatarBox = document.getElementById("charEditorAvatar");
-    const alignInput = document.getElementById("charEditorAlign");
-    const bubbleColor = document.getElementById("charEditorBubbleColor");
-    const textColor = document.getElementById("charEditorTextColor");
     const deleteBtn = document.getElementById("btnDeleteCharacter");
-    if (!editor || !nameInput || !avatarBox || !alignInput || !bubbleColor || !textColor || !deleteBtn) return;
+    if (!editor || !nameInput || !avatarBox || !deleteBtn) return;
 
     if (id) {
         const c = characters.find((x) => x.id === id);
@@ -1086,23 +1066,12 @@ function openCharacterEditor(id) {
         nameInput.value = c.name || "";
         avatarBox.style.backgroundImage = c.avatarData ? `url(${c.avatarData})` : "none";
         avatarBox.dataset.hasImage = c.avatarData ? "true" : "false";
-        alignInput.value = c.align || "left";
-        bubbleColor.value = c.bubbleColor || "#e5e5ea";
-        textColor.value = c.textColor || "#111111";
         deleteBtn.style.display = "block";
     } else {
         nameInput.value = "";
         avatarBox.style.backgroundImage = "none";
         avatarBox.dataset.hasImage = "false";
-        alignInput.value = "left";
-        bubbleColor.value = "#e5e5ea";
-        textColor.value = "#111111";
         deleteBtn.style.display = "none";
-    }
-
-    const seg = editor.querySelector('.segmented-control[data-target="charEditorAlign"]');
-    if (seg) {
-        seg.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b.dataset.value === alignInput.value));
     }
 
     editor.style.display = "flex";
@@ -1116,53 +1085,52 @@ function closeCharacterEditor() {
     pendingCharAvatarData = null;
 }
 
-function updateExistingBubbles(charId) {
+function updateExistingDialogueNames(charId) {
     const c = characters.find((x) => x.id === charId);
     if (!c || !els.editor) return;
-    els.editor.querySelectorAll(`.chat-bubble-row[data-char-id="${charId}"]`).forEach((row) => {
-        row.classList.remove("align-left", "align-right");
-        row.classList.add(`align-${c.align}`);
-        const avatar = row.querySelector(".bubble-avatar");
-        if (avatar) avatar.style.backgroundImage = c.avatarData ? `url(${c.avatarData})` : "none";
-        const nameEl = row.querySelector(".bubble-name");
-        if (nameEl) nameEl.textContent = c.name;
-        const bubble = row.querySelector(".bubble");
-        if (bubble) {
-            bubble.style.backgroundColor = c.bubbleColor;
-            bubble.style.color = c.textColor;
-            bubble.style.setProperty("--bubble-own-color", c.bubbleColor);
-        }
+    els.editor.querySelectorAll(`[data-char-id="${charId}"] .log-name, [data-char-id="${charId}"] .sl-name`).forEach((el) => {
+        el.textContent = c.name;
     });
 }
 
-function insertBubbleForCharacter(charId) {
+function getQuoteChars(style) {
+    if (style === "corner") return { open: "「", close: "」" };
+    if (style === "none") return { open: "", close: "" };
+    return { open: '"', close: '"' };
+}
+
+function insertDialogueForCharacter(charId) {
     const c = characters.find((x) => x.id === charId);
     if (!c || !els.editor) return;
     els.editor.focus();
 
-    const wrapper = document.createElement("div");
-    wrapper.innerHTML = `
-        <div class="template-block chat-bubble-row align-${c.align}" data-char-id="${c.id}">
-            <div class="bubble-avatar" contenteditable="false"${c.avatarData ? ` style="background-image:url(${c.avatarData})"` : ""}></div>
-            <div class="bubble-col">
-                <div class="bubble-name">${escapeHtml(c.name)}</div>
-                <div class="bubble tpl-field tpl-multiline" data-placeholder="대사를 입력하세요" style="background-color:${c.bubbleColor};color:${c.textColor};--bubble-own-color:${c.bubbleColor};"></div>
-            </div>
-        </div>
-    `.trim();
-    const node = wrapper.firstElementChild;
+    const mode = document.getElementById("dialogueMode")?.value || "log";
+    const showTranslation = document.getElementById("dlgShowTranslation")?.checked;
+    const useStage = document.getElementById("dlgUseStage")?.checked;
 
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount && els.editor.contains(selection.anchorNode)) {
-        const range = selection.getRangeAt(0);
-        range.deleteContents();
-        range.insertNode(node);
+    let html;
+    if (mode === "log") {
+        html = `
+            <div class="template-block log-turn-block" data-char-id="${c.id}">
+                <div class="log-name">${escapeHtml(c.name)}</div>
+                <div class="log-line tpl-field tpl-multiline" data-placeholder="원문 대사를 입력하세요"></div>
+                ${showTranslation ? `<div class="log-line log-translation tpl-field tpl-multiline" data-placeholder="번역"></div>` : ""}
+            </div>
+        `;
     } else {
-        els.editor.appendChild(node);
+        html = `
+            <div class="template-block speaker-line-block" data-char-id="${c.id}">
+                <div class="sl-header">
+                    <span class="sl-name">${escapeHtml(c.name)}</span>
+                    ${useStage ? `<span class="sl-stage tpl-field tpl-multiline" data-placeholder="지문(선택)"></span>` : ""}
+                </div>
+                <div class="sl-dialogue tpl-field tpl-multiline" data-placeholder="대사를 입력하세요"></div>
+            </div>
+        `;
     }
 
-    const trailer = document.createElement("div");
-    trailer.appendChild(document.createElement("br"));
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = html.trim();
     node.after(trailer);
 
     const field = node.querySelector(".tpl-field");
@@ -1184,27 +1152,18 @@ onClick("btnCancelCharacterEdit", closeCharacterEditor);
 
 onClick("btnSaveCharacter", () => {
     const nameInput = document.getElementById("charEditorName");
-    const alignInput = document.getElementById("charEditorAlign");
-    const bubbleColorInput = document.getElementById("charEditorBubbleColor");
-    const textColorInput = document.getElementById("charEditorTextColor");
-    if (!nameInput || !alignInput || !bubbleColorInput || !textColorInput) return;
+    if (!nameInput) return;
 
     const name = nameInput.value.trim() || "이름 없음";
-    const align = alignInput.value || "left";
-    const bubbleColor = bubbleColorInput.value;
-    const textColor = textColorInput.value;
     const existing = editingCharacterId ? characters.find((x) => x.id === editingCharacterId) : null;
     const avatarData = pendingCharAvatarData !== null ? pendingCharAvatarData : (existing ? existing.avatarData : null);
 
     if (existing) {
         existing.name = name;
-        existing.align = align;
-        existing.bubbleColor = bubbleColor;
-        existing.textColor = textColor;
         existing.avatarData = avatarData;
-        updateExistingBubbles(existing.id);
+        updateExistingDialogueNames(existing.id);
     } else {
-        characters.push({ id: uid(), name, align, bubbleColor, textColor, avatarData });
+        characters.push({ id: uid(), name, avatarData });
     }
 
     renderCharacterList();
@@ -1216,7 +1175,7 @@ onClick("btnSaveCharacter", () => {
 
 onClick("btnDeleteCharacter", () => {
     if (!editingCharacterId) return;
-    if (!window.confirm("이 캐릭터를 삭제할까요? 이미 넣은 말풍선은 그대로 남아요.")) return;
+    if (!window.confirm("이 캐릭터를 삭제할까요? 이미 넣은 대사는 그대로 남아요.")) return;
     characters = characters.filter((c) => c.id !== editingCharacterId);
     renderCharacterList();
     closeCharacterEditor();
@@ -1615,6 +1574,28 @@ document.addEventListener("DOMContentLoaded", () => {
         els.indentToggle.addEventListener("change", () => updateCanvas());
     }
 
+    // 대사 탭: 로그/글줄 모드 전환 시 관련 설정 행 보이기/숨기기
+    const dialogueModeGroup = document.querySelector('.segmented-control[data-target="dialogueMode"]');
+    if (dialogueModeGroup) {
+        const syncDialogueModeUI = () => {
+            const mode = document.getElementById("dialogueMode")?.value || "log";
+            const hint = document.getElementById("dialogueModeHint");
+            const translationArea = document.getElementById("dlgTranslationArea");
+            const stageArea = document.getElementById("dlgStageArea");
+            if (hint) {
+                hint.textContent = mode === "log"
+                    ? '로그: 이름 + 원문 대사 + 번역을 줄줄이 나열해요. (mok0999 발췌기의 "로그" 형식)'
+                    : '글줄: 화자 이름 + 지문 + 대사를 한 덩어리로 넣어요. (shoong 발췌기의 "글줄" 형식)';
+            }
+            if (translationArea) translationArea.style.display = mode === "log" ? "flex" : "none";
+            if (stageArea) stageArea.style.display = mode === "line" ? "flex" : "none";
+        };
+        dialogueModeGroup.querySelectorAll("button").forEach((btn) => {
+            btn.addEventListener("click", syncDialogueModeUI);
+        });
+        syncDialogueModeUI();
+    }
+
     // 제목/글자크기 등을 빠르게 여러 번 건드릴 때(타이핑, 슬라이더 드래그)
     // updateCanvas()가 매 입력마다 동기적으로 강제 레이아웃을 발생시켜서
     // 캔버스가 순간적으로 흔들리거나 깨져 보이는 것처럼 느껴지는 문제가 있었다.
@@ -1640,7 +1621,7 @@ document.addEventListener("DOMContentLoaded", () => {
         els.headingTitleInput, els.headingSubtitleInput,
         els.headingTitleFont, els.headingTitleSize, els.headingTitleBold,
         els.headingSubtitleFont, els.headingSubtitleSize, els.headingSubtitleBold,
-        els.bubbleShowAvatar, els.bubbleShowName, els.bubbleShowTail, els.bubbleShape
+        els.dlgNameSuffix, els.dlgQuoteStyle, els.dlgShowTranslation, els.dlgUseStage
     ];
     autoTriggers.forEach((el) => {
         if (el) { el.addEventListener("input", scheduleUpdateCanvas); el.addEventListener("change", scheduleUpdateCanvas); }

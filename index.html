@@ -8,7 +8,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=34" />
+        <link rel="stylesheet" href="style.css?v=35" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -55,9 +55,6 @@
                         <button id="btnQuoteLine" class="btn-dialogue-line" title="대사 강조선 바">강조선</button>
                         <button id="btnBoxQuote" class="btn-box-quote" title="박스로 감싸 인용 강조">박스인용</button>
                         <button id="btnInsertDivider" title="구분용 가로선 삽입">가로선</button>
-                        <button id="btnInsertSpeakerLine" title="화자 이름 + 지문 + 대사 (글줄 형태, 말풍선 없음)">화자글줄</button>
-                        <button id="btnInsertLogTurn" title="이름 + 원문 대사 + 번역 대사 (로그 형태, 말풍선 없음)">로그대사</button>
-                        <button id="btnInsertSpeaker" title="캐릭터 목록에서 말풍선 추가">말풍선</button>
                         <select id="selAlign" class="toolbar-select" title="선택한 문단만 정렬 변경 (전체 정렬과 별개)">
                             <option value="" disabled selected>정렬</option>
                             <option value="left">왼쪽</option>
@@ -684,33 +681,49 @@
                     </div>
                 </div>
             </div>
-            <div class="tab-panel" id="panel-bubble">
-                <div class="panel-section-title">말풍선 전역 설정</div>
+            <div class="tab-panel" id="panel-dialogue">
+                <div class="panel-section-title">대사 형식</div>
                 <div class="control-minimal-row">
-                    <div class="checkbox-minimal-group">
-                        <label><input type="checkbox" id="bubbleShowAvatar" checked /> 프로필 사진 표시</label>
+                    <label>표시 방식</label>
+                    <input type="hidden" id="dialogueMode" value="log" />
+                    <div class="segmented-control segmented-control-minimal" data-target="dialogueMode">
+                        <button type="button" data-value="log" class="active">로그</button>
+                        <button type="button" data-value="line">글줄</button>
                     </div>
                 </div>
+                <div class="field-hint" id="dialogueModeHint">로그: 이름 + 원문 대사 + 번역을 줄줄이 나열해요. (mok0999 발췌기의 "로그" 형식)</div>
+
+                <div class="panel-section-title">세부 설정</div>
                 <div class="control-minimal-row">
-                    <div class="checkbox-minimal-group">
-                        <label><input type="checkbox" id="bubbleShowName" checked /> 이름 표시</label>
-                    </div>
-                </div>
-                <div class="control-minimal-row">
-                    <div class="checkbox-minimal-group">
-                        <label><input type="checkbox" id="bubbleShowTail" checked /> 말풍선 꼬리</label>
-                    </div>
-                </div>
-                <div class="control-minimal-row">
-                    <label for="bubbleShape">말풍선 모양</label>
-                    <select id="bubbleShape">
-                        <option value="round" selected>둥글게</option>
-                        <option value="square">각지게</option>
+                    <label for="dlgNameSuffix">이름 뒤 기호</label>
+                    <select id="dlgNameSuffix">
+                        <option value="">없음</option>
+                        <option value=":" selected>:</option>
+                        <option value=" -"> -</option>
+                        <option value=".">.</option>
                     </select>
+                </div>
+                <div class="control-minimal-row">
+                    <label for="dlgQuoteStyle">대사 감싸는 기호</label>
+                    <select id="dlgQuoteStyle">
+                        <option value="none">없음</option>
+                        <option value="dquote" selected>" "</option>
+                        <option value="corner">「 」</option>
+                    </select>
+                </div>
+                <div class="control-minimal-row" id="dlgTranslationArea">
+                    <div class="checkbox-minimal-group">
+                        <label><input type="checkbox" id="dlgShowTranslation" checked /> 번역 대사 표시 (로그 전용)</label>
+                    </div>
+                </div>
+                <div class="control-minimal-row" id="dlgStageArea" style="display: none">
+                    <div class="checkbox-minimal-group">
+                        <label><input type="checkbox" id="dlgUseStage" checked /> 지문 칸 표시 (글줄 전용)</label>
+                    </div>
                 </div>
 
                 <div class="panel-section-title">캐릭터</div>
-                <div class="field-hint">캐릭터를 등록해두면 목록에서 탭 한 번으로 그 캐릭터의 말풍선(이름·프로필·색)을 바로 추가할 수 있어요.</div>
+                <div class="field-hint">캐릭터를 등록해두면 목록에서 탭 한 번으로 그 캐릭터의 대사를 바로 추가할 수 있어요. 프로필 사진은 이 목록에서 구분용으로만 쓰이고, 실제 결과물에는 나오지 않아요.</div>
                 <div id="characterList" class="character-list"></div>
                 <button type="button" class="btn-template" id="btnAddCharacter" style="width: 100%; margin-top: 10px">+ 캐릭터 추가</button>
 
@@ -720,24 +733,6 @@
                         <input type="text" id="charEditorName" placeholder="캐릭터 이름" class="input-minimal-plain" />
                     </div>
                     <input type="file" id="charAvatarInput" accept="image/*" style="display: none" />
-                    <div class="control-minimal-row">
-                        <label>말풍선 위치</label>
-                        <input type="hidden" id="charEditorAlign" value="left" />
-                        <div class="segmented-control segmented-control-minimal" data-target="charEditorAlign">
-                            <button type="button" data-value="left" class="active">왼쪽</button>
-                            <button type="button" data-value="right">오른쪽</button>
-                        </div>
-                    </div>
-                    <div class="picker-minimal-group">
-                        <div class="picker-cell">
-                            <input type="color" id="charEditorBubbleColor" value="#e5e5ea" />
-                            <span>말풍선색</span>
-                        </div>
-                        <div class="picker-cell">
-                            <input type="color" id="charEditorTextColor" value="#111111" />
-                            <span>글자색</span>
-                        </div>
-                    </div>
                     <div class="char-editor-btn-row">
                         <button type="button" class="btn-minimal-save" id="btnSaveCharacter">저장</button>
                         <button type="button" class="text-danger" id="btnDeleteCharacter" style="display: none">삭제</button>
@@ -821,11 +816,11 @@
                     </span>
                     <span class="dock-btn-label">사진</span>
                 </button>
-                <button class="dock-btn tab-btn" data-target="panel-bubble" title="말풍선 · 캐릭터">
+                <button class="dock-btn tab-btn" data-target="panel-dialogue" title="대사 · 캐릭터">
                     <svg class="dock-icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 4 H20 V16 H8 L4 20 Z"></path>
                     </svg>
-                    <span class="dock-btn-label">말풍선</span>
+                    <span class="dock-btn-label">대사</span>
                 </button>
             </div>
         </nav>
@@ -869,7 +864,7 @@
 
         <div class="toast" id="toast"></div>
 
-        <script src="presets.js?v=34"></script>
-        <script src="script.js?v=34"></script>
+        <script src="presets.js?v=35"></script>
+        <script src="script.js?v=35"></script>
     </body>
 </html>

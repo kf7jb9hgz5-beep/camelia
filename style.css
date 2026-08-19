@@ -1508,83 +1508,85 @@ input[type="file"]::file-selector-button {
     margin: 18px 0 !important;
 }
 
-/* ---- 말풍선 (캐릭터별 이름·프로필·색·좌우정렬) ---- */
-.chat-bubble-row {
-    display: flex !important;
-    align-items: flex-end;
-    gap: 8px;
+/* ---- 화자 글줄 (말풍선 없이 이름+지문+대사, "shoong 발췌기" 글줄 스타일) ---- */
+.speaker-line-block {
+    display: block !important;
     margin-bottom: inherit;
     text-align: inherit;
 }
 
-.chat-bubble-row.align-right {
-    flex-direction: row-reverse;
-}
-
-.bubble-avatar {
-    display: var(--bubble-avatar-display, flex);
-    flex: 0 0 36px;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background-color: var(--bg-main, #f3f3f1);
-    border: 1px solid var(--border-color, #eaeaea);
-    background-size: cover;
-    background-position: center;
-    box-sizing: border-box;
-}
-
-.bubble-col {
+.sl-header {
     display: flex;
-    flex-direction: column;
-    max-width: 72%;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 2px;
 }
 
-.chat-bubble-row.align-right .bubble-col {
-    align-items: flex-end;
-}
-
-.bubble-name {
-    display: var(--bubble-name-display, block);
-    font-size: 0.78em;
+.sl-name {
     font-weight: 700;
-    opacity: 0.7;
-    margin: 0 4px 3px;
 }
 
-.bubble {
-    position: relative;
-    padding: 9px 13px;
-    border-radius: var(--bubble-radius, 16px);
-    min-height: 1.4em;
-    box-sizing: border-box;
-    white-space: pre-wrap;
-    width: fit-content;
-    max-width: 100%;
+.sl-name::after {
+    content: var(--dlg-name-suffix, ":");
+    font-weight: 700;
 }
 
-.bubble::before {
-    display: var(--bubble-tail-display, block);
-    content: "";
-    position: absolute;
-    bottom: 8px;
-    width: 0;
-    height: 0;
-    border-top: 6px solid transparent;
-    border-bottom: 6px solid transparent;
+.sl-stage {
+    display: var(--dlg-stage-display, inline);
+    font-style: italic;
+    opacity: 0.65;
+    font-size: 0.92em;
 }
 
-.chat-bubble-row.align-left .bubble::before {
-    left: -7px;
-    border-right: 8px solid var(--bubble-own-color, #e5e5ea);
+.sl-dialogue {
+    display: block;
 }
 
-.chat-bubble-row.align-right .bubble::before {
-    right: -7px;
-    border-left: 8px solid var(--bubble-own-color, #e5e5ea);
+.sl-dialogue::before {
+    content: var(--dlg-quote-open, "");
 }
 
-/* ---- 말풍선 탭: 캐릭터 목록 / 편집기 ---- */
+.sl-dialogue::after {
+    content: var(--dlg-quote-close, "");
+}
+
+/* ---- 로그 대사 (말풍선 없이 이름+원문+번역, "mok0999" 로그 스타일) ---- */
+.log-turn-block {
+    display: block !important;
+    margin-bottom: inherit;
+    text-align: inherit;
+}
+
+.log-name {
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.log-name::after {
+    content: var(--dlg-name-suffix, ":");
+    font-weight: 700;
+}
+
+.log-line {
+    display: block;
+}
+
+.log-line::before {
+    content: var(--dlg-quote-open, "");
+}
+
+.log-line::after {
+    content: var(--dlg-quote-close, "");
+}
+
+.log-translation {
+    display: var(--dlg-translation-display, block);
+    opacity: 0.65;
+    font-size: 0.94em;
+}
+
+/* ---- 대사 탭: 캐릭터 목록 / 편집기 ---- */
 .character-list {
     display: flex;
     flex-direction: column;
@@ -1726,60 +1728,6 @@ input[type="file"]::file-selector-button {
 
 .char-editor-btn-row .text-danger {
     color: var(--danger-color);
-}
-
-/* ---- 화자 글줄 (말풍선 없이 이름+지문+대사, "shoong 발췌기" 글줄 스타일) ---- */
-.speaker-line-block {
-    display: block !important;
-    margin-bottom: inherit;
-    text-align: inherit;
-}
-
-.sl-header {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 2px;
-}
-
-.sl-name {
-    font-weight: 700;
-}
-
-.sl-name:empty::before {
-    font-weight: 700;
-}
-
-.sl-stage {
-    font-style: italic;
-    opacity: 0.65;
-    font-size: 0.92em;
-}
-
-.sl-dialogue {
-    display: block;
-}
-
-/* ---- 로그 대사 (말풍선 없이 이름+원문+번역, "mok0999" 로그 스타일) ---- */
-.log-turn-block {
-    display: block !important;
-    margin-bottom: inherit;
-    text-align: inherit;
-}
-
-.log-name {
-    font-weight: 700;
-    margin-bottom: 2px;
-}
-
-.log-line {
-    display: block;
-}
-
-.log-translation {
-    opacity: 0.65;
-    font-size: 0.94em;
 }
 
 .tpl-field {
