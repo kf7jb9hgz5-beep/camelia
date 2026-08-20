@@ -8,7 +8,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=35" />
+        <link rel="stylesheet" href="style.css?v=36" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -691,9 +691,13 @@
                         <button type="button" data-value="line">글줄</button>
                     </div>
                 </div>
-                <div class="field-hint" id="dialogueModeHint">로그: 이름 + 원문 대사 + 번역을 줄줄이 나열해요. (mok0999 발췌기의 "로그" 형식)</div>
 
                 <div class="panel-section-title">세부 설정</div>
+                <div class="control-minimal-row">
+                    <div class="checkbox-minimal-group">
+                        <label><input type="checkbox" id="dlgShowAvatar" checked /> 캐릭터 목록에 프로필 사진 표시</label>
+                    </div>
+                </div>
                 <div class="control-minimal-row">
                     <label for="dlgNameSuffix">이름 뒤 기호</label>
                     <select id="dlgNameSuffix">
@@ -864,7 +868,7 @@
 
         <div class="toast" id="toast"></div>
 
-        <script src="presets.js?v=35"></script>
-        <script src="script.js?v=35"></script>
+        <script src="presets.js?v=36"></script>
+        <script src="script.js?v=36"></script>
     </body>
 </html>

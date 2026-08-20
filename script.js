@@ -10,6 +10,7 @@ const els = {
     paddingRight: document.getElementById("paddingRight"),
     dlgNameSuffix: document.getElementById("dlgNameSuffix"),
     dlgQuoteStyle: document.getElementById("dlgQuoteStyle"),
+    dlgShowAvatar: document.getElementById("dlgShowAvatar"),
     dlgShowTranslation: document.getElementById("dlgShowTranslation"),
     dlgUseStage: document.getElementById("dlgUseStage"),
     bgType: document.getElementById("bgType"),
@@ -1131,6 +1132,20 @@ function insertDialogueForCharacter(charId) {
 
     const wrapper = document.createElement("div");
     wrapper.innerHTML = html.trim();
+    const node = wrapper.firstElementChild;
+    if (!node) return;
+
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount && els.editor.contains(selection.anchorNode)) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(node);
+    } else {
+        els.editor.appendChild(node);
+    }
+
+    const trailer = document.createElement("div");
+    trailer.appendChild(document.createElement("br"));
     node.after(trailer);
 
     const field = node.querySelector(".tpl-field");
@@ -1579,14 +1594,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (dialogueModeGroup) {
         const syncDialogueModeUI = () => {
             const mode = document.getElementById("dialogueMode")?.value || "log";
-            const hint = document.getElementById("dialogueModeHint");
             const translationArea = document.getElementById("dlgTranslationArea");
             const stageArea = document.getElementById("dlgStageArea");
-            if (hint) {
-                hint.textContent = mode === "log"
-                    ? '로그: 이름 + 원문 대사 + 번역을 줄줄이 나열해요. (mok0999 발췌기의 "로그" 형식)'
-                    : '글줄: 화자 이름 + 지문 + 대사를 한 덩어리로 넣어요. (shoong 발췌기의 "글줄" 형식)';
-            }
             if (translationArea) translationArea.style.display = mode === "log" ? "flex" : "none";
             if (stageArea) stageArea.style.display = mode === "line" ? "flex" : "none";
         };
@@ -1594,6 +1603,17 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.addEventListener("click", syncDialogueModeUI);
         });
         syncDialogueModeUI();
+    }
+
+    // 대사 탭: 캐릭터 목록의 프로필 사진 표시 여부
+    const dlgShowAvatarEl = document.getElementById("dlgShowAvatar");
+    if (dlgShowAvatarEl) {
+        const syncAvatarVisibility = () => {
+            const list = document.getElementById("characterList");
+            if (list) list.classList.toggle("hide-chip-avatars", !dlgShowAvatarEl.checked);
+        };
+        dlgShowAvatarEl.addEventListener("change", syncAvatarVisibility);
+        syncAvatarVisibility();
     }
 
     // 제목/글자크기 등을 빠르게 여러 번 건드릴 때(타이핑, 슬라이더 드래그)
@@ -1621,7 +1641,7 @@ document.addEventListener("DOMContentLoaded", () => {
         els.headingTitleInput, els.headingSubtitleInput,
         els.headingTitleFont, els.headingTitleSize, els.headingTitleBold,
         els.headingSubtitleFont, els.headingSubtitleSize, els.headingSubtitleBold,
-        els.dlgNameSuffix, els.dlgQuoteStyle, els.dlgShowTranslation, els.dlgUseStage
+        els.dlgNameSuffix, els.dlgQuoteStyle, els.dlgShowTranslation, els.dlgUseStage, els.dlgShowAvatar
     ];
     autoTriggers.forEach((el) => {
         if (el) { el.addEventListener("input", scheduleUpdateCanvas); el.addEventListener("change", scheduleUpdateCanvas); }

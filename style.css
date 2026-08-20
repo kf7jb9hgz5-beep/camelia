@@ -1615,6 +1615,10 @@ input[type="file"]::file-selector-button {
     box-sizing: border-box;
 }
 
+.character-list.hide-chip-avatars .char-chip-avatar {
+    display: none;
+}
+
 .char-chip-name {
     flex: 1 1 auto;
     font-size: 13px;

@@ -56,6 +56,7 @@ function getPresetSnapshot() {
         fontWeightSelect: els.fontWeightSelect?.value,
         dlgNameSuffix: els.dlgNameSuffix?.value,
         dlgQuoteStyle: els.dlgQuoteStyle?.value,
+        dlgShowAvatar: els.dlgShowAvatar?.checked,
         dlgShowTranslation: els.dlgShowTranslation?.checked,
         dlgUseStage: els.dlgUseStage?.checked,
         alignH: els.alignH.value,
@@ -131,6 +132,11 @@ function applyPresetSnapshot(data) {
     if (els.fontWeightSelect) els.fontWeightSelect.value = data.fontWeightSelect ?? els.fontWeightSelect.value;
     if (els.dlgNameSuffix) els.dlgNameSuffix.value = data.dlgNameSuffix ?? els.dlgNameSuffix.value;
     if (els.dlgQuoteStyle) els.dlgQuoteStyle.value = data.dlgQuoteStyle ?? els.dlgQuoteStyle.value;
+    if (els.dlgShowAvatar) els.dlgShowAvatar.checked = data.dlgShowAvatar ?? els.dlgShowAvatar.checked;
+    if (els.dlgShowAvatar) {
+        const list = document.getElementById("characterList");
+        if (list) list.classList.toggle("hide-chip-avatars", !els.dlgShowAvatar.checked);
+    }
     if (els.dlgShowTranslation) els.dlgShowTranslation.checked = data.dlgShowTranslation ?? els.dlgShowTranslation.checked;
     if (els.dlgUseStage) els.dlgUseStage.checked = data.dlgUseStage ?? els.dlgUseStage.checked;
     els.wordBreak.value = data.wordBreak ?? els.wordBreak.value;
