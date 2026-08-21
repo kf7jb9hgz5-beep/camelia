@@ -8,7 +8,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=36" />
+        <link rel="stylesheet" href="style.css?v=37" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -695,7 +695,7 @@
                 <div class="panel-section-title">세부 설정</div>
                 <div class="control-minimal-row">
                     <div class="checkbox-minimal-group">
-                        <label><input type="checkbox" id="dlgShowAvatar" checked /> 캐릭터 목록에 프로필 사진 표시</label>
+                        <label><input type="checkbox" id="dlgShowAvatar" /> 프로필 사진 표시</label>
                     </div>
                 </div>
                 <div class="control-minimal-row">
@@ -727,7 +727,6 @@
                 </div>
 
                 <div class="panel-section-title">캐릭터</div>
-                <div class="field-hint">캐릭터를 등록해두면 목록에서 탭 한 번으로 그 캐릭터의 대사를 바로 추가할 수 있어요. 프로필 사진은 이 목록에서 구분용으로만 쓰이고, 실제 결과물에는 나오지 않아요.</div>
                 <div id="characterList" class="character-list"></div>
                 <button type="button" class="btn-template" id="btnAddCharacter" style="width: 100%; margin-top: 10px">+ 캐릭터 추가</button>
 
@@ -743,6 +742,10 @@
                         <button type="button" id="btnCancelCharacterEdit">취소</button>
                     </div>
                 </div>
+
+                <div class="panel-section-title">대사 목록</div>
+                <div class="field-hint">여기서 직접 입력해요. 탭을 나갔다 와도, 새로고침해도 내용이 남아있어요.</div>
+                <div id="dialogueLineList" class="dialogue-line-list"></div>
             </div>
 
             <div class="tab-panel" id="panel-presets">

@@ -251,6 +251,7 @@ function updateCanvas() {
         let rawHTML = els.editor.innerHTML || "<div><br></div>";
         textWrapper.innerHTML = rawHTML;
         normalizeParagraphs(textWrapper);
+        appendDialogueLinesToCanvas(textWrapper);
 
         textWrapper.style.setProperty("--quote-line-color", els.quoteLineColor.value);
         if (els.editor) els.editor.style.setProperty("--quote-line-color", els.quoteLineColor.value);
@@ -1035,7 +1036,7 @@ function renderCharacterList() {
         insertBtn.type = "button";
         insertBtn.className = "char-chip-insert";
         insertBtn.textContent = "대사 추가";
-        insertBtn.addEventListener("click", () => insertDialogueForCharacter(c.id));
+        insertBtn.addEventListener("click", () => addDialogueLine(c.id));
 
         const editBtn = document.createElement("button");
         editBtn.type = "button";
@@ -1088,10 +1089,9 @@ function closeCharacterEditor() {
 
 function updateExistingDialogueNames(charId) {
     const c = characters.find((x) => x.id === charId);
-    if (!c || !els.editor) return;
-    els.editor.querySelectorAll(`[data-char-id="${charId}"] .log-name, [data-char-id="${charId}"] .sl-name`).forEach((el) => {
-        el.textContent = c.name;
-    });
+    if (!c) return;
+    renderDialogueLineList();
+    updateCanvas();
 }
 
 function getQuoteChars(style) {
@@ -1100,66 +1100,142 @@ function getQuoteChars(style) {
     return { open: '"', close: '"' };
 }
 
-function insertDialogueForCharacter(charId) {
-    const c = characters.find((x) => x.id === charId);
-    if (!c || !els.editor) return;
-    els.editor.focus();
+// ==== 대사 목록 (셀 형식, JS 배열 + localStorage에 보관 — 탭 이동/새로고침해도 안 지워짐) ====
+let dialogueLines = [];
+
+function saveDialogueLinesToStorage() {
+    try {
+        localStorage.setItem("quoteStudioDialogueLines", JSON.stringify(dialogueLines));
+    } catch (e) {
+        console.warn("대사 목록 저장 실패:", e);
+    }
+}
+
+function loadDialogueLinesFromStorage() {
+    try {
+        const raw = localStorage.getItem("quoteStudioDialogueLines");
+        dialogueLines = raw ? JSON.parse(raw) : [];
+    } catch (e) {
+        dialogueLines = [];
+    }
+}
+
+function addDialogueLine(charId) {
+    dialogueLines.push({ id: uid(), charId, text: "", translation: "" });
+    saveDialogueLinesToStorage();
+    renderDialogueLineList();
+    updateCanvas();
+}
+
+function deleteDialogueLine(lineId) {
+    dialogueLines = dialogueLines.filter((l) => l.id !== lineId);
+    saveDialogueLinesToStorage();
+    renderDialogueLineList();
+    updateCanvas();
+}
+
+function renderDialogueLineList() {
+    const container = document.getElementById("dialogueLineList");
+    if (!container) return;
+    container.innerHTML = "";
 
     const mode = document.getElementById("dialogueMode")?.value || "log";
+
+    dialogueLines.forEach((line) => {
+        const c = characters.find((x) => x.id === line.charId);
+        const cell = document.createElement("div");
+        cell.className = "dialogue-line-cell";
+
+        const header = document.createElement("div");
+        header.className = "dlc-header";
+
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "dlc-speaker-name";
+        nameSpan.textContent = c ? c.name : "(삭제된 캐릭터)";
+
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "dlc-delete";
+        delBtn.textContent = "✕";
+        delBtn.addEventListener("click", () => deleteDialogueLine(line.id));
+
+        header.appendChild(nameSpan);
+        header.appendChild(delBtn);
+        cell.appendChild(header);
+
+        const textArea = document.createElement("textarea");
+        textArea.className = "dlc-text";
+        textArea.placeholder = mode === "log" ? "원문 대사를 입력하세요" : "대사를 입력하세요";
+        textArea.value = line.text || "";
+        textArea.addEventListener("input", () => {
+            line.text = textArea.value;
+            saveDialogueLinesToStorage();
+            updateCanvas();
+        });
+        cell.appendChild(textArea);
+
+        if (mode === "log" && document.getElementById("dlgShowTranslation")?.checked) {
+            const transArea = document.createElement("textarea");
+            transArea.className = "dlc-translation";
+            transArea.placeholder = "번역 (선택)";
+            transArea.value = line.translation || "";
+            transArea.addEventListener("input", () => {
+                line.translation = transArea.value;
+                saveDialogueLinesToStorage();
+                updateCanvas();
+            });
+            cell.appendChild(transArea);
+        }
+
+        container.appendChild(cell);
+    });
+}
+
+function appendDialogueLinesToCanvas(textWrapper) {
+    if (!textWrapper || dialogueLines.length === 0) return;
+
+    const mode = document.getElementById("dialogueMode")?.value || "log";
+    const showAvatar = document.getElementById("dlgShowAvatar")?.checked;
     const showTranslation = document.getElementById("dlgShowTranslation")?.checked;
     const useStage = document.getElementById("dlgUseStage")?.checked;
 
-    let html;
-    if (mode === "log") {
-        html = `
-            <div class="template-block log-turn-block" data-char-id="${c.id}">
-                <div class="log-name">${escapeHtml(c.name)}</div>
-                <div class="log-line tpl-field tpl-multiline" data-placeholder="원문 대사를 입력하세요"></div>
-                ${showTranslation ? `<div class="log-line log-translation tpl-field tpl-multiline" data-placeholder="번역"></div>` : ""}
-            </div>
-        `;
-    } else {
-        html = `
-            <div class="template-block speaker-line-block" data-char-id="${c.id}">
-                <div class="sl-header">
-                    <span class="sl-name">${escapeHtml(c.name)}</span>
-                    ${useStage ? `<span class="sl-stage tpl-field tpl-multiline" data-placeholder="지문(선택)"></span>` : ""}
+    dialogueLines.forEach((line) => {
+        const c = characters.find((x) => x.id === line.charId);
+        if (!c) return;
+        const avatarHtml = `<div class="dlg-avatar"${c.avatarData ? ` style="background-image:url(${c.avatarData})"` : ""}></div>`;
+
+        const wrapper = document.createElement("div");
+        if (mode === "log") {
+            wrapper.innerHTML = `
+                <div class="log-turn-block">
+                    ${showAvatar ? avatarHtml : ""}
+                    <div class="log-turn-body">
+                        <div class="log-name">${escapeHtml(c.name)}</div>
+                        <div class="log-line">${escapeHtml(line.text || "")}</div>
+                        ${showTranslation && line.translation ? `<div class="log-line log-translation">${escapeHtml(line.translation)}</div>` : ""}
+                    </div>
                 </div>
-                <div class="sl-dialogue tpl-field tpl-multiline" data-placeholder="대사를 입력하세요"></div>
-            </div>
-        `;
-    }
-
-    const wrapper = document.createElement("div");
-    wrapper.innerHTML = html.trim();
-    const node = wrapper.firstElementChild;
-    if (!node) return;
-
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount && els.editor.contains(selection.anchorNode)) {
-        const range = selection.getRangeAt(0);
-        range.deleteContents();
-        range.insertNode(node);
-    } else {
-        els.editor.appendChild(node);
-    }
-
-    const trailer = document.createElement("div");
-    trailer.appendChild(document.createElement("br"));
-    node.after(trailer);
-
-    const field = node.querySelector(".tpl-field");
-    if (field && selection) {
-        const newRange = document.createRange();
-        newRange.selectNodeContents(field);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-    }
-
-    closeSheetPanel();
-    updateCanvas();
-    pushHistory(true);
+            `.trim();
+        } else {
+            wrapper.innerHTML = `
+                <div class="speaker-line-block">
+                    ${showAvatar ? avatarHtml : ""}
+                    <div class="sl-body">
+                        <div class="sl-header">
+                            <span class="sl-name">${escapeHtml(c.name)}</span>
+                            ${useStage && line.translation ? `<span class="sl-stage">${escapeHtml(line.translation)}</span>` : ""}
+                        </div>
+                        <div class="sl-dialogue">${escapeHtml(line.text || "")}</div>
+                    </div>
+                </div>
+            `.trim();
+        }
+        const node = wrapper.firstElementChild;
+        if (node) {
+            node.style.marginBottom = `${document.getElementById("paraSpacing")?.value || 16}px`;
+            textWrapper.appendChild(node);
+        }
+    });
 }
 
 onClick("btnAddCharacter", () => openCharacterEditor(null));
@@ -1228,6 +1304,8 @@ if (charAvatarInputEl) {
 
 loadCharactersFromStorage();
 renderCharacterList();
+loadDialogueLinesFromStorage();
+renderDialogueLineList();
 
 onClick("btnClearAll", () => {
     if (!els.editor) return;
@@ -1598,6 +1676,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const stageArea = document.getElementById("dlgStageArea");
             if (translationArea) translationArea.style.display = mode === "log" ? "flex" : "none";
             if (stageArea) stageArea.style.display = mode === "line" ? "flex" : "none";
+            renderDialogueLineList();
         };
         dialogueModeGroup.querySelectorAll("button").forEach((btn) => {
             btn.addEventListener("click", syncDialogueModeUI);
@@ -1605,15 +1684,10 @@ document.addEventListener("DOMContentLoaded", () => {
         syncDialogueModeUI();
     }
 
-    // 대사 탭: 캐릭터 목록의 프로필 사진 표시 여부
-    const dlgShowAvatarEl = document.getElementById("dlgShowAvatar");
-    if (dlgShowAvatarEl) {
-        const syncAvatarVisibility = () => {
-            const list = document.getElementById("characterList");
-            if (list) list.classList.toggle("hide-chip-avatars", !dlgShowAvatarEl.checked);
-        };
-        dlgShowAvatarEl.addEventListener("change", syncAvatarVisibility);
-        syncAvatarVisibility();
+    // 대사 탭: 번역 표시 여부가 바뀌면 목록 셀도 다시 그림 (번역 칸 보이기/숨기기)
+    const dlgShowTranslationEl = document.getElementById("dlgShowTranslation");
+    if (dlgShowTranslationEl) {
+        dlgShowTranslationEl.addEventListener("change", () => renderDialogueLineList());
     }
 
     // 제목/글자크기 등을 빠르게 여러 번 건드릴 때(타이핑, 슬라이더 드래그)

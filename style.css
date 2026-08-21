@@ -1510,9 +1510,31 @@ input[type="file"]::file-selector-button {
 
 /* ---- 화자 글줄 (말풍선 없이 이름+지문+대사, "shoong 발췌기" 글줄 스타일) ---- */
 .speaker-line-block {
-    display: block !important;
+    display: flex !important;
+    align-items: flex-start;
+    gap: 8px;
     margin-bottom: inherit;
     text-align: inherit;
+}
+
+.dlg-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: var(--bg-main, #f3f3f1);
+    border: 1px solid var(--border-color, #eaeaea);
+    background-size: cover;
+    background-position: center;
+    box-sizing: border-box;
+}
+
+.sl-body {
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .sl-header {
@@ -1553,9 +1575,16 @@ input[type="file"]::file-selector-button {
 
 /* ---- 로그 대사 (말풍선 없이 이름+원문+번역, "mok0999" 로그 스타일) ---- */
 .log-turn-block {
-    display: block !important;
+    display: flex !important;
+    align-items: flex-start;
+    gap: 8px;
     margin-bottom: inherit;
     text-align: inherit;
+}
+
+.log-turn-body {
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .log-name {
@@ -1570,6 +1599,7 @@ input[type="file"]::file-selector-button {
 
 .log-line {
     display: block;
+    white-space: pre-wrap;
 }
 
 .log-line::before {
@@ -1732,6 +1762,69 @@ input[type="file"]::file-selector-button {
 
 .char-editor-btn-row .text-danger {
     color: var(--danger-color);
+}
+
+/* ---- 대사 목록: 셀 형식 ---- */
+.dialogue-line-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dialogue-line-cell {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-main);
+    padding: 10px 12px;
+}
+
+.dlc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.dlc-speaker-name {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.dlc-delete {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.dlc-delete:active {
+    color: var(--danger-color);
+}
+
+.dlc-text,
+.dlc-translation {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 42px;
+    background-color: #ffffff;
+    color: var(--text-main);
+}
+
+.dlc-translation {
+    margin-top: 6px;
 }
 
 .tpl-field {
