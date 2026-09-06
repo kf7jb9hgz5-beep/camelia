@@ -1391,6 +1391,27 @@ input[type="file"]::file-selector-button {
     background-color: var(--border-color);
 }
 
+/* ---- 대사 블록 공통: 발췌문(본문) 글자 크기와 별개로, 항상 읽기 좋은 크기로 고정 ----
+   textWrapper(캔버스 전체)에 걸린 큰 본문 폰트 크기/줄간격을 그대로 물려받으면
+   로그/블록 한 줄 한 줄이 지나치게 커져 대사 사이 간격이 비정상적으로 벌어져 보인다.
+   그래서 대사 표시 영역은 본문 폰트 크기와 무관하게 고정 크기를 쓴다. */
+.log-turn-block,
+.log-turn-block *,
+.dlg-box,
+.dlg-box * {
+    font-size: 15.5px;
+    line-height: 1.55;
+    letter-spacing: normal;
+}
+
+.log-name {
+    font-size: 13px;
+}
+
+.log-translation {
+    font-size: 14px;
+}
+
 /* ---- 공용: 프로필 사진 ---- */
 .dlg-avatar {
     display: flex;
@@ -1421,7 +1442,7 @@ input[type="file"]::file-selector-button {
     display: flex !important;
     align-items: flex-start;
     gap: 8px;
-    margin-bottom: inherit;
+    margin-bottom: 10px;
     text-align: inherit;
 }
 
@@ -1459,92 +1480,28 @@ input[type="file"]::file-selector-button {
     font-size: 0.94em;
 }
 
-/* ---- 블록 대사 (프사+이름+말풍선, 다른 사이트의 말풍선 블록 기능을 옮겨온 스타일) ---- */
-.dlg-block-group {
-    display: flex !important;
-    align-items: flex-end;
-    gap: 8px;
-    max-width: 100%;
+/* ---- 블록 대사 (박스 하나 안에 "이름 대사"를 줄줄이 나열하는 방식) ---- */
+.dlg-box {
+    padding: 16px 18px;
+    box-sizing: border-box;
     text-align: inherit;
 }
 
-.dlg-block-group.side-left {
-    margin-right: auto;
-    justify-content: flex-start;
+.dlg-box-line {
+    display: block;
 }
 
-.dlg-block-group.side-right {
-    flex-direction: row-reverse;
-    margin-left: auto;
-    justify-content: flex-start;
-}
-
-.dlg-block-group.no-av {
-    align-items: flex-start;
-}
-
-.dlg-block-col {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    max-width: 78%;
-}
-
-.dlg-block-group.side-left .dlg-block-col {
-    align-items: flex-start;
-}
-
-.dlg-block-group.side-right .dlg-block-col {
-    align-items: flex-end;
-}
-
-.dlg-block-name {
-    font-size: 0.82em;
+.dlg-box-name {
     font-weight: 700;
-    margin-bottom: 3px;
-    padding: 0 4px;
 }
 
-.dlg-bubble {
-    position: relative;
-    padding: 9px 13px;
-    line-height: 1.5;
-    word-break: break-word;
-    overflow-wrap: anywhere;
+.dlg-box-name::after {
+    content: var(--dlg-name-suffix, "");
+}
+
+.dlg-box-text {
     white-space: pre-wrap;
-    max-width: 100%;
-    box-sizing: border-box;
-}
-
-/* 말풍선 꼬리: 묶음의 첫 번째 말풍선(프사 옆)에만 붙인다 */
-.dlg-bubble.tail-left {
-    border-top-left-radius: 4px !important;
-}
-
-.dlg-bubble.tail-left::before {
-    content: "";
-    position: absolute;
-    left: -6px;
-    top: 0;
-    width: 12px;
-    height: 12px;
-    background: inherit;
-    clip-path: polygon(100% 0, 100% 100%, 0 0);
-}
-
-.dlg-bubble.tail-right {
-    border-top-right-radius: 4px !important;
-}
-
-.dlg-bubble.tail-right::before {
-    content: "";
-    position: absolute;
-    right: -6px;
-    top: 0;
-    width: 12px;
-    height: 12px;
-    background: inherit;
-    clip-path: polygon(0 0, 0 100%, 100% 0);
+    word-break: break-word;
 }
 
 /* ---- 대사 탭: 캐릭터 목록 / 편집기 ---- */

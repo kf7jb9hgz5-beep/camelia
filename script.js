@@ -18,9 +18,8 @@ const els = {
     dlgUseCharColor: document.getElementById("dlgUseCharColor"),
     dlgLineGap: document.getElementById("dlgLineGap"),
     dlgContinuationGap: document.getElementById("dlgContinuationGap"),
-    dlgShowTail: document.getElementById("dlgShowTail"),
     dlgBubbleRadius: document.getElementById("dlgBubbleRadius"),
-    dlgBubbleGap: document.getElementById("dlgBubbleGap"),
+    dlgBoxBg: document.getElementById("dlgBoxBg"),
     bgType: document.getElementById("bgType"),
     bgColor1: document.getElementById("bgColor1"),
     gradColor1: document.getElementById("gradColor1"),
@@ -1074,10 +1073,6 @@ function openCharacterEditor(id) {
     const avatarBox = document.getElementById("charEditorAvatar");
     const deleteBtn = document.getElementById("btnDeleteCharacter");
     const colorInput = document.getElementById("charEditorColor");
-    const bubbleColorInput = document.getElementById("charEditorBubbleColor");
-    const bubbleTextColorInput = document.getElementById("charEditorBubbleTextColor");
-    const sideHidden = document.getElementById("charEditorSide");
-    const sideGroup = document.querySelector('.segmented-control[data-target="charEditorSide"]');
     if (!editor || !nameInput || !avatarBox || !deleteBtn) return;
 
     if (id) {
@@ -1087,35 +1082,14 @@ function openCharacterEditor(id) {
         avatarBox.style.backgroundImage = c.avatarData ? `url(${c.avatarData})` : "none";
         avatarBox.dataset.hasImage = c.avatarData ? "true" : "false";
         if (colorInput) colorInput.value = c.color || "#171717";
-        if (bubbleColorInput) bubbleColorInput.value = c.bubbleColor || "#f1f1ef";
-        if (bubbleTextColorInput) bubbleTextColorInput.value = c.bubbleTextColor || "#171717";
-        if (sideHidden) sideHidden.value = c.side || "left";
         deleteBtn.style.display = "block";
     } else {
         nameInput.value = "";
         avatarBox.style.backgroundImage = "none";
         avatarBox.dataset.hasImage = "false";
         if (colorInput) colorInput.value = "#171717";
-        if (bubbleColorInput) bubbleColorInput.value = "#f1f1ef";
-        if (bubbleTextColorInput) bubbleTextColorInput.value = "#171717";
-        if (sideHidden) sideHidden.value = "left";
         deleteBtn.style.display = "none";
     }
-    if (sideGroup) {
-        sideGroup.querySelectorAll("button").forEach((btn) => {
-            btn.classList.toggle("active", btn.dataset.value === (sideHidden ? sideHidden.value : "left"));
-        });
-    }
-
-    // 블록 모드에서만 위치·말풍선 색상 필드를 보여줌
-    const mode = document.getElementById("dialogueMode")?.value || "log";
-    const isBlock = mode === "block";
-    const sideArea = document.getElementById("charSideArea");
-    const bubbleColorArea = document.getElementById("charBubbleColorArea");
-    const bubbleTextColorArea = document.getElementById("charBubbleTextColorArea");
-    if (sideArea) sideArea.style.display = isBlock ? "flex" : "none";
-    if (bubbleColorArea) bubbleColorArea.style.display = isBlock ? "flex" : "none";
-    if (bubbleTextColorArea) bubbleTextColorArea.style.display = isBlock ? "flex" : "none";
 
     editor.style.display = "flex";
     editor.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -1147,13 +1121,13 @@ function syncDialogueModeUI() {
     const isLog = mode === "log";
     const hint = document.getElementById("dialogueModeHint");
     const areaMap = {
+        dlgShowAvatarArea: isLog,
         dlgQuoteStyleArea: isLog,
         dlgTranslationArea: isLog,
         dlgContinuationGapArea: isLog,
         dlgLogOnlyTitle: isLog,
-        dlgShowTailArea: !isLog,
+        dlgBoxBgArea: !isLog,
         dlgBubbleRadiusArea: !isLog,
-        dlgBubbleGapArea: !isLog,
         dlgBlockOnlyTitle: !isLog
     };
     Object.keys(areaMap).forEach((id) => {
@@ -1161,11 +1135,11 @@ function syncDialogueModeUI() {
         if (el) el.style.display = areaMap[id] ? "" : "none";
     });
     const lineGapLabel = document.getElementById("dlgLineGapLabel");
-    if (lineGapLabel) lineGapLabel.textContent = isLog ? "대사(턴) 간 간격 (px)" : "대사 그룹 간 간격 (px)";
+    if (lineGapLabel) lineGapLabel.textContent = isLog ? "대사(턴) 간 간격 (px)" : "대사 줄 사이 간격 (px)";
     if (hint) {
         hint.textContent = isLog
             ? "이름과 프로필 사진을 앞에 두고, 대사를 한 줄씩 이어 보여줘요."
-            : "이름·프로필 사진과 함께 말풍선 블록 형태로 대사를 보여줘요.";
+            : "이름과 대사를 한 줄씩, 하나의 박스 안에 모아 보여줘요.";
     }
     renderDialogueLineList();
     if (typeof updateCanvas === "function") updateCanvas();
@@ -1209,8 +1183,17 @@ function addDialogueLine(charId) {
     saveDialogueLinesToStorage();
     renderDialogueLineList();
     updateCanvas();
-    const list = document.getElementById("dialogueLineList");
-    if (list) list.scrollIntoView({ block: "end", behavior: "smooth" });
+    // 새로 추가된 칸이 어디 있는지 바로 보이도록 스크롤하고, 커서를 그 안에 놓는다.
+    const container = document.getElementById("dialogueLineList");
+    if (container) {
+        const lastTextarea = container.querySelector(".dialogue-line-cell:last-child .dlc-text");
+        if (lastTextarea) {
+            lastTextarea.scrollIntoView({ block: "center", behavior: "smooth" });
+            lastTextarea.focus();
+        } else {
+            container.scrollIntoView({ block: "end", behavior: "smooth" });
+        }
+    }
 }
 
 function deleteDialogueLine(lineId) {
@@ -1316,27 +1299,28 @@ function appendDialogueLinesToCanvas(textWrapper) {
     if (!textWrapper || dialogueLines.length === 0) return;
 
     const mode = document.getElementById("dialogueMode")?.value || "log";
-    const showAvatar = document.getElementById("dlgShowAvatar")?.checked;
+    const showAvatar = mode === "log" && document.getElementById("dlgShowAvatar")?.checked;
     const showName = document.getElementById("dlgShowName")?.checked !== false;
     const showTranslation = document.getElementById("dlgShowTranslation")?.checked;
-    const showTail = document.getElementById("dlgShowTail")?.checked !== false;
     const useCharColor = document.getElementById("dlgUseCharColor")?.checked;
-    const lineGap = parseFloat(document.getElementById("dlgLineGap")?.value) || 18;
-    const continuationGap = parseFloat(document.getElementById("dlgContinuationGap")?.value);
-    const bubbleGap = parseFloat(document.getElementById("dlgBubbleGap")?.value);
-    const bubbleRadius = parseFloat(document.getElementById("dlgBubbleRadius")?.value);
+    const lineGap = parseFloat(document.getElementById("dlgLineGap")?.value);
+    const safeLineGap = isNaN(lineGap) ? 10 : lineGap;
+    const continuationGapRaw = parseFloat(document.getElementById("dlgContinuationGap")?.value);
+    const continuationGap = isNaN(continuationGapRaw) ? 4 : continuationGapRaw;
+    const boxRadiusRaw = parseFloat(document.getElementById("dlgBubbleRadius")?.value);
+    const boxRadius = isNaN(boxRadiusRaw) ? 16 : boxRadiusRaw;
+    const boxBg = document.getElementById("dlgBoxBg")?.value || "#f1f1ef";
 
-    const runs = groupDialogueLinesByRun(dialogueLines);
+    if (mode === "log") {
+        // 로그 모드: 같은 인물이 이어 말하면 이름·프사는 처음 한 번만, 이후는 좁은 간격으로 붙여서 보여준다.
+        const runs = groupDialogueLinesByRun(dialogueLines);
+        runs.forEach((run, runIndex) => {
+            const c = characters.find((x) => x.id === run.charId);
+            if (!c) return;
+            const avatarHtml = `<div class="dlg-avatar"${c.avatarData ? ` style="background-image:url(${c.avatarData})"` : ""}></div>`;
+            const nameColorAttr = (useCharColor && c.color) ? ` style="color:${c.color}"` : "";
+            const isLast = runIndex === runs.length - 1;
 
-    runs.forEach((run, runIndex) => {
-        const c = characters.find((x) => x.id === run.charId);
-        if (!c) return;
-        const avatarHtml = `<div class="dlg-avatar"${c.avatarData ? ` style="background-image:url(${c.avatarData})"` : ""}></div>`;
-        const nameColorAttr = (useCharColor && c.color) ? ` style="color:${c.color}"` : "";
-        const isLast = runIndex === runs.length - 1;
-
-        if (mode === "log") {
-            // 로그 모드: 같은 인물이 이어 말하면 이름·프사는 처음 한 번만, 이후는 좁은 간격으로 붙여서 보여준다.
             run.lines.forEach((line, i) => {
                 const continued = i > 0;
                 const wrapper = document.createElement("div");
@@ -1353,36 +1337,32 @@ function appendDialogueLinesToCanvas(textWrapper) {
                 const node = wrapper.firstElementChild;
                 if (!node) return;
                 const notLastLine = !(isLast && i === run.lines.length - 1);
-                node.style.marginBottom = notLastLine ? `${continued ? continuationGap : lineGap}px` : "0";
+                node.style.marginBottom = notLastLine ? `${continued ? continuationGap : safeLineGap}px` : "0";
                 textWrapper.appendChild(node);
             });
-        } else {
-            // 블록 모드: 같은 인물의 연속 대사를 [프사][이름 + 말풍선 여러 개] 한 묶음으로 그룹핑한다.
-            const side = c.side === "right" ? "right" : "left";
-            const bubbleColor = c.bubbleColor || "#f1f1ef";
-            const bubbleTextColor = c.bubbleTextColor || "#171717";
-            const tailClass = showTail ? ` tail-${side}` : "";
+        });
+    } else {
+        // 블록 모드: 대사 전체를 하나의 박스 안에 "이름 대사" 한 줄씩 모아서 보여준다.
+        const linesHtml = dialogueLines.map((line, i) => {
+            const c = characters.find((x) => x.id === line.charId);
+            if (!c) return "";
+            const nameColorAttr = (useCharColor && c.color) ? ` style="color:${c.color}"` : "";
+            const marginStyle = i > 0 ? ` style="margin-top:${safeLineGap}px"` : "";
+            return `<div class="dlg-box-line"${marginStyle}>${showName ? `<span class="dlg-box-name"${nameColorAttr}>${escapeHtml(c.name)}</span> ` : ""}<span class="dlg-box-text">${escapeHtml(line.text || "")}</span></div>`;
+        }).join("");
 
-            const bubblesHtml = run.lines.map((line, i) => `
-                <div class="dlg-bubble${i === 0 ? tailClass : ""}" style="background-color:${bubbleColor};color:${bubbleTextColor};border-radius:${bubbleRadius}px;${i > 0 ? `margin-top:${bubbleGap}px;` : ""}">${escapeHtml(line.text || "")}</div>
-            `.trim()).join("");
-
-            const wrapper = document.createElement("div");
-            wrapper.innerHTML = `
-                <div class="dlg-block-group side-${side}${showAvatar ? "" : " no-av"}">
-                    ${showAvatar ? avatarHtml : ""}
-                    <div class="dlg-block-col">
-                        ${showName ? `<div class="dlg-block-name"${nameColorAttr}>${escapeHtml(c.name)}</div>` : ""}
-                        ${bubblesHtml}
-                    </div>
-                </div>
-            `.trim();
-            const node = wrapper.firstElementChild;
-            if (!node) return;
-            node.style.marginBottom = isLast ? "0" : `${lineGap}px`;
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = `
+            <div class="dlg-box" style="background-color:${boxBg};border-radius:${boxRadius}px;">
+                ${linesHtml}
+            </div>
+        `.trim();
+        const node = wrapper.firstElementChild;
+        if (node) {
+            node.style.marginBottom = "0";
             textWrapper.appendChild(node);
         }
-    });
+    }
 }
 
 onClick("btnAddCharacter", () => openCharacterEditor(null));
@@ -1396,20 +1376,14 @@ onClick("btnSaveCharacter", () => {
     const existing = editingCharacterId ? characters.find((x) => x.id === editingCharacterId) : null;
     const avatarData = pendingCharAvatarData !== null ? pendingCharAvatarData : (existing ? existing.avatarData : null);
     const color = document.getElementById("charEditorColor")?.value || "#171717";
-    const bubbleColor = document.getElementById("charEditorBubbleColor")?.value || "#f1f1ef";
-    const bubbleTextColor = document.getElementById("charEditorBubbleTextColor")?.value || "#171717";
-    const side = document.getElementById("charEditorSide")?.value === "right" ? "right" : "left";
 
     if (existing) {
         existing.name = name;
         existing.avatarData = avatarData;
         existing.color = color;
-        existing.bubbleColor = bubbleColor;
-        existing.bubbleTextColor = bubbleTextColor;
-        existing.side = side;
         updateExistingDialogueNames(existing.id);
     } else {
-        characters.push({ id: uid(), name, avatarData, color, bubbleColor, bubbleTextColor, side });
+        characters.push({ id: uid(), name, avatarData, color });
     }
 
     renderCharacterList();
@@ -1785,7 +1759,7 @@ document.addEventListener("DOMContentLoaded", () => {
         els.headingSubtitleFont, els.headingSubtitleSize, els.headingSubtitleBold,
         els.dlgNameSuffix, els.dlgQuoteStyle, els.dlgShowTranslation, els.dlgShowAvatar, els.dlgShowName,
         els.dlgAvatarSize, els.dlgUseCharColor, els.dlgLineGap, els.dlgContinuationGap,
-        els.dlgShowTail, els.dlgBubbleRadius, els.dlgBubbleGap
+        els.dlgBubbleRadius, els.dlgBoxBg
     ];
     autoTriggers.forEach((el) => {
         if (el) { el.addEventListener("input", scheduleUpdateCanvas); el.addEventListener("change", scheduleUpdateCanvas); }
