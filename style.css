@@ -1391,15 +1391,7 @@ input[type="file"]::file-selector-button {
     background-color: var(--border-color);
 }
 
-/* ---- 화자 글줄 (말풍선 없이 이름+지문+대사, "shoong 발췌기" 글줄 스타일) ---- */
-.speaker-line-block {
-    display: flex !important;
-    align-items: flex-start;
-    gap: 8px;
-    margin-bottom: inherit;
-    text-align: inherit;
-}
-
+/* ---- 공용: 프로필 사진 ---- */
 .dlg-avatar {
     display: flex;
     align-items: center;
@@ -1416,48 +1408,15 @@ input[type="file"]::file-selector-button {
     transition: border-radius 0.15s ease;
 }
 
-.sl-body {
-    flex: 1 1 auto;
-    min-width: 0;
+/* 같은 인물이 연이어 말할 때, 두 번째 대사부터는 프사 자리를 빈 칸으로 유지해
+   이름·프사가 있는 첫 줄과 본문 들여쓰기가 흐트러지지 않게 한다. (모코 사이트 연속 묶음 방식) */
+.dlg-avatar-spacer {
+    flex: 0 0 var(--dlg-avatar-size, 32px);
+    width: var(--dlg-avatar-size, 32px);
+    height: 0;
 }
 
-.sl-header {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 2px;
-}
-
-.sl-name {
-    font-weight: 700;
-}
-
-.sl-name::after {
-    content: var(--dlg-name-suffix, ":");
-    font-weight: 700;
-}
-
-.sl-stage {
-    display: var(--dlg-stage-display, inline);
-    font-style: italic;
-    opacity: 0.65;
-    font-size: 0.92em;
-}
-
-.sl-dialogue {
-    display: block;
-}
-
-.sl-dialogue::before {
-    content: var(--dlg-quote-open, "");
-}
-
-.sl-dialogue::after {
-    content: var(--dlg-quote-close, "");
-}
-
-/* ---- 로그 대사 (말풍선 없이 이름+원문+번역, "mok0999" 로그 스타일) ---- */
+/* ---- 로그 대사 (말풍선 없이 이름+원문+번역, 모코 사이트 로그 모드 스타일) ---- */
 .log-turn-block {
     display: flex !important;
     align-items: flex-start;
@@ -1473,7 +1432,7 @@ input[type="file"]::file-selector-button {
 
 .log-name {
     font-weight: 700;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
 }
 
 .log-name::after {
@@ -1498,6 +1457,94 @@ input[type="file"]::file-selector-button {
     display: var(--dlg-translation-display, block);
     opacity: 0.65;
     font-size: 0.94em;
+}
+
+/* ---- 블록 대사 (프사+이름+말풍선, 다른 사이트의 말풍선 블록 기능을 옮겨온 스타일) ---- */
+.dlg-block-group {
+    display: flex !important;
+    align-items: flex-end;
+    gap: 8px;
+    max-width: 100%;
+    text-align: inherit;
+}
+
+.dlg-block-group.side-left {
+    margin-right: auto;
+    justify-content: flex-start;
+}
+
+.dlg-block-group.side-right {
+    flex-direction: row-reverse;
+    margin-left: auto;
+    justify-content: flex-start;
+}
+
+.dlg-block-group.no-av {
+    align-items: flex-start;
+}
+
+.dlg-block-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    max-width: 78%;
+}
+
+.dlg-block-group.side-left .dlg-block-col {
+    align-items: flex-start;
+}
+
+.dlg-block-group.side-right .dlg-block-col {
+    align-items: flex-end;
+}
+
+.dlg-block-name {
+    font-size: 0.82em;
+    font-weight: 700;
+    margin-bottom: 3px;
+    padding: 0 4px;
+}
+
+.dlg-bubble {
+    position: relative;
+    padding: 9px 13px;
+    line-height: 1.5;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* 말풍선 꼬리: 묶음의 첫 번째 말풍선(프사 옆)에만 붙인다 */
+.dlg-bubble.tail-left {
+    border-top-left-radius: 4px !important;
+}
+
+.dlg-bubble.tail-left::before {
+    content: "";
+    position: absolute;
+    left: -6px;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    background: inherit;
+    clip-path: polygon(100% 0, 100% 100%, 0 0);
+}
+
+.dlg-bubble.tail-right {
+    border-top-right-radius: 4px !important;
+}
+
+.dlg-bubble.tail-right::before {
+    content: "";
+    position: absolute;
+    right: -6px;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    background: inherit;
+    clip-path: polygon(0 0, 0 100%, 100% 0);
 }
 
 /* ---- 대사 탭: 캐릭터 목록 / 편집기 ---- */

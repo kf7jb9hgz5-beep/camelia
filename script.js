@@ -11,12 +11,16 @@ const els = {
     dlgNameSuffix: document.getElementById("dlgNameSuffix"),
     dlgQuoteStyle: document.getElementById("dlgQuoteStyle"),
     dlgShowAvatar: document.getElementById("dlgShowAvatar"),
+    dlgShowName: document.getElementById("dlgShowName"),
     dlgShowTranslation: document.getElementById("dlgShowTranslation"),
-    dlgUseStage: document.getElementById("dlgUseStage"),
     dlgAvatarShape: document.getElementById("dlgAvatarShape"),
     dlgAvatarSize: document.getElementById("dlgAvatarSize"),
     dlgUseCharColor: document.getElementById("dlgUseCharColor"),
     dlgLineGap: document.getElementById("dlgLineGap"),
+    dlgContinuationGap: document.getElementById("dlgContinuationGap"),
+    dlgShowTail: document.getElementById("dlgShowTail"),
+    dlgBubbleRadius: document.getElementById("dlgBubbleRadius"),
+    dlgBubbleGap: document.getElementById("dlgBubbleGap"),
     bgType: document.getElementById("bgType"),
     bgColor1: document.getElementById("bgColor1"),
     gradColor1: document.getElementById("gradColor1"),
@@ -282,10 +286,6 @@ function updateCanvas() {
         const translationDisplay = (document.getElementById("dlgShowTranslation")?.checked === false) ? "none" : "block";
         textWrapper.style.setProperty("--dlg-translation-display", translationDisplay);
         if (els.editor) els.editor.style.setProperty("--dlg-translation-display", translationDisplay);
-
-        const stageDisplay = (document.getElementById("dlgUseStage")?.checked === false) ? "none" : "inline";
-        textWrapper.style.setProperty("--dlg-stage-display", stageDisplay);
-        if (els.editor) els.editor.style.setProperty("--dlg-stage-display", stageDisplay);
 
         const avatarSizeVal = parseFloat(document.getElementById("dlgAvatarSize")?.value);
         const avatarSizePx = `${isNaN(avatarSizeVal) ? 32 : avatarSizeVal}px`;
@@ -1074,6 +1074,10 @@ function openCharacterEditor(id) {
     const avatarBox = document.getElementById("charEditorAvatar");
     const deleteBtn = document.getElementById("btnDeleteCharacter");
     const colorInput = document.getElementById("charEditorColor");
+    const bubbleColorInput = document.getElementById("charEditorBubbleColor");
+    const bubbleTextColorInput = document.getElementById("charEditorBubbleTextColor");
+    const sideHidden = document.getElementById("charEditorSide");
+    const sideGroup = document.querySelector('.segmented-control[data-target="charEditorSide"]');
     if (!editor || !nameInput || !avatarBox || !deleteBtn) return;
 
     if (id) {
@@ -1083,14 +1087,35 @@ function openCharacterEditor(id) {
         avatarBox.style.backgroundImage = c.avatarData ? `url(${c.avatarData})` : "none";
         avatarBox.dataset.hasImage = c.avatarData ? "true" : "false";
         if (colorInput) colorInput.value = c.color || "#171717";
+        if (bubbleColorInput) bubbleColorInput.value = c.bubbleColor || "#f1f1ef";
+        if (bubbleTextColorInput) bubbleTextColorInput.value = c.bubbleTextColor || "#171717";
+        if (sideHidden) sideHidden.value = c.side || "left";
         deleteBtn.style.display = "block";
     } else {
         nameInput.value = "";
         avatarBox.style.backgroundImage = "none";
         avatarBox.dataset.hasImage = "false";
         if (colorInput) colorInput.value = "#171717";
+        if (bubbleColorInput) bubbleColorInput.value = "#f1f1ef";
+        if (bubbleTextColorInput) bubbleTextColorInput.value = "#171717";
+        if (sideHidden) sideHidden.value = "left";
         deleteBtn.style.display = "none";
     }
+    if (sideGroup) {
+        sideGroup.querySelectorAll("button").forEach((btn) => {
+            btn.classList.toggle("active", btn.dataset.value === (sideHidden ? sideHidden.value : "left"));
+        });
+    }
+
+    // 블록 모드에서만 위치·말풍선 색상 필드를 보여줌
+    const mode = document.getElementById("dialogueMode")?.value || "log";
+    const isBlock = mode === "block";
+    const sideArea = document.getElementById("charSideArea");
+    const bubbleColorArea = document.getElementById("charBubbleColorArea");
+    const bubbleTextColorArea = document.getElementById("charBubbleTextColorArea");
+    if (sideArea) sideArea.style.display = isBlock ? "flex" : "none";
+    if (bubbleColorArea) bubbleColorArea.style.display = isBlock ? "flex" : "none";
+    if (bubbleTextColorArea) bubbleTextColorArea.style.display = isBlock ? "flex" : "none";
 
     editor.style.display = "flex";
     editor.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -1114,6 +1139,49 @@ function getQuoteChars(style) {
     if (style === "corner") return { open: "「", close: "」" };
     if (style === "none") return { open: "", close: "" };
     return { open: '"', close: '"' };
+}
+
+// 대사 탭: 로그/블록 모드에 따라 관련 설정 행을 보이기/숨기기 (프리셋 적용 시에도 재사용)
+function syncDialogueModeUI() {
+    const mode = document.getElementById("dialogueMode")?.value || "log";
+    const isLog = mode === "log";
+    const hint = document.getElementById("dialogueModeHint");
+    const areaMap = {
+        dlgQuoteStyleArea: isLog,
+        dlgTranslationArea: isLog,
+        dlgContinuationGapArea: isLog,
+        dlgLogOnlyTitle: isLog,
+        dlgShowTailArea: !isLog,
+        dlgBubbleRadiusArea: !isLog,
+        dlgBubbleGapArea: !isLog,
+        dlgBlockOnlyTitle: !isLog
+    };
+    Object.keys(areaMap).forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = areaMap[id] ? "" : "none";
+    });
+    const lineGapLabel = document.getElementById("dlgLineGapLabel");
+    if (lineGapLabel) lineGapLabel.textContent = isLog ? "대사(턴) 간 간격 (px)" : "대사 그룹 간 간격 (px)";
+    if (hint) {
+        hint.textContent = isLog
+            ? "이름과 프로필 사진을 앞에 두고, 대사를 한 줄씩 이어 보여줘요."
+            : "이름·프로필 사진과 함께 말풍선 블록 형태로 대사를 보여줘요.";
+    }
+    renderDialogueLineList();
+    if (typeof updateCanvas === "function") updateCanvas();
+}
+
+// 대사 탭: 프사 표시 여부에 따라 모양/크기 설정 행 보이기/숨기기
+function syncAvatarSettingUI() {
+    const showAvatarEl = document.getElementById("dlgShowAvatar");
+    if (!showAvatarEl) return;
+    const show = showAvatarEl.checked;
+    const shapeArea = document.getElementById("dlgAvatarShapeArea");
+    const sizeArea = document.getElementById("dlgAvatarSizeArea");
+    if (shapeArea) shapeArea.style.display = show ? "flex" : "none";
+    if (sizeArea) sizeArea.style.display = show ? "flex" : "none";
+    const list = document.getElementById("characterList");
+    if (list) list.classList.toggle("hide-chip-avatars", !show);
 }
 
 // ==== 대사 목록 (셀 형식, JS 배열 + localStorage에 보관 — 탭 이동/새로고침해도 안 지워짐) ====
@@ -1200,20 +1268,6 @@ function renderDialogueLineList() {
         header.appendChild(delBtn);
         cell.appendChild(header);
 
-        if (mode === "line" && document.getElementById("dlgUseStage")?.checked !== false) {
-            const stageInput = document.createElement("input");
-            stageInput.type = "text";
-            stageInput.className = "dlc-stage";
-            stageInput.placeholder = "지문 (예: 문을 열며)";
-            stageInput.value = line.stage || "";
-            stageInput.addEventListener("input", () => {
-                line.stage = stageInput.value;
-                saveDialogueLinesToStorage();
-                updateCanvas();
-            });
-            cell.appendChild(stageInput);
-        }
-
         const textArea = document.createElement("textarea");
         textArea.className = "dlc-text";
         textArea.placeholder = mode === "log" ? "원문 대사를 입력하세요" : "대사를 입력하세요";
@@ -1242,51 +1296,90 @@ function renderDialogueLineList() {
     });
 }
 
+// 대사 목록을 "같은 인물이 연속으로 말하는 묶음" 단위로 나눈다.
+// (모코 사이트의 로그 continuation 묶음 처리와 동일한 방식)
+function groupDialogueLinesByRun(lines) {
+    const runs = [];
+    let cur = null;
+    lines.forEach((line) => {
+        if (cur && cur.charId === line.charId) {
+            cur.lines.push(line);
+        } else {
+            cur = { charId: line.charId, lines: [line] };
+            runs.push(cur);
+        }
+    });
+    return runs;
+}
+
 function appendDialogueLinesToCanvas(textWrapper) {
     if (!textWrapper || dialogueLines.length === 0) return;
 
     const mode = document.getElementById("dialogueMode")?.value || "log";
     const showAvatar = document.getElementById("dlgShowAvatar")?.checked;
+    const showName = document.getElementById("dlgShowName")?.checked !== false;
     const showTranslation = document.getElementById("dlgShowTranslation")?.checked;
-    const useStage = document.getElementById("dlgUseStage")?.checked;
+    const showTail = document.getElementById("dlgShowTail")?.checked !== false;
     const useCharColor = document.getElementById("dlgUseCharColor")?.checked;
-    const lineGap = document.getElementById("dlgLineGap")?.value || document.getElementById("paraSpacing")?.value || 16;
+    const lineGap = parseFloat(document.getElementById("dlgLineGap")?.value) || 18;
+    const continuationGap = parseFloat(document.getElementById("dlgContinuationGap")?.value);
+    const bubbleGap = parseFloat(document.getElementById("dlgBubbleGap")?.value);
+    const bubbleRadius = parseFloat(document.getElementById("dlgBubbleRadius")?.value);
 
-    dialogueLines.forEach((line) => {
-        const c = characters.find((x) => x.id === line.charId);
+    const runs = groupDialogueLinesByRun(dialogueLines);
+
+    runs.forEach((run, runIndex) => {
+        const c = characters.find((x) => x.id === run.charId);
         if (!c) return;
         const avatarHtml = `<div class="dlg-avatar"${c.avatarData ? ` style="background-image:url(${c.avatarData})"` : ""}></div>`;
         const nameColorAttr = (useCharColor && c.color) ? ` style="color:${c.color}"` : "";
+        const isLast = runIndex === runs.length - 1;
 
-        const wrapper = document.createElement("div");
         if (mode === "log") {
-            wrapper.innerHTML = `
-                <div class="log-turn-block">
-                    ${showAvatar ? avatarHtml : ""}
-                    <div class="log-turn-body">
-                        <div class="log-name"${nameColorAttr}>${escapeHtml(c.name)}</div>
-                        <div class="log-line">${escapeHtml(line.text || "")}</div>
-                        ${showTranslation && line.translation ? `<div class="log-line log-translation">${escapeHtml(line.translation)}</div>` : ""}
-                    </div>
-                </div>
-            `.trim();
-        } else {
-            wrapper.innerHTML = `
-                <div class="speaker-line-block">
-                    ${showAvatar ? avatarHtml : ""}
-                    <div class="sl-body">
-                        <div class="sl-header">
-                            <span class="sl-name"${nameColorAttr}>${escapeHtml(c.name)}</span>
-                            ${useStage && line.stage ? `<span class="sl-stage">${escapeHtml(line.stage)}</span>` : ""}
+            // 로그 모드: 같은 인물이 이어 말하면 이름·프사는 처음 한 번만, 이후는 좁은 간격으로 붙여서 보여준다.
+            run.lines.forEach((line, i) => {
+                const continued = i > 0;
+                const wrapper = document.createElement("div");
+                wrapper.innerHTML = `
+                    <div class="log-turn-block${continued ? " log-continuation" : ""}">
+                        ${showAvatar ? (continued ? `<div class="dlg-avatar-spacer"></div>` : avatarHtml) : ""}
+                        <div class="log-turn-body">
+                            ${(showName && !continued) ? `<div class="log-name"${nameColorAttr}>${escapeHtml(c.name)}</div>` : ""}
+                            <div class="log-line">${escapeHtml(line.text || "")}</div>
+                            ${showTranslation && line.translation ? `<div class="log-line log-translation">${escapeHtml(line.translation)}</div>` : ""}
                         </div>
-                        <div class="sl-dialogue">${escapeHtml(line.text || "")}</div>
+                    </div>
+                `.trim();
+                const node = wrapper.firstElementChild;
+                if (!node) return;
+                const notLastLine = !(isLast && i === run.lines.length - 1);
+                node.style.marginBottom = notLastLine ? `${continued ? continuationGap : lineGap}px` : "0";
+                textWrapper.appendChild(node);
+            });
+        } else {
+            // 블록 모드: 같은 인물의 연속 대사를 [프사][이름 + 말풍선 여러 개] 한 묶음으로 그룹핑한다.
+            const side = c.side === "right" ? "right" : "left";
+            const bubbleColor = c.bubbleColor || "#f1f1ef";
+            const bubbleTextColor = c.bubbleTextColor || "#171717";
+            const tailClass = showTail ? ` tail-${side}` : "";
+
+            const bubblesHtml = run.lines.map((line, i) => `
+                <div class="dlg-bubble${i === 0 ? tailClass : ""}" style="background-color:${bubbleColor};color:${bubbleTextColor};border-radius:${bubbleRadius}px;${i > 0 ? `margin-top:${bubbleGap}px;` : ""}">${escapeHtml(line.text || "")}</div>
+            `.trim()).join("");
+
+            const wrapper = document.createElement("div");
+            wrapper.innerHTML = `
+                <div class="dlg-block-group side-${side}${showAvatar ? "" : " no-av"}">
+                    ${showAvatar ? avatarHtml : ""}
+                    <div class="dlg-block-col">
+                        ${showName ? `<div class="dlg-block-name"${nameColorAttr}>${escapeHtml(c.name)}</div>` : ""}
+                        ${bubblesHtml}
                     </div>
                 </div>
             `.trim();
-        }
-        const node = wrapper.firstElementChild;
-        if (node) {
-            node.style.marginBottom = `${lineGap}px`;
+            const node = wrapper.firstElementChild;
+            if (!node) return;
+            node.style.marginBottom = isLast ? "0" : `${lineGap}px`;
             textWrapper.appendChild(node);
         }
     });
@@ -1303,14 +1396,20 @@ onClick("btnSaveCharacter", () => {
     const existing = editingCharacterId ? characters.find((x) => x.id === editingCharacterId) : null;
     const avatarData = pendingCharAvatarData !== null ? pendingCharAvatarData : (existing ? existing.avatarData : null);
     const color = document.getElementById("charEditorColor")?.value || "#171717";
+    const bubbleColor = document.getElementById("charEditorBubbleColor")?.value || "#f1f1ef";
+    const bubbleTextColor = document.getElementById("charEditorBubbleTextColor")?.value || "#171717";
+    const side = document.getElementById("charEditorSide")?.value === "right" ? "right" : "left";
 
     if (existing) {
         existing.name = name;
         existing.avatarData = avatarData;
         existing.color = color;
+        existing.bubbleColor = bubbleColor;
+        existing.bubbleTextColor = bubbleTextColor;
+        existing.side = side;
         updateExistingDialogueNames(existing.id);
     } else {
-        characters.push({ id: uid(), name, avatarData, color });
+        characters.push({ id: uid(), name, avatarData, color, bubbleColor, bubbleTextColor, side });
     }
 
     renderCharacterList();
@@ -1635,23 +1734,9 @@ document.addEventListener("DOMContentLoaded", () => {
         els.indentToggle.addEventListener("change", () => updateCanvas());
     }
 
-    // 대사 탭: 로그/글줄 모드 전환 시 관련 설정 행 보이기/숨기기
+    // 대사 탭: 로그/블록 모드 전환 시 관련 설정 행 보이기/숨기기
     const dialogueModeGroup = document.querySelector('.segmented-control[data-target="dialogueMode"]');
     if (dialogueModeGroup) {
-        const syncDialogueModeUI = () => {
-            const mode = document.getElementById("dialogueMode")?.value || "log";
-            const translationArea = document.getElementById("dlgTranslationArea");
-            const stageArea = document.getElementById("dlgStageArea");
-            const hint = document.getElementById("dialogueModeHint");
-            if (translationArea) translationArea.style.display = mode === "log" ? "flex" : "none";
-            if (stageArea) stageArea.style.display = mode === "line" ? "flex" : "none";
-            if (hint) {
-                hint.textContent = mode === "log"
-                    ? "이름과 프로필 사진, 원문·번역 대사를 함께 보여줘요."
-                    : "말풍선 없이 이름 옆에 지문을 두고, 대사를 글줄로 이어 보여줘요.";
-            }
-            renderDialogueLineList();
-        };
         dialogueModeGroup.querySelectorAll("button").forEach((btn) => {
             btn.addEventListener("click", syncDialogueModeUI);
         });
@@ -1660,26 +1745,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 대사 탭: 프사 표시 여부에 따라 모양/크기 설정 행 보이기/숨기기
     if (els.dlgShowAvatar) {
-        const syncAvatarSettingUI = () => {
-            const show = els.dlgShowAvatar.checked;
-            const shapeArea = document.getElementById("dlgAvatarShapeArea");
-            const sizeArea = document.getElementById("dlgAvatarSizeArea");
-            if (shapeArea) shapeArea.style.display = show ? "flex" : "none";
-            if (sizeArea) sizeArea.style.display = show ? "flex" : "none";
-            const list = document.getElementById("characterList");
-            if (list) list.classList.toggle("hide-chip-avatars", !show);
-        };
         syncAvatarSettingUI();
         els.dlgShowAvatar.addEventListener("change", syncAvatarSettingUI);
     }
 
-    // 대사 탭: 번역/지문 표시 여부가 바뀌면 목록 셀도 다시 그림
+    // 대사 탭: 번역 표시 여부가 바뀌면 목록 셀도 다시 그림
     const dlgShowTranslationEl = document.getElementById("dlgShowTranslation");
     if (dlgShowTranslationEl) {
         dlgShowTranslationEl.addEventListener("change", () => renderDialogueLineList());
     }
-    if (els.dlgUseStage) {
-        els.dlgUseStage.addEventListener("change", () => renderDialogueLineList());
+    if (els.dlgShowName) {
+        els.dlgShowName.addEventListener("change", () => updateCanvas());
     }
 
     // 제목/글자크기 등을 빠르게 여러 번 건드릴 때(타이핑, 슬라이더 드래그)
@@ -1707,8 +1783,9 @@ document.addEventListener("DOMContentLoaded", () => {
         els.headingTitleInput, els.headingSubtitleInput,
         els.headingTitleFont, els.headingTitleSize, els.headingTitleBold,
         els.headingSubtitleFont, els.headingSubtitleSize, els.headingSubtitleBold,
-        els.dlgNameSuffix, els.dlgQuoteStyle, els.dlgShowTranslation, els.dlgUseStage, els.dlgShowAvatar,
-        els.dlgAvatarSize, els.dlgUseCharColor, els.dlgLineGap
+        els.dlgNameSuffix, els.dlgQuoteStyle, els.dlgShowTranslation, els.dlgShowAvatar, els.dlgShowName,
+        els.dlgAvatarSize, els.dlgUseCharColor, els.dlgLineGap, els.dlgContinuationGap,
+        els.dlgShowTail, els.dlgBubbleRadius, els.dlgBubbleGap
     ];
     autoTriggers.forEach((el) => {
         if (el) { el.addEventListener("input", scheduleUpdateCanvas); el.addEventListener("change", scheduleUpdateCanvas); }

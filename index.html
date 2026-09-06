@@ -688,12 +688,12 @@
                     <input type="hidden" id="dialogueMode" value="log" />
                     <div class="segmented-control segmented-control-minimal" data-target="dialogueMode">
                         <button type="button" data-value="log" class="active">로그</button>
-                        <button type="button" data-value="line">글줄</button>
+                        <button type="button" data-value="block">블록</button>
                     </div>
                 </div>
-                <div class="field-hint" id="dialogueModeHint">이름과 프로필 사진, 원문·번역 대사를 함께 보여줘요.</div>
+                <div class="field-hint" id="dialogueModeHint">이름과 프로필 사진을 앞에 두고, 대사를 한 줄씩 이어 보여줘요.</div>
 
-                <div class="panel-section-title">세부 설정</div>
+                <div class="panel-section-title">프로필 · 이름</div>
                 <div class="control-minimal-row">
                     <div class="checkbox-minimal-group">
                         <label><input type="checkbox" id="dlgShowAvatar" /> 프로필 사진 표시</label>
@@ -717,10 +717,15 @@
                 </div>
                 <div class="control-minimal-row">
                     <div class="checkbox-minimal-group">
+                        <label><input type="checkbox" id="dlgShowName" checked /> 이름 표시</label>
+                    </div>
+                </div>
+                <div class="control-minimal-row" id="dlgUseCharColorArea">
+                    <div class="checkbox-minimal-group">
                         <label><input type="checkbox" id="dlgUseCharColor" /> 이름에 인물 포인트 색상 적용</label>
                     </div>
                 </div>
-                <div class="control-minimal-row">
+                <div class="control-minimal-row" id="dlgNameSuffixArea">
                     <label for="dlgNameSuffix">이름 뒤 기호</label>
                     <select id="dlgNameSuffix">
                         <option value="">없음</option>
@@ -729,7 +734,9 @@
                         <option value=".">.</option>
                     </select>
                 </div>
-                <div class="control-minimal-row">
+
+                <div class="panel-section-title" id="dlgLogOnlyTitle">로그 세부 설정</div>
+                <div class="control-minimal-row" id="dlgQuoteStyleArea">
                     <label for="dlgQuoteStyle">대사 감싸는 기호</label>
                     <select id="dlgQuoteStyle">
                         <option value="none">없음</option>
@@ -739,19 +746,47 @@
                 </div>
                 <div class="control-minimal-row" id="dlgTranslationArea">
                     <div class="checkbox-minimal-group">
-                        <label><input type="checkbox" id="dlgShowTranslation" checked /> 번역 대사 표시 (로그 전용)</label>
+                        <label><input type="checkbox" id="dlgShowTranslation" checked /> 번역 대사 표시</label>
                     </div>
                 </div>
-                <div class="control-minimal-row" id="dlgStageArea" style="display: none">
+                <div class="control-minimal-row" id="dlgContinuationGapArea">
+                    <label for="dlgContinuationGap">같은 인물 연속 대사 간격 (px)</label>
+                    <div class="stepper-minimal">
+                        <button type="button" onclick="stepInput('dlgContinuationGap', -2)">-</button>
+                        <input type="number" id="dlgContinuationGap" value="6" />
+                        <button type="button" onclick="stepInput('dlgContinuationGap', 2)">+</button>
+                    </div>
+                </div>
+
+                <div class="panel-section-title" id="dlgBlockOnlyTitle" style="display: none">블록 세부 설정</div>
+                <div class="control-minimal-row" id="dlgShowTailArea" style="display: none">
                     <div class="checkbox-minimal-group">
-                        <label><input type="checkbox" id="dlgUseStage" checked /> 지문 칸 표시 (글줄 전용)</label>
+                        <label><input type="checkbox" id="dlgShowTail" checked /> 말풍선 꼬리 표시</label>
                     </div>
                 </div>
+                <div class="control-minimal-row" id="dlgBubbleRadiusArea" style="display: none">
+                    <label for="dlgBubbleRadius">말풍선 둥글기 (px)</label>
+                    <div class="stepper-minimal">
+                        <button type="button" onclick="stepInput('dlgBubbleRadius', -2)">-</button>
+                        <input type="number" id="dlgBubbleRadius" value="16" />
+                        <button type="button" onclick="stepInput('dlgBubbleRadius', 2)">+</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row" id="dlgBubbleGapArea" style="display: none">
+                    <label for="dlgBubbleGap">같은 인물 말풍선 간격 (px)</label>
+                    <div class="stepper-minimal">
+                        <button type="button" onclick="stepInput('dlgBubbleGap', -2)">-</button>
+                        <input type="number" id="dlgBubbleGap" value="4" />
+                        <button type="button" onclick="stepInput('dlgBubbleGap', 2)">+</button>
+                    </div>
+                </div>
+
+                <div class="panel-section-title">간격</div>
                 <div class="control-minimal-row">
-                    <label for="dlgLineGap">대사 간 간격 (px)</label>
+                    <label for="dlgLineGap" id="dlgLineGapLabel">대사(턴) 간 간격 (px)</label>
                     <div class="stepper-minimal">
                         <button type="button" onclick="stepInput('dlgLineGap', -2)">-</button>
-                        <input type="number" id="dlgLineGap" value="16" />
+                        <input type="number" id="dlgLineGap" value="18" />
                         <button type="button" onclick="stepInput('dlgLineGap', 2)">+</button>
                     </div>
                 </div>
@@ -769,6 +804,22 @@
                     <div class="control-minimal-row char-editor-color-row">
                         <label for="charEditorColor">포인트 색상</label>
                         <input type="color" id="charEditorColor" value="#171717" />
+                    </div>
+                    <div class="control-minimal-row" id="charSideArea" style="display: none">
+                        <label>말풍선 위치</label>
+                        <input type="hidden" id="charEditorSide" value="left" />
+                        <div class="segmented-control segmented-control-minimal" data-target="charEditorSide">
+                            <button type="button" data-value="left" class="active">왼쪽</button>
+                            <button type="button" data-value="right">오른쪽</button>
+                        </div>
+                    </div>
+                    <div class="control-minimal-row char-editor-color-row" id="charBubbleColorArea" style="display: none">
+                        <label for="charEditorBubbleColor">말풍선 색상</label>
+                        <input type="color" id="charEditorBubbleColor" value="#f1f1ef" />
+                    </div>
+                    <div class="control-minimal-row char-editor-color-row" id="charBubbleTextColorArea" style="display: none">
+                        <label for="charEditorBubbleTextColor">말풍선 글자색</label>
+                        <input type="color" id="charEditorBubbleTextColor" value="#171717" />
                     </div>
                     <div class="char-editor-btn-row">
                         <button type="button" class="btn-minimal-save" id="btnSaveCharacter">저장</button>

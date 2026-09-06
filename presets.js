@@ -54,11 +54,20 @@ function getPresetSnapshot() {
         gradMode: document.querySelector('input[name="gradMode"]:checked')?.value || "2",
         fontSelect: els.fontSelect.value,
         fontWeightSelect: els.fontWeightSelect?.value,
+        dialogueMode: document.getElementById("dialogueMode")?.value,
         dlgNameSuffix: els.dlgNameSuffix?.value,
         dlgQuoteStyle: els.dlgQuoteStyle?.value,
         dlgShowAvatar: els.dlgShowAvatar?.checked,
+        dlgShowName: els.dlgShowName?.checked,
         dlgShowTranslation: els.dlgShowTranslation?.checked,
-        dlgUseStage: els.dlgUseStage?.checked,
+        dlgAvatarShape: document.getElementById("dlgAvatarShape")?.value,
+        dlgAvatarSize: els.dlgAvatarSize?.value,
+        dlgUseCharColor: els.dlgUseCharColor?.checked,
+        dlgLineGap: els.dlgLineGap?.value,
+        dlgContinuationGap: els.dlgContinuationGap?.value,
+        dlgShowTail: els.dlgShowTail?.checked,
+        dlgBubbleRadius: els.dlgBubbleRadius?.value,
+        dlgBubbleGap: els.dlgBubbleGap?.value,
         alignH: els.alignH.value,
         wordBreak: els.wordBreak.value,
         fontSize: els.fontSize.value,
@@ -130,6 +139,14 @@ function applyPresetSnapshot(data) {
 
     els.fontSelect.value = data.fontSelect ?? els.fontSelect.value;
     if (els.fontWeightSelect) els.fontWeightSelect.value = data.fontWeightSelect ?? els.fontWeightSelect.value;
+    if (data.dialogueMode) {
+        const modeHidden = document.getElementById("dialogueMode");
+        const modeGroup = document.querySelector('.segmented-control[data-target="dialogueMode"]');
+        if (modeHidden) modeHidden.value = data.dialogueMode;
+        if (modeGroup) {
+            modeGroup.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b.dataset.value === data.dialogueMode));
+        }
+    }
     if (els.dlgNameSuffix) els.dlgNameSuffix.value = data.dlgNameSuffix ?? els.dlgNameSuffix.value;
     if (els.dlgQuoteStyle) els.dlgQuoteStyle.value = data.dlgQuoteStyle ?? els.dlgQuoteStyle.value;
     if (els.dlgShowAvatar) els.dlgShowAvatar.checked = data.dlgShowAvatar ?? els.dlgShowAvatar.checked;
@@ -137,8 +154,22 @@ function applyPresetSnapshot(data) {
         const list = document.getElementById("characterList");
         if (list) list.classList.toggle("hide-chip-avatars", !els.dlgShowAvatar.checked);
     }
+    if (els.dlgShowName) els.dlgShowName.checked = data.dlgShowName ?? els.dlgShowName.checked;
     if (els.dlgShowTranslation) els.dlgShowTranslation.checked = data.dlgShowTranslation ?? els.dlgShowTranslation.checked;
-    if (els.dlgUseStage) els.dlgUseStage.checked = data.dlgUseStage ?? els.dlgUseStage.checked;
+    const dlgAvatarShapeHidden = document.getElementById("dlgAvatarShape");
+    if (dlgAvatarShapeHidden && data.dlgAvatarShape) {
+        dlgAvatarShapeHidden.value = data.dlgAvatarShape;
+        const shapeGroup = document.querySelector('.segmented-control[data-target="dlgAvatarShape"]');
+        if (shapeGroup) shapeGroup.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b.dataset.value === data.dlgAvatarShape));
+    }
+    if (els.dlgAvatarSize) els.dlgAvatarSize.value = data.dlgAvatarSize ?? els.dlgAvatarSize.value;
+    if (els.dlgUseCharColor) els.dlgUseCharColor.checked = data.dlgUseCharColor ?? els.dlgUseCharColor.checked;
+    if (els.dlgLineGap) els.dlgLineGap.value = data.dlgLineGap ?? els.dlgLineGap.value;
+    if (els.dlgContinuationGap) els.dlgContinuationGap.value = data.dlgContinuationGap ?? els.dlgContinuationGap.value;
+    if (els.dlgShowTail) els.dlgShowTail.checked = data.dlgShowTail ?? els.dlgShowTail.checked;
+    if (els.dlgBubbleRadius) els.dlgBubbleRadius.value = data.dlgBubbleRadius ?? els.dlgBubbleRadius.value;
+    if (els.dlgBubbleGap) els.dlgBubbleGap.value = data.dlgBubbleGap ?? els.dlgBubbleGap.value;
+    if (typeof syncDialogueModeUI === "function") syncDialogueModeUI();
     els.wordBreak.value = data.wordBreak ?? els.wordBreak.value;
     els.fontSize.value = data.fontSize ?? els.fontSize.value;
     els.letterSpacing.value = data.letterSpacing ?? els.letterSpacing.value;
