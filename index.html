@@ -8,7 +8,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=37" />
+        <link rel="stylesheet" href="style.css?v=38" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -691,11 +691,33 @@
                         <button type="button" data-value="line">글줄</button>
                     </div>
                 </div>
+                <div class="field-hint" id="dialogueModeHint">이름과 프로필 사진, 원문·번역 대사를 함께 보여줘요.</div>
 
                 <div class="panel-section-title">세부 설정</div>
                 <div class="control-minimal-row">
                     <div class="checkbox-minimal-group">
                         <label><input type="checkbox" id="dlgShowAvatar" /> 프로필 사진 표시</label>
+                    </div>
+                </div>
+                <div class="control-minimal-row" id="dlgAvatarShapeArea">
+                    <label>프사 모양</label>
+                    <input type="hidden" id="dlgAvatarShape" value="circle" />
+                    <div class="segmented-control segmented-control-minimal" data-target="dlgAvatarShape">
+                        <button type="button" data-value="circle" class="active">원형</button>
+                        <button type="button" data-value="square">사각</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row" id="dlgAvatarSizeArea">
+                    <label for="dlgAvatarSize">프사 크기 (px)</label>
+                    <div class="stepper-minimal">
+                        <button type="button" onclick="stepInput('dlgAvatarSize', -2)">-</button>
+                        <input type="number" id="dlgAvatarSize" value="32" />
+                        <button type="button" onclick="stepInput('dlgAvatarSize', 2)">+</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
+                    <div class="checkbox-minimal-group">
+                        <label><input type="checkbox" id="dlgUseCharColor" /> 이름에 인물 포인트 색상 적용</label>
                     </div>
                 </div>
                 <div class="control-minimal-row">
@@ -725,6 +747,14 @@
                         <label><input type="checkbox" id="dlgUseStage" checked /> 지문 칸 표시 (글줄 전용)</label>
                     </div>
                 </div>
+                <div class="control-minimal-row">
+                    <label for="dlgLineGap">대사 간 간격 (px)</label>
+                    <div class="stepper-minimal">
+                        <button type="button" onclick="stepInput('dlgLineGap', -2)">-</button>
+                        <input type="number" id="dlgLineGap" value="16" />
+                        <button type="button" onclick="stepInput('dlgLineGap', 2)">+</button>
+                    </div>
+                </div>
 
                 <div class="panel-section-title">캐릭터</div>
                 <div id="characterList" class="character-list"></div>
@@ -736,6 +766,10 @@
                         <input type="text" id="charEditorName" placeholder="캐릭터 이름" class="input-minimal-plain" />
                     </div>
                     <input type="file" id="charAvatarInput" accept="image/*" style="display: none" />
+                    <div class="control-minimal-row char-editor-color-row">
+                        <label for="charEditorColor">포인트 색상</label>
+                        <input type="color" id="charEditorColor" value="#171717" />
+                    </div>
                     <div class="char-editor-btn-row">
                         <button type="button" class="btn-minimal-save" id="btnSaveCharacter">저장</button>
                         <button type="button" class="text-danger" id="btnDeleteCharacter" style="display: none">삭제</button>
@@ -744,28 +778,11 @@
                 </div>
 
                 <div class="panel-section-title">대사 목록</div>
-                <div class="field-hint">여기서 직접 입력해요. 탭을 나갔다 와도, 새로고침해도 내용이 남아있어요.</div>
+                <div class="field-hint">여기서 직접 입력해요. 탭을 나갔다 와도, 새로고침해도 내용이 남아있어요. 캐릭터의 "대사 추가"를 누르면 목록에 새 칸이 생겨요.</div>
                 <div id="dialogueLineList" class="dialogue-line-list"></div>
             </div>
 
             <div class="tab-panel" id="panel-presets">
-                <div class="panel-section-title">레이아웃 템플릿</div>
-                <div class="template-btn-grid">
-                    <button type="button" class="btn-template" id="btnTemplateVerticalMix">세로+가로 혼합</button>
-                    <button type="button" class="btn-template" id="btnTemplateSpeaker">인물 대사 구분</button>
-                    <button type="button" class="btn-template" id="btnTemplateHeading">머리말/항목 구분</button>
-                    <button type="button" class="btn-template" id="btnTemplateSideNote">2단 + 사이드노트</button>
-                    <button type="button" class="btn-template" id="btnTemplatePageNumber">페이지 번호 디자인</button>
-                </div>
-
-                <div class="panel-section-title">내 템플릿</div>
-                <div class="field-hint">지금 본문에 있는 레이아웃(구조)을 그대로 저장해뒀다가 나중에 다시 불러올 수 있어요.</div>
-                <div class="preset-save-box-minimal">
-                    <input type="text" id="customTemplateNameInput" placeholder="템플릿 이름 입력" />
-                    <button class="btn-minimal-save" onclick="saveCustomTemplate()">저장</button>
-                </div>
-                <div class="preset-list-scroll" id="customTemplateList"></div>
-
                 <div class="panel-section-title">디자인 프리셋</div>
                 <div class="preset-save-box-minimal">
                     <input type="text" id="presetNameInput" placeholder="프리셋 이름 입력" />
@@ -871,7 +888,7 @@
 
         <div class="toast" id="toast"></div>
 
-        <script src="presets.js?v=36"></script>
-        <script src="script.js?v=36"></script>
+        <script src="presets.js?v=38"></script>
+        <script src="script.js?v=38"></script>
     </body>
 </html>

@@ -13,6 +13,10 @@ const els = {
     dlgShowAvatar: document.getElementById("dlgShowAvatar"),
     dlgShowTranslation: document.getElementById("dlgShowTranslation"),
     dlgUseStage: document.getElementById("dlgUseStage"),
+    dlgAvatarShape: document.getElementById("dlgAvatarShape"),
+    dlgAvatarSize: document.getElementById("dlgAvatarSize"),
+    dlgUseCharColor: document.getElementById("dlgUseCharColor"),
+    dlgLineGap: document.getElementById("dlgLineGap"),
     bgType: document.getElementById("bgType"),
     bgColor1: document.getElementById("bgColor1"),
     gradColor1: document.getElementById("gradColor1"),
@@ -282,6 +286,14 @@ function updateCanvas() {
         const stageDisplay = (document.getElementById("dlgUseStage")?.checked === false) ? "none" : "inline";
         textWrapper.style.setProperty("--dlg-stage-display", stageDisplay);
         if (els.editor) els.editor.style.setProperty("--dlg-stage-display", stageDisplay);
+
+        const avatarSizeVal = parseFloat(document.getElementById("dlgAvatarSize")?.value);
+        const avatarSizePx = `${isNaN(avatarSizeVal) ? 32 : avatarSizeVal}px`;
+        textWrapper.style.setProperty("--dlg-avatar-size", avatarSizePx);
+        if (els.editor) els.editor.style.setProperty("--dlg-avatar-size", avatarSizePx);
+        const avatarShapeVal = document.getElementById("dlgAvatarShape")?.value === "square" ? "22%" : "50%";
+        textWrapper.style.setProperty("--dlg-avatar-radius", avatarShapeVal);
+        if (els.editor) els.editor.style.setProperty("--dlg-avatar-radius", avatarShapeVal);
         const indentEm = parseFloat(els.indentSize?.value);
         const indentValue = (els.indentToggle && els.indentToggle.checked) ? `${isNaN(indentEm) ? 1 : indentEm}em` : "0";
         textWrapper.style.setProperty("--indent-size", indentValue);
@@ -1027,6 +1039,7 @@ function renderCharacterList() {
         const avatar = document.createElement("div");
         avatar.className = "char-chip-avatar";
         if (c.avatarData) avatar.style.backgroundImage = `url(${c.avatarData})`;
+        if (c.color) avatar.style.boxShadow = `0 0 0 2px ${c.color}`;
 
         const name = document.createElement("div");
         name.className = "char-chip-name";
@@ -1060,6 +1073,7 @@ function openCharacterEditor(id) {
     const nameInput = document.getElementById("charEditorName");
     const avatarBox = document.getElementById("charEditorAvatar");
     const deleteBtn = document.getElementById("btnDeleteCharacter");
+    const colorInput = document.getElementById("charEditorColor");
     if (!editor || !nameInput || !avatarBox || !deleteBtn) return;
 
     if (id) {
@@ -1068,11 +1082,13 @@ function openCharacterEditor(id) {
         nameInput.value = c.name || "";
         avatarBox.style.backgroundImage = c.avatarData ? `url(${c.avatarData})` : "none";
         avatarBox.dataset.hasImage = c.avatarData ? "true" : "false";
+        if (colorInput) colorInput.value = c.color || "#171717";
         deleteBtn.style.display = "block";
     } else {
         nameInput.value = "";
         avatarBox.style.backgroundImage = "none";
         avatarBox.dataset.hasImage = "false";
+        if (colorInput) colorInput.value = "#171717";
         deleteBtn.style.display = "none";
     }
 
@@ -1121,10 +1137,12 @@ function loadDialogueLinesFromStorage() {
 }
 
 function addDialogueLine(charId) {
-    dialogueLines.push({ id: uid(), charId, text: "", translation: "" });
+    dialogueLines.push({ id: uid(), charId, text: "", translation: "", stage: "" });
     saveDialogueLinesToStorage();
     renderDialogueLineList();
     updateCanvas();
+    const list = document.getElementById("dialogueLineList");
+    if (list) list.scrollIntoView({ block: "end", behavior: "smooth" });
 }
 
 function deleteDialogueLine(lineId) {
@@ -1141,17 +1159,36 @@ function renderDialogueLineList() {
 
     const mode = document.getElementById("dialogueMode")?.value || "log";
 
+    if (dialogueLines.length === 0) {
+        const empty = document.createElement("div");
+        empty.style.cssText = "text-align:center;font-size:12px;color:var(--text-muted);padding:12px 0;";
+        empty.textContent = "위 캐릭터의 \"대사 추가\"를 눌러 시작하세요.";
+        container.appendChild(empty);
+        return;
+    }
+
     dialogueLines.forEach((line) => {
         const c = characters.find((x) => x.id === line.charId);
         const cell = document.createElement("div");
         cell.className = "dialogue-line-cell";
+        if (c && c.color) cell.style.borderLeft = `3px solid ${c.color}`;
 
         const header = document.createElement("div");
         header.className = "dlc-header";
 
+        const nameGroup = document.createElement("div");
+        nameGroup.className = "dlc-name-group";
+
+        const avatarThumb = document.createElement("div");
+        avatarThumb.className = "dlc-avatar-thumb";
+        if (c && c.avatarData) avatarThumb.style.backgroundImage = `url(${c.avatarData})`;
+        nameGroup.appendChild(avatarThumb);
+
         const nameSpan = document.createElement("span");
         nameSpan.className = "dlc-speaker-name";
         nameSpan.textContent = c ? c.name : "(삭제된 캐릭터)";
+        if (c && c.color) nameSpan.style.color = c.color;
+        nameGroup.appendChild(nameSpan);
 
         const delBtn = document.createElement("button");
         delBtn.type = "button";
@@ -1159,9 +1196,23 @@ function renderDialogueLineList() {
         delBtn.textContent = "✕";
         delBtn.addEventListener("click", () => deleteDialogueLine(line.id));
 
-        header.appendChild(nameSpan);
+        header.appendChild(nameGroup);
         header.appendChild(delBtn);
         cell.appendChild(header);
+
+        if (mode === "line" && document.getElementById("dlgUseStage")?.checked !== false) {
+            const stageInput = document.createElement("input");
+            stageInput.type = "text";
+            stageInput.className = "dlc-stage";
+            stageInput.placeholder = "지문 (예: 문을 열며)";
+            stageInput.value = line.stage || "";
+            stageInput.addEventListener("input", () => {
+                line.stage = stageInput.value;
+                saveDialogueLinesToStorage();
+                updateCanvas();
+            });
+            cell.appendChild(stageInput);
+        }
 
         const textArea = document.createElement("textarea");
         textArea.className = "dlc-text";
@@ -1174,7 +1225,7 @@ function renderDialogueLineList() {
         });
         cell.appendChild(textArea);
 
-        if (mode === "log" && document.getElementById("dlgShowTranslation")?.checked) {
+        if (mode === "log" && document.getElementById("dlgShowTranslation")?.checked !== false) {
             const transArea = document.createElement("textarea");
             transArea.className = "dlc-translation";
             transArea.placeholder = "번역 (선택)";
@@ -1198,11 +1249,14 @@ function appendDialogueLinesToCanvas(textWrapper) {
     const showAvatar = document.getElementById("dlgShowAvatar")?.checked;
     const showTranslation = document.getElementById("dlgShowTranslation")?.checked;
     const useStage = document.getElementById("dlgUseStage")?.checked;
+    const useCharColor = document.getElementById("dlgUseCharColor")?.checked;
+    const lineGap = document.getElementById("dlgLineGap")?.value || document.getElementById("paraSpacing")?.value || 16;
 
     dialogueLines.forEach((line) => {
         const c = characters.find((x) => x.id === line.charId);
         if (!c) return;
         const avatarHtml = `<div class="dlg-avatar"${c.avatarData ? ` style="background-image:url(${c.avatarData})"` : ""}></div>`;
+        const nameColorAttr = (useCharColor && c.color) ? ` style="color:${c.color}"` : "";
 
         const wrapper = document.createElement("div");
         if (mode === "log") {
@@ -1210,7 +1264,7 @@ function appendDialogueLinesToCanvas(textWrapper) {
                 <div class="log-turn-block">
                     ${showAvatar ? avatarHtml : ""}
                     <div class="log-turn-body">
-                        <div class="log-name">${escapeHtml(c.name)}</div>
+                        <div class="log-name"${nameColorAttr}>${escapeHtml(c.name)}</div>
                         <div class="log-line">${escapeHtml(line.text || "")}</div>
                         ${showTranslation && line.translation ? `<div class="log-line log-translation">${escapeHtml(line.translation)}</div>` : ""}
                     </div>
@@ -1222,8 +1276,8 @@ function appendDialogueLinesToCanvas(textWrapper) {
                     ${showAvatar ? avatarHtml : ""}
                     <div class="sl-body">
                         <div class="sl-header">
-                            <span class="sl-name">${escapeHtml(c.name)}</span>
-                            ${useStage && line.translation ? `<span class="sl-stage">${escapeHtml(line.translation)}</span>` : ""}
+                            <span class="sl-name"${nameColorAttr}>${escapeHtml(c.name)}</span>
+                            ${useStage && line.stage ? `<span class="sl-stage">${escapeHtml(line.stage)}</span>` : ""}
                         </div>
                         <div class="sl-dialogue">${escapeHtml(line.text || "")}</div>
                     </div>
@@ -1232,7 +1286,7 @@ function appendDialogueLinesToCanvas(textWrapper) {
         }
         const node = wrapper.firstElementChild;
         if (node) {
-            node.style.marginBottom = `${document.getElementById("paraSpacing")?.value || 16}px`;
+            node.style.marginBottom = `${lineGap}px`;
             textWrapper.appendChild(node);
         }
     });
@@ -1248,13 +1302,15 @@ onClick("btnSaveCharacter", () => {
     const name = nameInput.value.trim() || "이름 없음";
     const existing = editingCharacterId ? characters.find((x) => x.id === editingCharacterId) : null;
     const avatarData = pendingCharAvatarData !== null ? pendingCharAvatarData : (existing ? existing.avatarData : null);
+    const color = document.getElementById("charEditorColor")?.value || "#171717";
 
     if (existing) {
         existing.name = name;
         existing.avatarData = avatarData;
+        existing.color = color;
         updateExistingDialogueNames(existing.id);
     } else {
-        characters.push({ id: uid(), name, avatarData });
+        characters.push({ id: uid(), name, avatarData, color });
     }
 
     renderCharacterList();
@@ -1363,93 +1419,6 @@ function redoEdit() {
 
 onClick("btnUndo", undoEdit);
 onClick("btnRedo", redoEdit);
-
-function insertTemplateBlock(html) {
-    if (!els.editor) return;
-    const wrapper = document.createElement("div");
-    wrapper.innerHTML = html.trim();
-    const node = wrapper.firstElementChild;
-    if (!node) return;
-    els.editor.appendChild(node);
-    const trailer = document.createElement("div");
-    trailer.appendChild(document.createElement("br"));
-    els.editor.appendChild(trailer);
-    closeSheetPanel();
-    updateCanvas();
-    pushHistory(true);
-    showToast("템플릿을 추가했어요. 빈 칸을 탭해서 내용을 입력해 주세요.");
-
-    const firstField = node.querySelector(".tpl-field");
-    if (firstField) {
-        setTimeout(() => {
-            els.editor.focus();
-            const range = document.createRange();
-            range.selectNodeContents(firstField);
-            range.collapse(true);
-            const sel = window.getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
-            firstField.scrollIntoView({ block: "center", behavior: "smooth" });
-        }, 50);
-    }
-}
-
-onClick("btnTemplateVerticalMix", () => {
-    insertTemplateBlock(`
-        <div class="template-block template-vertical-mix">
-            <div class="vertical-mix-source tpl-field tpl-multiline" data-placeholder="원문을 입력하세요"></div>
-            <div class="vertical-mix-divider"></div>
-            <div class="vertical-mix-translation tpl-field tpl-multiline" data-placeholder="번역문을 입력하세요"></div>
-        </div>
-    `);
-});
-
-onClick("btnTemplateSpeaker", () => {
-    insertTemplateBlock(`
-        <div class="template-block template-speaker">
-            <div class="speaker-row"><div class="speaker-name tpl-field" data-placeholder="이름"></div><div class="speaker-line tpl-field tpl-multiline" data-placeholder="대사를 입력하세요"></div></div>
-            <div class="speaker-row"><div class="speaker-name tpl-field" data-placeholder="이름"></div><div class="speaker-line tpl-field tpl-multiline" data-placeholder="대사를 입력하세요"></div></div>
-        </div>
-    `);
-});
-
-onClick("btnTemplateHeading", () => {
-    insertTemplateBlock(`
-        <div class="template-block template-heading-section">
-            <div class="section-heading tpl-field" data-placeholder="— 소제목을 입력하세요"></div>
-            <div class="section-body tpl-field tpl-multiline" data-placeholder="본문 내용을 입력하세요"></div>
-            <div class="section-asterisk">＊</div>
-            <div class="section-heading tpl-field" data-placeholder="— 소제목을 입력하세요"></div>
-            <div class="section-body tpl-field tpl-multiline" data-placeholder="본문 내용을 입력하세요"></div>
-        </div>
-    `);
-});
-
-onClick("btnTemplateSideNote", () => {
-    insertTemplateBlock(`
-        <div class="template-block template-sidenote">
-            <div class="sidenote-main tpl-field tpl-multiline" data-placeholder="본문 내용을 입력하세요"></div>
-            <div class="sidenote-aside">
-                <div class="sidenote-row"><span class="sidenote-label">DATE.</span><span class="sidenote-value tpl-field" data-placeholder="00/00"></span></div>
-                <div class="sidenote-row"><span class="sidenote-label">TIME.</span><span class="sidenote-value tpl-field" data-placeholder="00:00"></span></div>
-                <div class="sidenote-row"><span class="sidenote-label">PLACE.</span><span class="sidenote-value tpl-field" data-placeholder="장소"></span></div>
-                <div class="sidenote-row"><span class="sidenote-label">NOTE.</span><span class="sidenote-value tpl-field" data-placeholder="메모"></span></div>
-            </div>
-        </div>
-    `);
-});
-
-onClick("btnTemplatePageNumber", () => {
-    insertTemplateBlock(`
-        <div class="template-block template-page-number">
-            <div class="page-number-big tpl-field" data-placeholder="07"></div>
-            <div class="page-number-body tpl-field tpl-multiline" data-placeholder="본문 내용을 입력하세요."></div>
-            <div class="hr-divider" contenteditable="false"></div>
-            <div class="page-number-big tpl-field" data-placeholder="08"></div>
-            <div class="page-number-body tpl-field tpl-multiline" data-placeholder="본문 내용을 입력하세요."></div>
-        </div>
-    `);
-});
 
 els.editor.addEventListener("keydown", function (e) {
     if (e.key === "Enter") {
@@ -1634,7 +1603,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     pushHistory(true);
     if (typeof renderPresets === "function") renderPresets();
-    if (typeof renderCustomTemplates === "function") renderCustomTemplates();
 
     if (els.columnToggle) {
         const toggleColumnRows = () => {
@@ -1674,8 +1642,14 @@ document.addEventListener("DOMContentLoaded", () => {
             const mode = document.getElementById("dialogueMode")?.value || "log";
             const translationArea = document.getElementById("dlgTranslationArea");
             const stageArea = document.getElementById("dlgStageArea");
+            const hint = document.getElementById("dialogueModeHint");
             if (translationArea) translationArea.style.display = mode === "log" ? "flex" : "none";
             if (stageArea) stageArea.style.display = mode === "line" ? "flex" : "none";
+            if (hint) {
+                hint.textContent = mode === "log"
+                    ? "이름과 프로필 사진, 원문·번역 대사를 함께 보여줘요."
+                    : "말풍선 없이 이름 옆에 지문을 두고, 대사를 글줄로 이어 보여줘요.";
+            }
             renderDialogueLineList();
         };
         dialogueModeGroup.querySelectorAll("button").forEach((btn) => {
@@ -1684,10 +1658,28 @@ document.addEventListener("DOMContentLoaded", () => {
         syncDialogueModeUI();
     }
 
-    // 대사 탭: 번역 표시 여부가 바뀌면 목록 셀도 다시 그림 (번역 칸 보이기/숨기기)
+    // 대사 탭: 프사 표시 여부에 따라 모양/크기 설정 행 보이기/숨기기
+    if (els.dlgShowAvatar) {
+        const syncAvatarSettingUI = () => {
+            const show = els.dlgShowAvatar.checked;
+            const shapeArea = document.getElementById("dlgAvatarShapeArea");
+            const sizeArea = document.getElementById("dlgAvatarSizeArea");
+            if (shapeArea) shapeArea.style.display = show ? "flex" : "none";
+            if (sizeArea) sizeArea.style.display = show ? "flex" : "none";
+            const list = document.getElementById("characterList");
+            if (list) list.classList.toggle("hide-chip-avatars", !show);
+        };
+        syncAvatarSettingUI();
+        els.dlgShowAvatar.addEventListener("change", syncAvatarSettingUI);
+    }
+
+    // 대사 탭: 번역/지문 표시 여부가 바뀌면 목록 셀도 다시 그림
     const dlgShowTranslationEl = document.getElementById("dlgShowTranslation");
     if (dlgShowTranslationEl) {
         dlgShowTranslationEl.addEventListener("change", () => renderDialogueLineList());
+    }
+    if (els.dlgUseStage) {
+        els.dlgUseStage.addEventListener("change", () => renderDialogueLineList());
     }
 
     // 제목/글자크기 등을 빠르게 여러 번 건드릴 때(타이핑, 슬라이더 드래그)
@@ -1715,7 +1707,8 @@ document.addEventListener("DOMContentLoaded", () => {
         els.headingTitleInput, els.headingSubtitleInput,
         els.headingTitleFont, els.headingTitleSize, els.headingTitleBold,
         els.headingSubtitleFont, els.headingSubtitleSize, els.headingSubtitleBold,
-        els.dlgNameSuffix, els.dlgQuoteStyle, els.dlgShowTranslation, els.dlgUseStage, els.dlgShowAvatar
+        els.dlgNameSuffix, els.dlgQuoteStyle, els.dlgShowTranslation, els.dlgUseStage, els.dlgShowAvatar,
+        els.dlgAvatarSize, els.dlgUseCharColor, els.dlgLineGap
     ];
     autoTriggers.forEach((el) => {
         if (el) { el.addEventListener("input", scheduleUpdateCanvas); el.addEventListener("change", scheduleUpdateCanvas); }
