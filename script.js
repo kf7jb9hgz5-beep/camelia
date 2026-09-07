@@ -1301,12 +1301,21 @@ function appendDialogueLinesToCanvas(textWrapper) {
     const showName = document.getElementById("dlgShowName")?.checked !== false;
     const showTranslation = document.getElementById("dlgShowTranslation")?.checked;
     const useCharColor = document.getElementById("dlgUseCharColor")?.checked;
+    const nameSuffix = document.getElementById("dlgNameSuffix")?.value ?? ":";
+    const quoteChars = getQuoteChars(document.getElementById("dlgQuoteStyle")?.value || "none");
     const lineGap = parseFloat(document.getElementById("dlgLineGap")?.value);
     const safeLineGap = isNaN(lineGap) ? 10 : lineGap;
     const continuationGapRaw = parseFloat(document.getElementById("dlgContinuationGap")?.value);
     const continuationGap = isNaN(continuationGapRaw) ? 4 : continuationGapRaw;
     const nameGapRaw = parseFloat(document.getElementById("dlgNameGap")?.value);
     const nameGap = isNaN(nameGapRaw) ? 14 : nameGapRaw;
+    const avatarSizeRaw = parseFloat(document.getElementById("dlgAvatarSize")?.value);
+    const avatarSize = isNaN(avatarSizeRaw) ? 32 : avatarSizeRaw;
+    const avatarRadius = document.getElementById("dlgAvatarShape")?.value === "square" ? "22%" : "50%";
+    // 대사 영역은 본문(발췌문) 글자 크기가 얼마든 상관없이 항상 이 고정 크기로만 보이게 한다.
+    // (CSS 클래스에 맡기지 않고 여기서 직접 인라인 스타일로 강제 — 다른 CSS가 절대 못 덮어씀.
+    //  같은 이유로 이름 뒤 기호·감싸는 기호도 CSS ::after/content 변수 대신 여기서 직접 문자로 붙인다.)
+    const DLG_FONT = "font-size:15.5px;line-height:24px;letter-spacing:normal;";
 
     if (mode === "log") {
         // 로그 모드: 같은 인물이 이어 말하면 이름·프사는 처음 한 번만, 이후는 좁은 간격으로 붙여서 보여준다.
@@ -1314,20 +1323,23 @@ function appendDialogueLinesToCanvas(textWrapper) {
         runs.forEach((run, runIndex) => {
             const c = characters.find((x) => x.id === run.charId);
             if (!c) return;
-            const avatarHtml = `<div class="dlg-avatar"${c.avatarData ? ` style="background-image:url(${c.avatarData})"` : ""}></div>`;
-            const nameColorAttr = (useCharColor && c.color) ? ` style="color:${c.color}"` : "";
+            const avatarStyle = `flex:0 0 ${avatarSize}px;width:${avatarSize}px;height:${avatarSize}px;border-radius:${avatarRadius};background-color:#f3f3f1;border:1px solid #eaeaea;background-size:cover;background-position:center;box-sizing:border-box;${c.avatarData ? `background-image:url(${c.avatarData});` : ""}`;
+            const avatarHtml = `<div style="${avatarStyle}"></div>`;
+            const spacerHtml = `<div style="flex:0 0 ${avatarSize}px;width:${avatarSize}px;height:0;"></div>`;
+            const nameColor = (useCharColor && c.color) ? `color:${c.color};` : "";
             const isLast = runIndex === runs.length - 1;
 
             run.lines.forEach((line, i) => {
                 const continued = i > 0;
                 const wrapper = document.createElement("div");
+                const quotedText = `${quoteChars.open}${escapeHtml(line.text || "")}${quoteChars.close}`;
                 wrapper.innerHTML = `
-                    <div class="log-turn-block${continued ? " log-continuation" : ""}">
-                        ${showAvatar ? (continued ? `<div class="dlg-avatar-spacer"></div>` : avatarHtml) : ""}
-                        <div class="log-turn-body">
-                            ${(showName && !continued) ? `<div class="log-name"${nameColorAttr}>${escapeHtml(c.name)}</div>` : ""}
-                            <div class="log-line">${escapeHtml(line.text || "")}</div>
-                            ${showTranslation && line.translation ? `<div class="log-line log-translation">${escapeHtml(line.translation)}</div>` : ""}
+                    <div style="display:flex;align-items:flex-start;gap:8px;text-align:inherit;">
+                        ${showAvatar ? (continued ? spacerHtml : avatarHtml) : ""}
+                        <div style="flex:1 1 auto;min-width:0;">
+                            ${(showName && !continued) ? `<div style="${DLG_FONT}font-size:13px;font-weight:700;${nameColor}margin-bottom:3px;">${escapeHtml(c.name)}${nameSuffix}</div>` : ""}
+                            <div style="${DLG_FONT}display:block;white-space:pre-wrap;">${quotedText}</div>
+                            ${showTranslation && line.translation ? `<div style="${DLG_FONT}font-size:14px;display:block;white-space:pre-wrap;opacity:0.65;">${escapeHtml(line.translation)}</div>` : ""}
                         </div>
                     </div>
                 `.trim();
@@ -1339,22 +1351,20 @@ function appendDialogueLinesToCanvas(textWrapper) {
             });
         });
     } else {
-        // 블록 모드: 박스 없이, "이름 대사" 한 줄씩 모아서 보여준다.
+        // 블록 모드: 박스 없이, "이름 대사" 한 줄씩 모아서 보여준다. (전부 인라인 스타일)
         const linesHtml = dialogueLines.map((line, i) => {
             const c = characters.find((x) => x.id === line.charId);
             if (!c) return "";
-            const nameColorAttr = (useCharColor && c.color) ? ` style="color:${c.color}"` : "";
-            const nameStyleParts = [nameColorAttr ? `color:${c.color}` : "", `margin-right:${nameGap}px`].filter(Boolean).join(";");
-            const marginStyle = i > 0 ? ` style="margin-top:${safeLineGap}px"` : "";
-            return `<div class="dlg-box-line"${marginStyle}>${showName ? `<span class="dlg-box-name" style="${nameStyleParts}">${escapeHtml(c.name)}</span>` : ""}<span class="dlg-box-text">${escapeHtml(line.text || "")}</span></div>`;
+            const nameColor = (useCharColor && c.color) ? `color:${c.color};` : "";
+            const rowMargin = i > 0 ? `margin-top:${safeLineGap}px;` : "";
+            const nameHtml = showName
+                ? `<span style="${DLG_FONT}font-weight:700;${nameColor}margin-right:${nameGap}px;">${escapeHtml(c.name)}</span>`
+                : "";
+            return `<div style="${DLG_FONT}${rowMargin}display:flex;align-items:baseline;flex-wrap:wrap;">${nameHtml}<span style="${DLG_FONT}white-space:pre-wrap;word-break:break-word;">${escapeHtml(line.text || "")}</span></div>`;
         }).join("");
 
         const wrapper = document.createElement("div");
-        wrapper.innerHTML = `
-            <div class="dlg-box">
-                ${linesHtml}
-            </div>
-        `.trim();
+        wrapper.innerHTML = `<div style="text-align:inherit;">${linesHtml}</div>`.trim();
         const node = wrapper.firstElementChild;
         if (node) {
             node.style.marginBottom = "0";
