@@ -65,9 +65,7 @@ function getPresetSnapshot() {
         dlgUseCharColor: els.dlgUseCharColor?.checked,
         dlgLineGap: els.dlgLineGap?.value,
         dlgContinuationGap: els.dlgContinuationGap?.value,
-        dlgShowTail: els.dlgShowTail?.checked,
-        dlgBubbleRadius: els.dlgBubbleRadius?.value,
-        dlgBoxBg: els.dlgBoxBg?.value,
+        dlgNameGap: els.dlgNameGap?.value,
         alignH: els.alignH.value,
         wordBreak: els.wordBreak.value,
         fontSize: els.fontSize.value,
@@ -166,9 +164,7 @@ function applyPresetSnapshot(data) {
     if (els.dlgUseCharColor) els.dlgUseCharColor.checked = data.dlgUseCharColor ?? els.dlgUseCharColor.checked;
     if (els.dlgLineGap) els.dlgLineGap.value = data.dlgLineGap ?? els.dlgLineGap.value;
     if (els.dlgContinuationGap) els.dlgContinuationGap.value = data.dlgContinuationGap ?? els.dlgContinuationGap.value;
-    if (els.dlgShowTail) els.dlgShowTail.checked = data.dlgShowTail ?? els.dlgShowTail.checked;
-    if (els.dlgBubbleRadius) els.dlgBubbleRadius.value = data.dlgBubbleRadius ?? els.dlgBubbleRadius.value;
-    if (els.dlgBoxBg) els.dlgBoxBg.value = data.dlgBoxBg ?? els.dlgBoxBg.value;
+    if (els.dlgNameGap) els.dlgNameGap.value = data.dlgNameGap ?? els.dlgNameGap.value;
     if (typeof syncDialogueModeUI === "function") syncDialogueModeUI();
     els.wordBreak.value = data.wordBreak ?? els.wordBreak.value;
     els.fontSize.value = data.fontSize ?? els.fontSize.value;

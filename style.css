@@ -1399,17 +1399,17 @@ input[type="file"]::file-selector-button {
 .log-turn-block *,
 .dlg-box,
 .dlg-box * {
-    font-size: 15.5px;
-    line-height: 1.55;
-    letter-spacing: normal;
+    font-size: 15.5px !important;
+    line-height: 24px !important;
+    letter-spacing: normal !important;
 }
 
 .log-name {
-    font-size: 13px;
+    font-size: 13px !important;
 }
 
 .log-translation {
-    font-size: 14px;
+    font-size: 14px !important;
 }
 
 /* ---- 공용: 프로필 사진 ---- */
@@ -1482,17 +1482,18 @@ input[type="file"]::file-selector-button {
 
 /* ---- 블록 대사 (박스 하나 안에 "이름 대사"를 줄줄이 나열하는 방식) ---- */
 .dlg-box {
-    padding: 16px 18px;
-    box-sizing: border-box;
     text-align: inherit;
 }
 
 .dlg-box-line {
-    display: block;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
 }
 
 .dlg-box-name {
     font-weight: 700;
+    margin-right: var(--dlg-name-gap, 14px);
 }
 
 .dlg-box-name::after {

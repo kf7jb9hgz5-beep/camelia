@@ -8,7 +8,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=39" />
+        <link rel="stylesheet" href="style.css?v=40" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -759,16 +759,12 @@
                 </div>
 
                 <div class="panel-section-title" id="dlgBlockOnlyTitle" style="display: none">블록 세부 설정</div>
-                <div class="control-minimal-row char-editor-color-row" id="dlgBoxBgArea" style="display: none">
-                    <label for="dlgBoxBg">박스 배경색</label>
-                    <input type="color" id="dlgBoxBg" value="#f1f1ef" />
-                </div>
-                <div class="control-minimal-row" id="dlgBubbleRadiusArea" style="display: none">
-                    <label for="dlgBubbleRadius">박스 모서리 둥글기 (px)</label>
+                <div class="control-minimal-row" id="dlgNameGapArea" style="display: none">
+                    <label for="dlgNameGap">이름-대사 사이 간격 (px)</label>
                     <div class="stepper-minimal">
-                        <button type="button" onclick="stepInput('dlgBubbleRadius', -2)">-</button>
-                        <input type="number" id="dlgBubbleRadius" value="16" />
-                        <button type="button" onclick="stepInput('dlgBubbleRadius', 2)">+</button>
+                        <button type="button" onclick="stepInput('dlgNameGap', -2)">-</button>
+                        <input type="number" id="dlgNameGap" value="14" />
+                        <button type="button" onclick="stepInput('dlgNameGap', 2)">+</button>
                     </div>
                 </div>
 
@@ -914,7 +910,7 @@
 
         <div class="toast" id="toast"></div>
 
-        <script src="presets.js?v=39"></script>
-        <script src="script.js?v=39"></script>
+        <script src="presets.js?v=40"></script>
+        <script src="script.js?v=40"></script>
     </body>
 </html>

@@ -18,8 +18,7 @@ const els = {
     dlgUseCharColor: document.getElementById("dlgUseCharColor"),
     dlgLineGap: document.getElementById("dlgLineGap"),
     dlgContinuationGap: document.getElementById("dlgContinuationGap"),
-    dlgBubbleRadius: document.getElementById("dlgBubbleRadius"),
-    dlgBoxBg: document.getElementById("dlgBoxBg"),
+    dlgNameGap: document.getElementById("dlgNameGap"),
     bgType: document.getElementById("bgType"),
     bgColor1: document.getElementById("bgColor1"),
     gradColor1: document.getElementById("gradColor1"),
@@ -1126,8 +1125,7 @@ function syncDialogueModeUI() {
         dlgTranslationArea: isLog,
         dlgContinuationGapArea: isLog,
         dlgLogOnlyTitle: isLog,
-        dlgBoxBgArea: !isLog,
-        dlgBubbleRadiusArea: !isLog,
+        dlgNameGapArea: !isLog,
         dlgBlockOnlyTitle: !isLog
     };
     Object.keys(areaMap).forEach((id) => {
@@ -1307,9 +1305,8 @@ function appendDialogueLinesToCanvas(textWrapper) {
     const safeLineGap = isNaN(lineGap) ? 10 : lineGap;
     const continuationGapRaw = parseFloat(document.getElementById("dlgContinuationGap")?.value);
     const continuationGap = isNaN(continuationGapRaw) ? 4 : continuationGapRaw;
-    const boxRadiusRaw = parseFloat(document.getElementById("dlgBubbleRadius")?.value);
-    const boxRadius = isNaN(boxRadiusRaw) ? 16 : boxRadiusRaw;
-    const boxBg = document.getElementById("dlgBoxBg")?.value || "#f1f1ef";
+    const nameGapRaw = parseFloat(document.getElementById("dlgNameGap")?.value);
+    const nameGap = isNaN(nameGapRaw) ? 14 : nameGapRaw;
 
     if (mode === "log") {
         // 로그 모드: 같은 인물이 이어 말하면 이름·프사는 처음 한 번만, 이후는 좁은 간격으로 붙여서 보여준다.
@@ -1342,18 +1339,19 @@ function appendDialogueLinesToCanvas(textWrapper) {
             });
         });
     } else {
-        // 블록 모드: 대사 전체를 하나의 박스 안에 "이름 대사" 한 줄씩 모아서 보여준다.
+        // 블록 모드: 박스 없이, "이름 대사" 한 줄씩 모아서 보여준다.
         const linesHtml = dialogueLines.map((line, i) => {
             const c = characters.find((x) => x.id === line.charId);
             if (!c) return "";
             const nameColorAttr = (useCharColor && c.color) ? ` style="color:${c.color}"` : "";
+            const nameStyleParts = [nameColorAttr ? `color:${c.color}` : "", `margin-right:${nameGap}px`].filter(Boolean).join(";");
             const marginStyle = i > 0 ? ` style="margin-top:${safeLineGap}px"` : "";
-            return `<div class="dlg-box-line"${marginStyle}>${showName ? `<span class="dlg-box-name"${nameColorAttr}>${escapeHtml(c.name)}</span> ` : ""}<span class="dlg-box-text">${escapeHtml(line.text || "")}</span></div>`;
+            return `<div class="dlg-box-line"${marginStyle}>${showName ? `<span class="dlg-box-name" style="${nameStyleParts}">${escapeHtml(c.name)}</span>` : ""}<span class="dlg-box-text">${escapeHtml(line.text || "")}</span></div>`;
         }).join("");
 
         const wrapper = document.createElement("div");
         wrapper.innerHTML = `
-            <div class="dlg-box" style="background-color:${boxBg};border-radius:${boxRadius}px;">
+            <div class="dlg-box">
                 ${linesHtml}
             </div>
         `.trim();
@@ -1759,7 +1757,7 @@ document.addEventListener("DOMContentLoaded", () => {
         els.headingSubtitleFont, els.headingSubtitleSize, els.headingSubtitleBold,
         els.dlgNameSuffix, els.dlgQuoteStyle, els.dlgShowTranslation, els.dlgShowAvatar, els.dlgShowName,
         els.dlgAvatarSize, els.dlgUseCharColor, els.dlgLineGap, els.dlgContinuationGap,
-        els.dlgBubbleRadius, els.dlgBoxBg
+        els.dlgNameGap
     ];
     autoTriggers.forEach((el) => {
         if (el) { el.addEventListener("input", scheduleUpdateCanvas); el.addEventListener("change", scheduleUpdateCanvas); }
