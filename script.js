@@ -1339,16 +1339,15 @@ function appendDialogueLinesToCanvas(textWrapper) {
                 const wrapper = document.createElement("div");
                 const quotedText = `${quoteChars.open}${escapeHtml(line.text || "")}${quoteChars.close}`;
                 const minHeight = (showAvatar && !continued) ? `min-height:${avatarSize}px;` : "";
-                wrapper.innerHTML = `
-                    <div style="position:relative;${minHeight}text-align:inherit;box-sizing:border-box;">
-                        ${(showAvatar && !continued) ? avatarHtml : ""}
-                        <div style="margin-left:${leftOffset}px;">
-                            ${(showName && !continued) ? `<div style="${DLG_FONT}font-size:13px;font-weight:700;${nameColor}margin-bottom:3px;">${escapeHtml(c.name)}${nameSuffix}</div>` : ""}
-                            <div style="${DLG_FONT}display:block;white-space:pre-wrap;">${quotedText}</div>
-                            ${showTranslation && line.translation ? `<div style="${DLG_FONT}font-size:14px;display:block;white-space:pre-wrap;opacity:0.65;">${escapeHtml(line.translation)}</div>` : ""}
-                        </div>
-                    </div>
-                `.trim();
+                // ⚠️ 진짜 원인이었던 버그: #canvasTextWrapper 전체에 white-space:pre-wrap이 걸려 있어서
+                // (사용자가 본문에 직접 입력한 줄바꿈을 보존하기 위함), 아래처럼 보기 좋게 들여쓰기한
+                // template literal 안의 줄바꿈·공백까지 전부 "진짜 빈 줄"로 화면에 그려져 버렸다.
+                // 그게 프사와 이름·대사 사이를 갈라놓던 진짜 원인. 그래서 태그 사이 줄바꿈/들여쓰기가
+                // 전혀 없는 한 줄짜리 문자열로 만들고, 혹시 몰라 바깥 두 div에도 white-space:normal을
+                // 명시적으로 걸어 pre-wrap 상속을 막는다(안쪽 대사·번역 줄은 그대로 pre-wrap 유지).
+                const nameHtml2 = (showName && !continued) ? `<div style="${DLG_FONT}font-size:13px;font-weight:700;${nameColor}margin-bottom:3px;">${escapeHtml(c.name)}${nameSuffix}</div>` : "";
+                const translationHtml = (showTranslation && line.translation) ? `<div style="${DLG_FONT}font-size:14px;display:block;white-space:pre-wrap;opacity:0.65;">${escapeHtml(line.translation)}</div>` : "";
+                wrapper.innerHTML = `<div style="position:relative;${minHeight}text-align:inherit;box-sizing:border-box;white-space:normal;">${(showAvatar && !continued) ? avatarHtml : ""}<div style="margin-left:${leftOffset}px;white-space:normal;">${nameHtml2}<div style="${DLG_FONT}display:block;white-space:pre-wrap;">${quotedText}</div>${translationHtml}</div></div>`;
                 const node = wrapper.firstElementChild;
                 if (!node) return;
                 const notLastLine = !(isLast && i === run.lines.length - 1);
