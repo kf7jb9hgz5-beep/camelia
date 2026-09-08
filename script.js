@@ -1323,9 +1323,14 @@ function appendDialogueLinesToCanvas(textWrapper) {
         runs.forEach((run, runIndex) => {
             const c = characters.find((x) => x.id === run.charId);
             if (!c) return;
-            const avatarStyle = `flex:0 0 ${avatarSize}px;width:${avatarSize}px;height:${avatarSize}px;border-radius:${avatarRadius};background-color:#f3f3f1;border:1px solid #eaeaea;background-size:cover;background-position:center;box-sizing:border-box;${c.avatarData ? `background-image:url(${c.avatarData});` : ""}`;
+            // html2canvas(저장/캡처용 라이브러리)는 display:flex + gap 조합을 안정적으로 그리지 못해서
+            // 화면에는 프사/이름/대사가 가로로 나란히 보여도, 저장한 이미지에서는 세로로 떨어져 찍히는 문제가 있었다.
+            // 그래서 flex 대신 "프사는 absolute로 왼쪽에 고정 + 텍스트는 margin-left로 밀기" 방식으로 그린다.
+            // (position:absolute + margin은 html2canvas가 항상 정확히 그려주는 안전한 조합)
+            const avatarGap = 8;
+            const leftOffset = showAvatar ? avatarSize + avatarGap : 0;
+            const avatarStyle = `position:absolute;top:0;left:0;width:${avatarSize}px;height:${avatarSize}px;border-radius:${avatarRadius};background-color:#f3f3f1;border:1px solid #eaeaea;background-size:cover;background-position:center;box-sizing:border-box;${c.avatarData ? `background-image:url(${c.avatarData});` : ""}`;
             const avatarHtml = `<div style="${avatarStyle}"></div>`;
-            const spacerHtml = `<div style="flex:0 0 ${avatarSize}px;width:${avatarSize}px;height:0;"></div>`;
             const nameColor = (useCharColor && c.color) ? `color:${c.color};` : "";
             const isLast = runIndex === runs.length - 1;
 
@@ -1333,10 +1338,11 @@ function appendDialogueLinesToCanvas(textWrapper) {
                 const continued = i > 0;
                 const wrapper = document.createElement("div");
                 const quotedText = `${quoteChars.open}${escapeHtml(line.text || "")}${quoteChars.close}`;
+                const minHeight = (showAvatar && !continued) ? `min-height:${avatarSize}px;` : "";
                 wrapper.innerHTML = `
-                    <div style="display:flex;align-items:flex-start;gap:8px;text-align:inherit;">
-                        ${showAvatar ? (continued ? spacerHtml : avatarHtml) : ""}
-                        <div style="flex:1 1 auto;min-width:0;">
+                    <div style="position:relative;${minHeight}text-align:inherit;box-sizing:border-box;">
+                        ${(showAvatar && !continued) ? avatarHtml : ""}
+                        <div style="margin-left:${leftOffset}px;">
                             ${(showName && !continued) ? `<div style="${DLG_FONT}font-size:13px;font-weight:700;${nameColor}margin-bottom:3px;">${escapeHtml(c.name)}${nameSuffix}</div>` : ""}
                             <div style="${DLG_FONT}display:block;white-space:pre-wrap;">${quotedText}</div>
                             ${showTranslation && line.translation ? `<div style="${DLG_FONT}font-size:14px;display:block;white-space:pre-wrap;opacity:0.65;">${escapeHtml(line.translation)}</div>` : ""}
@@ -1352,15 +1358,16 @@ function appendDialogueLinesToCanvas(textWrapper) {
         });
     } else {
         // 블록 모드: 박스 없이, "이름 대사" 한 줄씩 모아서 보여준다. (전부 인라인 스타일)
+        // 여기도 flex 대신 일반 인라인 흐름(span)만 써서 html2canvas 저장 시에도 화면과 동일하게 찍히게 한다.
         const linesHtml = dialogueLines.map((line, i) => {
             const c = characters.find((x) => x.id === line.charId);
             if (!c) return "";
             const nameColor = (useCharColor && c.color) ? `color:${c.color};` : "";
             const rowMargin = i > 0 ? `margin-top:${safeLineGap}px;` : "";
             const nameHtml = showName
-                ? `<span style="${DLG_FONT}font-weight:700;${nameColor}margin-right:${nameGap}px;">${escapeHtml(c.name)}</span>`
+                ? `<span style="${DLG_FONT}display:inline-block;font-weight:700;${nameColor}margin-right:${nameGap}px;">${escapeHtml(c.name)}</span>`
                 : "";
-            return `<div style="${DLG_FONT}${rowMargin}display:flex;align-items:baseline;flex-wrap:wrap;">${nameHtml}<span style="${DLG_FONT}white-space:pre-wrap;word-break:break-word;">${escapeHtml(line.text || "")}</span></div>`;
+            return `<div style="${DLG_FONT}${rowMargin}text-align:inherit;">${nameHtml}<span style="${DLG_FONT}white-space:pre-wrap;word-break:break-word;">${escapeHtml(line.text || "")}</span></div>`;
         }).join("");
 
         const wrapper = document.createElement("div");
