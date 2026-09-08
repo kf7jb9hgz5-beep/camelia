@@ -255,9 +255,16 @@ function updateCanvas() {
     const textWrapper = document.getElementById("canvasTextWrapper");
     if (textWrapper) {
         let rawHTML = els.editor.innerHTML || "<div><br></div>";
-        textWrapper.innerHTML = rawHTML;
-        normalizeParagraphs(textWrapper);
-        appendDialogueLinesToCanvas(textWrapper);
+        const dialogueModeVal = document.getElementById("dialogueMode")?.value || "log";
+        const paragraphLayoutOn = dialogueModeVal === "block" && document.getElementById("dlgParagraphLayout")?.checked;
+
+        if (paragraphLayoutOn && dialogueLines.length > 0) {
+            renderSpeakerParagraphLayout(textWrapper);
+        } else {
+            textWrapper.innerHTML = rawHTML;
+            normalizeParagraphs(textWrapper);
+            appendDialogueLinesToCanvas(textWrapper);
+        }
 
         textWrapper.style.setProperty("--quote-line-color", els.quoteLineColor.value);
         if (els.editor) els.editor.style.setProperty("--quote-line-color", els.quoteLineColor.value);
@@ -1126,7 +1133,8 @@ function syncDialogueModeUI() {
         dlgContinuationGapArea: isLog,
         dlgLogOnlyTitle: isLog,
         dlgNameGapArea: !isLog,
-        dlgBlockOnlyTitle: !isLog
+        dlgBlockOnlyTitle: !isLog,
+        dlgParagraphLayoutArea: !isLog
     };
     Object.keys(areaMap).forEach((id) => {
         const el = document.getElementById(id);
@@ -1139,9 +1147,23 @@ function syncDialogueModeUI() {
             ? "이름과 프로필 사진을 앞에 두고, 대사를 한 줄씩 이어 보여줘요."
             : "이름과 대사를 한 줄씩, 하나의 박스 안에 모아 보여줘요.";
     }
+    syncParagraphLayoutUI();
     renderDialogueLineList();
     if (typeof updateCanvas === "function") updateCanvas();
 }
+
+// 대사 탭: "화자 · 줄글 단락 분리" 체크 여부에 따라 하위 설정 행(들여쓰기·이름 칸 너비) 보이기/숨기기
+function syncParagraphLayoutUI() {
+    const mode = document.getElementById("dialogueMode")?.value || "log";
+    const checkbox = document.getElementById("dlgParagraphLayout");
+    const on = mode === "block" && !!(checkbox && checkbox.checked);
+    ["dlgParagraphLayoutHint", "dlgParagraphIndentArea", "dlgNameColumnWidthArea"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = on ? "" : "none";
+    });
+    renderDialogueLineList();
+}
+
 
 // 대사 탭: 프사 표시 여부에 따라 모양/크기 설정 행 보이기/숨기기
 function syncAvatarSettingUI() {
@@ -1177,7 +1199,7 @@ function loadDialogueLinesFromStorage() {
 }
 
 function addDialogueLine(charId) {
-    dialogueLines.push({ id: uid(), charId, text: "", translation: "", stage: "" });
+    dialogueLines.push({ id: uid(), charId, text: "", translation: "", narration: "", stage: "" });
     saveDialogueLinesToStorage();
     renderDialogueLineList();
     updateCanvas();
@@ -1273,6 +1295,19 @@ function renderDialogueLineList() {
             cell.appendChild(transArea);
         }
 
+        if (mode === "block" && document.getElementById("dlgParagraphLayout")?.checked) {
+            const narrationArea = document.createElement("textarea");
+            narrationArea.className = "dlc-translation";
+            narrationArea.placeholder = "줄글 (선택) — 이 대사 아래에 들여쓰기로 표시돼요";
+            narrationArea.value = line.narration || "";
+            narrationArea.addEventListener("input", () => {
+                line.narration = narrationArea.value;
+                saveDialogueLinesToStorage();
+                updateCanvas();
+            });
+            cell.appendChild(narrationArea);
+        }
+
         container.appendChild(cell);
     });
 }
@@ -1291,6 +1326,40 @@ function groupDialogueLinesByRun(lines) {
         }
     });
     return runs;
+}
+
+// 화자 · 줄글 단락 분리 레이아웃: 왼쪽엔 화자 이름, 오른쪽엔 그 화자의 대사(들)를 먼저 이어 붙이고
+// 그 아래에 "대사 목록"에서 각 줄마다 직접 입력한 줄글(나레이션)을 이어서 들여쓰기로 붙여서 보여준다.
+// (본문 편집기 문단과 순서로 짝짓지 않고, 대사 항목 자체에 딸린 줄글 입력칸을 사용한다.)
+// ⚠️ #canvasTextWrapper 전체에 white-space:pre-wrap이 걸려 있어서, 여기서 만드는 HTML 문자열은
+// 절대 보기 좋게 줄바꿈/들여쓰기하지 않고 항상 태그 사이 공백 없는 한 줄로 이어 붙인다.
+function renderSpeakerParagraphLayout(textWrapper) {
+    const runs = groupDialogueLinesByRun(dialogueLines);
+    const quoteChars = getQuoteChars(document.getElementById("dlgQuoteStyle")?.value || "none");
+    const useCharColor = document.getElementById("dlgUseCharColor")?.checked;
+    const showName = document.getElementById("dlgShowName")?.checked !== false;
+    const nameSuffix = document.getElementById("dlgNameSuffix")?.value ?? ":";
+    const lineGap = parseFloat(document.getElementById("dlgLineGap")?.value);
+    const safeLineGap = isNaN(lineGap) ? 10 : lineGap;
+    const indentRaw = parseFloat(document.getElementById("dlgParagraphIndent")?.value);
+    const indentPx = isNaN(indentRaw) ? 16 : indentRaw;
+    const colWidthRaw = parseFloat(document.getElementById("dlgNameColumnWidth")?.value);
+    const colWidthPx = isNaN(colWidthRaw) ? 88 : colWidthRaw;
+    const DLG_FONT = "font-size:15.5px;line-height:24px;letter-spacing:normal;";
+
+    const rowsHtml = runs.map((run) => {
+        const c = characters.find((x) => x.id === run.charId);
+        if (!c) return "";
+        const nameColor = (useCharColor && c.color) ? `color:${c.color};` : "";
+        const dialogueText = run.lines.map((l) => `${quoteChars.open}${escapeHtml(l.text || "")}${quoteChars.close}`).join("");
+        const narrationParas = run.lines.map((l) => (l.narration || "").trim()).filter(Boolean);
+        const narrationHtml = narrationParas.map((t) => `<div style="${DLG_FONT}margin-left:${indentPx}px;margin-top:2px;white-space:pre-wrap;">${escapeHtml(t)}</div>`).join("");
+        const nameCell = showName ? `<div style="${DLG_FONT}font-weight:700;${nameColor}">${escapeHtml(c.name)}${nameSuffix}</div>` : "";
+        const contentCell = `<div style="${DLG_FONT}white-space:pre-wrap;">${dialogueText}</div>${narrationHtml}`;
+        return `<div style="display:grid;grid-template-columns:${colWidthPx}px 1fr;gap:12px;align-items:start;margin-bottom:${safeLineGap}px;text-align:inherit;"><div>${nameCell}</div><div>${contentCell}</div></div>`;
+    }).join("");
+
+    textWrapper.innerHTML = rowsHtml;
 }
 
 function appendDialogueLinesToCanvas(textWrapper) {
@@ -1737,6 +1806,16 @@ document.addEventListener("DOMContentLoaded", () => {
         els.dlgShowAvatar.addEventListener("change", syncAvatarSettingUI);
     }
 
+    // 대사 탭: 화자·줄글 단락 분리 체크박스가 바뀌면 하위 설정 보이기/숨기기 + 다시 그리기
+    const dlgParagraphLayoutEl = document.getElementById("dlgParagraphLayout");
+    if (dlgParagraphLayoutEl) {
+        syncParagraphLayoutUI();
+        dlgParagraphLayoutEl.addEventListener("change", () => {
+            syncParagraphLayoutUI();
+            updateCanvas();
+        });
+    }
+
     // 대사 탭: 번역 표시 여부가 바뀌면 목록 셀도 다시 그림
     const dlgShowTranslationEl = document.getElementById("dlgShowTranslation");
     if (dlgShowTranslationEl) {
@@ -1773,7 +1852,8 @@ document.addEventListener("DOMContentLoaded", () => {
         els.headingSubtitleFont, els.headingSubtitleSize, els.headingSubtitleBold,
         els.dlgNameSuffix, els.dlgQuoteStyle, els.dlgShowTranslation, els.dlgShowAvatar, els.dlgShowName,
         els.dlgAvatarSize, els.dlgUseCharColor, els.dlgLineGap, els.dlgContinuationGap,
-        els.dlgNameGap
+        els.dlgNameGap,
+        document.getElementById("dlgParagraphIndent"), document.getElementById("dlgNameColumnWidth")
     ];
     autoTriggers.forEach((el) => {
         if (el) { el.addEventListener("input", scheduleUpdateCanvas); el.addEventListener("change", scheduleUpdateCanvas); }

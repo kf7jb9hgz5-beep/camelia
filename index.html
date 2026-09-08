@@ -767,6 +767,30 @@
                         <button type="button" onclick="stepInput('dlgNameGap', 2)">+</button>
                     </div>
                 </div>
+                <div class="control-minimal-row" id="dlgParagraphLayoutArea" style="display: none">
+                    <div class="checkbox-minimal-group">
+                        <label><input type="checkbox" id="dlgParagraphLayout" /> 화자 · 줄글 단락 분리</label>
+                    </div>
+                </div>
+                <div class="field-hint" id="dlgParagraphLayoutHint" style="display: none">
+                    켜면 화자 이름을 왼쪽에 따로 두고, 오른쪽엔 그 화자의 대사를 먼저 쓴 다음, 아래 "대사 목록"에서 각 줄마다 새로 생기는 "줄글" 칸에 입력한 나레이션을 이어서 들여쓰기로 보여줘요.
+                </div>
+                <div class="control-minimal-row" id="dlgParagraphIndentArea" style="display: none">
+                    <label for="dlgParagraphIndent">줄글 들여쓰기 (px)</label>
+                    <div class="stepper-minimal">
+                        <button type="button" onclick="stepInput('dlgParagraphIndent', -2)">-</button>
+                        <input type="number" id="dlgParagraphIndent" value="16" />
+                        <button type="button" onclick="stepInput('dlgParagraphIndent', 2)">+</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row" id="dlgNameColumnWidthArea" style="display: none">
+                    <label for="dlgNameColumnWidth">이름 칸 너비 (px)</label>
+                    <div class="stepper-minimal">
+                        <button type="button" onclick="stepInput('dlgNameColumnWidth', -4)">-</button>
+                        <input type="number" id="dlgNameColumnWidth" value="88" />
+                        <button type="button" onclick="stepInput('dlgNameColumnWidth', 4)">+</button>
+                    </div>
+                </div>
 
                 <div class="panel-section-title">간격</div>
                 <div class="control-minimal-row">
