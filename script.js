@@ -1333,6 +1333,18 @@ function groupDialogueLinesByRun(lines) {
 // (본문 편집기 문단과 순서로 짝짓지 않고, 대사 항목 자체에 딸린 줄글 입력칸을 사용한다.)
 // ⚠️ #canvasTextWrapper 전체에 white-space:pre-wrap이 걸려 있어서, 여기서 만드는 HTML 문자열은
 // 절대 보기 좋게 줄바꿈/들여쓰기하지 않고 항상 태그 사이 공백 없는 한 줄로 이어 붙인다.
+// 대사 영역 글자 스타일: "폰트" 탭에서 사용자가 설정한 폰트 크기·자간·행간을 그대로 따라가게 한다.
+// (이전엔 대사만 항상 고정 크기로 보이게 일부러 하드코딩했었는데, 이제는 본문과 똑같이 커스텀 폰트
+//  설정이 적용되도록 매번 현재 설정값을 읽어서 만든다. font-family는 #canvasTextWrapper에서 이미
+//  상속되니 여기서 따로 지정하지 않는다.)
+function getDialogueFontStyle() {
+    const fontSize = parseFloat(document.getElementById("fontSize")?.value) || 16;
+    const letterSpacing = parseFloat(document.getElementById("letterSpacing")?.value) || 0;
+    const lineHeightRaw = parseFloat(document.getElementById("lineHeight")?.value);
+    const lineHeight = isNaN(lineHeightRaw) ? Math.round(fontSize * 1.6) : lineHeightRaw;
+    return `font-size:${fontSize}px;line-height:${lineHeight}px;letter-spacing:${letterSpacing}px;`;
+}
+
 function renderSpeakerParagraphLayout(textWrapper) {
     const runs = groupDialogueLinesByRun(dialogueLines);
     const quoteChars = getQuoteChars(document.getElementById("dlgQuoteStyle")?.value || "none");
@@ -1345,18 +1357,23 @@ function renderSpeakerParagraphLayout(textWrapper) {
     const indentPx = isNaN(indentRaw) ? 16 : indentRaw;
     const colWidthRaw = parseFloat(document.getElementById("dlgNameColumnWidth")?.value);
     const colWidthPx = isNaN(colWidthRaw) ? 88 : colWidthRaw;
-    const DLG_FONT = "font-size:15.5px;line-height:24px;letter-spacing:normal;";
+    // "이름-대사 사이 간격" 설정을 그리드 두 칸(이름 칸 / 대사 칸) 사이 간격으로도 그대로 쓴다.
+    const nameGapRaw = parseFloat(document.getElementById("dlgNameGap")?.value);
+    const nameGap = isNaN(nameGapRaw) ? 14 : nameGapRaw;
+    const DLG_FONT = getDialogueFontStyle();
 
     const rowsHtml = runs.map((run) => {
         const c = characters.find((x) => x.id === run.charId);
         if (!c) return "";
         const nameColor = (useCharColor && c.color) ? `color:${c.color};` : "";
-        const dialogueText = run.lines.map((l) => `${quoteChars.open}${escapeHtml(l.text || "")}${quoteChars.close}`).join("");
+        // 같은 인물이 대사를 여러 줄(항목)로 나눠 말한 경우, 항목 사이에 줄바꿈(\n)을 넣어서 붙지 않게 한다.
+        // (white-space:pre-wrap이라 \n이 실제 줄바꿈으로 그려짐)
+        const dialogueText = run.lines.map((l) => `${quoteChars.open}${escapeHtml(l.text || "")}${quoteChars.close}`).join("\n");
         const narrationParas = run.lines.map((l) => (l.narration || "").trim()).filter(Boolean);
         const narrationHtml = narrationParas.map((t) => `<div style="${DLG_FONT}margin-left:${indentPx}px;margin-top:2px;white-space:pre-wrap;">${escapeHtml(t)}</div>`).join("");
         const nameCell = showName ? `<div style="${DLG_FONT}font-weight:700;${nameColor}">${escapeHtml(c.name)}${nameSuffix}</div>` : "";
         const contentCell = `<div style="${DLG_FONT}white-space:pre-wrap;">${dialogueText}</div>${narrationHtml}`;
-        return `<div style="display:grid;grid-template-columns:${colWidthPx}px 1fr;gap:12px;align-items:start;margin-bottom:${safeLineGap}px;text-align:inherit;"><div>${nameCell}</div><div>${contentCell}</div></div>`;
+        return `<div style="display:grid;grid-template-columns:${colWidthPx}px 1fr;gap:${nameGap}px;align-items:start;margin-bottom:${safeLineGap}px;text-align:inherit;"><div>${nameCell}</div><div>${contentCell}</div></div>`;
     }).join("");
 
     textWrapper.innerHTML = rowsHtml;
@@ -1381,10 +1398,8 @@ function appendDialogueLinesToCanvas(textWrapper) {
     const avatarSizeRaw = parseFloat(document.getElementById("dlgAvatarSize")?.value);
     const avatarSize = isNaN(avatarSizeRaw) ? 32 : avatarSizeRaw;
     const avatarRadius = document.getElementById("dlgAvatarShape")?.value === "square" ? "22%" : "50%";
-    // 대사 영역은 본문(발췌문) 글자 크기가 얼마든 상관없이 항상 이 고정 크기로만 보이게 한다.
-    // (CSS 클래스에 맡기지 않고 여기서 직접 인라인 스타일로 강제 — 다른 CSS가 절대 못 덮어씀.
-    //  같은 이유로 이름 뒤 기호·감싸는 기호도 CSS ::after/content 변수 대신 여기서 직접 문자로 붙인다.)
-    const DLG_FONT = "font-size:15.5px;line-height:24px;letter-spacing:normal;";
+    // 대사 영역도 이제 "폰트" 탭의 크기·자간·행간 설정을 그대로 따라간다(고정값 아님).
+    const DLG_FONT = getDialogueFontStyle();
 
     if (mode === "log") {
         // 로그 모드: 같은 인물이 이어 말하면 이름·프사는 처음 한 번만, 이후는 좁은 간격으로 붙여서 보여준다.
