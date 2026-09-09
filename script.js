@@ -254,7 +254,17 @@ function updateCanvas() {
 
     const textWrapper = document.getElementById("canvasTextWrapper");
     if (textWrapper) {
-        let rawHTML = els.editor.innerHTML || "<div><br></div>";
+        // 편집창에 넣어둔 "대사 미리보기" 안내 블록(.dlg-editor-marker)은 사용자가 본문에서
+        // 대사 위치를 참고하려고 넣어둔 것일 뿐, 실제 대사는 캔버스에 따로 그려지므로
+        // 캔버스용 rawHTML을 만들 때는 항상 이 블록들을 제외한다(중복 출력 방지).
+        let rawHTML;
+        if (els.editor.querySelector(".dlg-editor-marker")) {
+            const editorClone = els.editor.cloneNode(true);
+            editorClone.querySelectorAll(".dlg-editor-marker").forEach((m) => m.remove());
+            rawHTML = editorClone.innerHTML || "<div><br></div>";
+        } else {
+            rawHTML = els.editor.innerHTML || "<div><br></div>";
+        }
         const dialogueModeVal = document.getElementById("dialogueMode")?.value || "log";
         const paragraphLayoutOn = dialogueModeVal === "block" && document.getElementById("dlgParagraphLayout")?.checked;
 
@@ -1112,6 +1122,7 @@ function updateExistingDialogueNames(charId) {
     const c = characters.find((x) => x.id === charId);
     if (!c) return;
     renderDialogueLineList();
+    dialogueLines.filter((l) => l.charId === charId).forEach((l) => updateDialogueMarkerInEditor(l));
     updateCanvas();
 }
 
@@ -1199,9 +1210,11 @@ function loadDialogueLinesFromStorage() {
 }
 
 function addDialogueLine(charId) {
-    dialogueLines.push({ id: uid(), charId, text: "", translation: "", narration: "", stage: "" });
+    const line = { id: uid(), charId, text: "", translation: "", narration: "", stage: "" };
+    dialogueLines.push(line);
     saveDialogueLinesToStorage();
     renderDialogueLineList();
+    insertDialogueMarkerIntoEditor(line);
     updateCanvas();
     // 새로 추가된 칸이 어디 있는지 바로 보이도록 스크롤하고, 커서를 그 안에 놓는다.
     const container = document.getElementById("dialogueLineList");
@@ -1216,10 +1229,52 @@ function addDialogueLine(charId) {
     }
 }
 
+// "대사 추가"를 누르면, 그 대사가 본문(편집창)에도 바로 보이도록 편집창 맨 끝에 작은 안내 블록을 하나 넣는다.
+// 이 블록은 contenteditable=false라서 본문 글자로는 타이핑이 안 되고(실수로 안에 글자가 섞이는 걸 방지),
+// 사용자는 이 블록 위/아래에 자유롭게 줄글을 이어서 쓸 수 있다.
+// ⚠️ 실제 캔버스에 그려지는 대사는 여전히 "대사 목록" 데이터를 기반으로 appendDialogueLinesToCanvas /
+// renderSpeakerParagraphLayout이 그리기 때문에, 이 블록이 본문에도 있다고 대사가 두 번 나오지 않도록
+// updateCanvas()에서 캔버스에 반영하기 직전에 이 블록들은 항상 제거한 채로 rawHTML을 만든다.
+function dialogueMarkerLabel(line) {
+    const c = characters.find((x) => x.id === line.charId);
+    const name = c ? c.name : "이름 없음";
+    const preview = (line.text || "").trim() || "(대사 입력 전)";
+    return `🗨 ${name}: ${preview}`;
+}
+
+function insertDialogueMarkerIntoEditor(line) {
+    if (!els.editor) return;
+    const marker = document.createElement("div");
+    marker.className = "dlg-editor-marker";
+    marker.dataset.lineId = line.id;
+    marker.contentEditable = "false";
+    marker.style.cssText = "margin:6px 0;padding:6px 10px;background:#f1f1ef;border-left:3px solid #a3a3a3;border-radius:6px;font-size:13px;line-height:1.5;color:#555;white-space:pre-wrap;user-select:none;";
+    marker.textContent = dialogueMarkerLabel(line);
+    els.editor.appendChild(marker);
+    // 마커 뒤에 계속 이어서 타이핑할 수 있도록 빈 줄을 하나 더 붙여둔다.
+    const trailing = document.createElement("div");
+    trailing.appendChild(document.createElement("br"));
+    els.editor.appendChild(trailing);
+    if (typeof pushHistory === "function") pushHistory(true);
+}
+
+function updateDialogueMarkerInEditor(line) {
+    if (!els.editor) return;
+    const marker = els.editor.querySelector(`.dlg-editor-marker[data-line-id="${line.id}"]`);
+    if (marker) marker.textContent = dialogueMarkerLabel(line);
+}
+
+function removeDialogueMarkerFromEditor(lineId) {
+    if (!els.editor) return;
+    const marker = els.editor.querySelector(`.dlg-editor-marker[data-line-id="${lineId}"]`);
+    if (marker) marker.remove();
+}
+
 function deleteDialogueLine(lineId) {
     dialogueLines = dialogueLines.filter((l) => l.id !== lineId);
     saveDialogueLinesToStorage();
     renderDialogueLineList();
+    removeDialogueMarkerFromEditor(lineId);
     updateCanvas();
 }
 
@@ -1278,6 +1333,7 @@ function renderDialogueLineList() {
         textArea.addEventListener("input", () => {
             line.text = textArea.value;
             saveDialogueLinesToStorage();
+            updateDialogueMarkerInEditor(line);
             updateCanvas();
         });
         cell.appendChild(textArea);
@@ -1442,15 +1498,21 @@ function appendDialogueLinesToCanvas(textWrapper) {
     } else {
         // 블록 모드: 박스 없이, "이름 대사" 한 줄씩 모아서 보여준다. (전부 인라인 스타일)
         // 여기도 flex 대신 일반 인라인 흐름(span)만 써서 html2canvas 저장 시에도 화면과 동일하게 찍히게 한다.
-        const linesHtml = dialogueLines.map((line, i) => {
-            const c = characters.find((x) => x.id === line.charId);
+        // 같은 인물이 연속으로 여러 줄 말하면, 이름은 그 묶음의 첫 줄에만 보여주고 이후 줄은 이름 없이 붙인다.
+        const runs = groupDialogueLinesByRun(dialogueLines);
+        let rowIndex = 0;
+        const linesHtml = runs.map((run) => {
+            const c = characters.find((x) => x.id === run.charId);
             if (!c) return "";
             const nameColor = (useCharColor && c.color) ? `color:${c.color};` : "";
-            const rowMargin = i > 0 ? `margin-top:${safeLineGap}px;` : "";
-            const nameHtml = showName
-                ? `<span style="${DLG_FONT}display:inline-block;font-weight:700;${nameColor}margin-right:${nameGap}px;">${escapeHtml(c.name)}</span>`
-                : "";
-            return `<div style="${DLG_FONT}${rowMargin}text-align:inherit;">${nameHtml}<span style="${DLG_FONT}white-space:pre-wrap;word-break:break-word;">${escapeHtml(line.text || "")}</span></div>`;
+            return run.lines.map((line, i) => {
+                const rowMargin = rowIndex > 0 ? `margin-top:${safeLineGap}px;` : "";
+                rowIndex++;
+                const nameHtml = (showName && i === 0)
+                    ? `<span style="${DLG_FONT}display:inline-block;font-weight:700;${nameColor}margin-right:${nameGap}px;">${escapeHtml(c.name)}</span>`
+                    : "";
+                return `<div style="${DLG_FONT}${rowMargin}text-align:inherit;">${nameHtml}<span style="${DLG_FONT}white-space:pre-wrap;word-break:break-word;">${escapeHtml(line.text || "")}</span></div>`;
+            }).join("");
         }).join("");
 
         const wrapper = document.createElement("div");
