@@ -254,27 +254,16 @@ function updateCanvas() {
 
     const textWrapper = document.getElementById("canvasTextWrapper");
     if (textWrapper) {
-        // 편집창에 넣어둔 "대사 미리보기" 안내 블록(.dlg-editor-marker)은 사용자가 본문에서
-        // 대사 위치를 참고하려고 넣어둔 것일 뿐, 실제 대사는 캔버스에 따로 그려지므로
-        // 캔버스용 rawHTML을 만들 때는 항상 이 블록들을 제외한다(중복 출력 방지).
-        let rawHTML;
-        if (els.editor.querySelector(".dlg-editor-marker")) {
-            const editorClone = els.editor.cloneNode(true);
-            editorClone.querySelectorAll(".dlg-editor-marker").forEach((m) => m.remove());
-            rawHTML = editorClone.innerHTML || "<div><br></div>";
-        } else {
-            rawHTML = els.editor.innerHTML || "<div><br></div>";
-        }
-        const dialogueModeVal = document.getElementById("dialogueMode")?.value || "log";
-        const paragraphLayoutOn = dialogueModeVal === "block" && document.getElementById("dlgParagraphLayout")?.checked;
+        // "대사 추가"로 넣은 블록(.dlg-editor-marker)은 이제 미리보기가 아니라 실제로 캔버스에
+        // 그려지는 진짜 대사 블록이다. 본문(rawHTML) 안에 그대로 살아있는 채로 캔버스에 반영되므로,
+        // 여기서 매번 최신 설정(이름표시·따옴표·색상·폰트 등)에 맞춰 블록 모양부터 새로고침한 다음
+        // 본문 내용을 그대로 캔버스에 옮긴다. (더 이상 대사 목록을 따로 append하지 않음 — 중복 방지)
+        ensureAllDialogueMarkersExist();
+        refreshAllDialogueMarkers();
+        const rawHTML = els.editor.innerHTML || "<div><br></div>";
 
-        if (paragraphLayoutOn && dialogueLines.length > 0) {
-            renderSpeakerParagraphLayout(textWrapper);
-        } else {
-            textWrapper.innerHTML = rawHTML;
-            normalizeParagraphs(textWrapper);
-            appendDialogueLinesToCanvas(textWrapper);
-        }
+        textWrapper.innerHTML = rawHTML;
+        normalizeParagraphs(textWrapper);
 
         textWrapper.style.setProperty("--quote-line-color", els.quoteLineColor.value);
         if (els.editor) els.editor.style.setProperty("--quote-line-color", els.quoteLineColor.value);
@@ -1229,27 +1218,72 @@ function addDialogueLine(charId) {
     }
 }
 
-// "대사 추가"를 누르면, 그 대사가 본문(편집창)에도 바로 보이도록 편집창 맨 끝에 작은 안내 블록을 하나 넣는다.
-// 이 블록은 contenteditable=false라서 본문 글자로는 타이핑이 안 되고(실수로 안에 글자가 섞이는 걸 방지),
-// 사용자는 이 블록 위/아래에 자유롭게 줄글을 이어서 쓸 수 있다.
-// ⚠️ 실제 캔버스에 그려지는 대사는 여전히 "대사 목록" 데이터를 기반으로 appendDialogueLinesToCanvas /
-// renderSpeakerParagraphLayout이 그리기 때문에, 이 블록이 본문에도 있다고 대사가 두 번 나오지 않도록
-// updateCanvas()에서 캔버스에 반영하기 직전에 이 블록들은 항상 제거한 채로 rawHTML을 만든다.
-function dialogueMarkerLabel(line) {
+// 대사 하나(line)를 현재 설정(로그/블록/단락분리, 이름표시, 따옴표, 색상, 프사, 번역, 폰트 등)에 맞춰
+// 실제로 화면·저장본에 그려질 모양 그대로 HTML로 만든다. 편집창 안의 블록(.dlg-editor-marker)과
+// 캔버스 양쪽에 이 함수 하나로 항상 똑같은 모양을 그린다 (따로 관리하던 두 렌더링 경로를 통합).
+// ⚠️ #canvasTextWrapper/#textEditor에 white-space:pre-wrap이 걸려 있으므로 태그 사이 줄바꿈 없이 한 줄로 만든다.
+function buildDialogueBlockHTML(line) {
     const c = characters.find((x) => x.id === line.charId);
-    const name = c ? c.name : "이름 없음";
-    const preview = (line.text || "").trim() || "(대사 입력 전)";
-    return `🗨 ${name}: ${preview}`;
+    if (!c) return `<div style="font-size:12px;color:#999;">(삭제된 캐릭터)</div>`;
+
+    const mode = document.getElementById("dialogueMode")?.value || "log";
+    const paragraphLayoutOn = mode === "block" && document.getElementById("dlgParagraphLayout")?.checked;
+    const showAvatar = mode === "log" && document.getElementById("dlgShowAvatar")?.checked;
+    const showName = document.getElementById("dlgShowName")?.checked !== false;
+    const showTranslation = document.getElementById("dlgShowTranslation")?.checked;
+    const useCharColor = document.getElementById("dlgUseCharColor")?.checked;
+    const nameSuffix = document.getElementById("dlgNameSuffix")?.value ?? ":";
+    const quoteChars = getQuoteChars(document.getElementById("dlgQuoteStyle")?.value || "none");
+    const nameGapRaw = parseFloat(document.getElementById("dlgNameGap")?.value);
+    const nameGap = isNaN(nameGapRaw) ? 14 : nameGapRaw;
+    const avatarSizeRaw = parseFloat(document.getElementById("dlgAvatarSize")?.value);
+    const avatarSize = isNaN(avatarSizeRaw) ? 32 : avatarSizeRaw;
+    const avatarRadius = document.getElementById("dlgAvatarShape")?.value === "square" ? "22%" : "50%";
+    const DLG_FONT = getDialogueFontStyle();
+    const nameColor = (useCharColor && c.color) ? `color:${c.color};` : "";
+    const quotedText = `${quoteChars.open}${escapeHtml(line.text || "")}${quoteChars.close}`;
+    const narrationText = (line.narration || "").trim();
+
+    if (paragraphLayoutOn) {
+        const indentRaw = parseFloat(document.getElementById("dlgParagraphIndent")?.value);
+        const indentPx = isNaN(indentRaw) ? 16 : indentRaw;
+        const colWidthRaw = parseFloat(document.getElementById("dlgNameColumnWidth")?.value);
+        const colWidthPx = isNaN(colWidthRaw) ? 88 : colWidthRaw;
+        const nameCell = showName ? `<div style="${DLG_FONT}font-weight:700;${nameColor}">${escapeHtml(c.name)}${nameSuffix}</div>` : "";
+        const narrationHtml = narrationText ? `<div style="${DLG_FONT}margin-left:${indentPx}px;margin-top:2px;white-space:pre-wrap;">${escapeHtml(narrationText)}</div>` : "";
+        return `<div style="display:grid;grid-template-columns:${colWidthPx}px 1fr;gap:${nameGap}px;align-items:start;text-align:inherit;"><div>${nameCell}</div><div><div style="${DLG_FONT}white-space:pre-wrap;">${quotedText}</div>${narrationHtml}</div></div>`;
+    }
+
+    if (mode === "log") {
+        const avatarGap = 8;
+        const leftOffset = showAvatar ? avatarSize + avatarGap : 0;
+        const avatarStyle = `position:absolute;top:0;left:0;width:${avatarSize}px;height:${avatarSize}px;border-radius:${avatarRadius};background-color:#f3f3f1;border:1px solid #eaeaea;background-size:cover;background-position:center;box-sizing:border-box;${c.avatarData ? `background-image:url(${c.avatarData});` : ""}`;
+        const avatarHtml = showAvatar ? `<div style="${avatarStyle}"></div>` : "";
+        const nameHtml = showName ? `<div style="${DLG_FONT}font-size:13px;font-weight:700;${nameColor}margin-bottom:3px;">${escapeHtml(c.name)}${nameSuffix}</div>` : "";
+        const translationHtml = (showTranslation && line.translation) ? `<div style="${DLG_FONT}font-size:14px;white-space:pre-wrap;opacity:0.65;">${escapeHtml(line.translation)}</div>` : "";
+        const narrationHtml = narrationText ? `<div style="${DLG_FONT}margin-top:2px;white-space:pre-wrap;">${escapeHtml(narrationText)}</div>` : "";
+        const minHeight = showAvatar ? `min-height:${avatarSize}px;` : "";
+        return `<div style="position:relative;${minHeight}text-align:inherit;box-sizing:border-box;white-space:normal;">${avatarHtml}<div style="margin-left:${leftOffset}px;white-space:normal;">${nameHtml}<div style="${DLG_FONT}white-space:pre-wrap;">${quotedText}</div>${translationHtml}${narrationHtml}</div></div>`;
+    }
+
+    // 기본 블록 모드(단락분리 미사용): 이름 + 대사 한 줄
+    const nameHtml = showName ? `<span style="${DLG_FONT}display:inline-block;font-weight:700;${nameColor}margin-right:${nameGap}px;">${escapeHtml(c.name)}</span>` : "";
+    const narrationHtml = narrationText ? `<div style="${DLG_FONT}margin-top:2px;white-space:pre-wrap;">${escapeHtml(narrationText)}</div>` : "";
+    return `<div style="text-align:inherit;">${nameHtml}<span style="${DLG_FONT}white-space:pre-wrap;word-break:break-word;">${escapeHtml(line.text || "")}</span></div>${narrationHtml}`;
 }
 
+// "대사 추가"를 누르면, 그 대사가 본문(편집창)에도 바로 보이도록 편집창 맨 끝에 실제 대사 블록을 넣는다.
+// 이 블록은 contenteditable=false라서 본문 글자로는 타이핑이 안 되고(실수로 안에 글자가 섞이는 걸 방지),
+// 사용자는 이 블록 위/아래에 자유롭게 줄글을 이어서 쓸 수 있다. 캔버스는 이제 이 본문 내용을 그대로
+// 옮겨서 그리기 때문에, 이 블록이 곧 실제로 저장되는 대사 모양이다(더 이상 미리보기 전용이 아님).
 function insertDialogueMarkerIntoEditor(line) {
     if (!els.editor) return;
     const marker = document.createElement("div");
     marker.className = "dlg-editor-marker";
     marker.dataset.lineId = line.id;
     marker.contentEditable = "false";
-    marker.style.cssText = "margin:6px 0;padding:6px 10px;background:#f1f1ef;border-left:3px solid #a3a3a3;border-radius:6px;font-size:13px;line-height:1.5;color:#555;white-space:pre-wrap;user-select:none;";
-    marker.textContent = dialogueMarkerLabel(line);
+    marker.style.cssText = "margin:8px 0;";
+    marker.innerHTML = buildDialogueBlockHTML(line);
     els.editor.appendChild(marker);
     // 마커 뒤에 계속 이어서 타이핑할 수 있도록 빈 줄을 하나 더 붙여둔다.
     const trailing = document.createElement("div");
@@ -1261,20 +1295,37 @@ function insertDialogueMarkerIntoEditor(line) {
 function updateDialogueMarkerInEditor(line) {
     if (!els.editor) return;
     const marker = els.editor.querySelector(`.dlg-editor-marker[data-line-id="${line.id}"]`);
-    if (marker) marker.textContent = dialogueMarkerLabel(line);
+    if (marker) marker.innerHTML = buildDialogueBlockHTML(line);
 }
 
-function removeDialogueMarkerFromEditor(lineId) {
+// 편집창에 이미 들어있는 모든 대사 블록을, 현재 설정(이름표시/따옴표/색상/폰트 등)에 맞춰 다시 그린다.
+// 설정을 바꿀 때마다 일일이 리스너를 걸지 않고, updateCanvas가 실행될 때마다 항상 이걸 먼저 불러서
+// 편집창 속 블록 모양이 캔버스와 항상 똑같이 최신 상태로 유지되게 한다.
+function refreshAllDialogueMarkers() {
     if (!els.editor) return;
-    const marker = els.editor.querySelector(`.dlg-editor-marker[data-line-id="${lineId}"]`);
-    if (marker) marker.remove();
+    els.editor.querySelectorAll(".dlg-editor-marker").forEach((marker) => {
+        const line = dialogueLines.find((l) => l.id === marker.dataset.lineId);
+        if (line) marker.innerHTML = buildDialogueBlockHTML(line);
+        else marker.remove(); // 삭제된 대사인데 편집창에 블록이 남아있으면 정리
+    });
+}
+
+// 새로고침 등으로 "대사 목록"엔 있는데 편집창엔 블록이 없는 대사가 생기면, 맨 끝에 자동으로 채워 넣는다.
+function ensureAllDialogueMarkersExist() {
+    if (!els.editor) return;
+    dialogueLines.forEach((line) => {
+        if (!els.editor.querySelector(`.dlg-editor-marker[data-line-id="${line.id}"]`)) {
+            insertDialogueMarkerIntoEditor(line);
+        }
+    });
 }
 
 function deleteDialogueLine(lineId) {
     dialogueLines = dialogueLines.filter((l) => l.id !== lineId);
     saveDialogueLinesToStorage();
     renderDialogueLineList();
-    removeDialogueMarkerFromEditor(lineId);
+    const marker = els.editor ? els.editor.querySelector(`.dlg-editor-marker[data-line-id="${lineId}"]`) : null;
+    if (marker) marker.remove();
     updateCanvas();
 }
 
@@ -2215,6 +2266,16 @@ function normalizeParagraphs(container) {
                 paragraphAligns.push(null);
                 paragraphIndents.push(false);
                 flushParagraph();
+            } else if (node.classList.contains("dlg-editor-marker")) {
+                // "대사 추가"로 삽입된 실제 대사 블록. 내부 구조(absolute 프사, grid 등)를 그대로
+                // 보존해야 캔버스에서도 정확히 같은 모양으로 나오므로, 다른 블록들처럼 통째로 보존한다.
+                flushParagraph();
+                const markerClone = node.cloneNode(true);
+                markerClone.removeAttribute("contenteditable");
+                paragraphs.push(markerClone);
+                paragraphAligns.push(null);
+                paragraphIndents.push(false);
+                flushParagraph();
             } else if (tagName === "DIV" || tagName === "P" || /^H[1-6]$/.test(tagName)) {
                 flushParagraph();
                 const prevAlign = currentAlign;
@@ -2226,7 +2287,7 @@ function normalizeParagraphs(container) {
                 currentAlign = prevAlign;
                 currentIndent = prevIndent;
             } else {
-                if (node.querySelector("div, p, br, .dialogue-line, .box-quote, .template-block")) Array.from(node.childNodes).forEach(parseNodes);
+                if (node.querySelector("div, p, br, .dialogue-line, .box-quote, .template-block, .dlg-editor-marker")) Array.from(node.childNodes).forEach(parseNodes);
                 else currentParagraphNodes.push(node.cloneNode(true));
             }
         }
@@ -2247,7 +2308,7 @@ function normalizeParagraphs(container) {
     paragraphs.forEach((pNodes, idx) => {
         const align = paragraphAligns[idx];
         const indented = paragraphIndents[idx];
-        if (pNodes instanceof HTMLElement && (pNodes.classList.contains("dialogue-line") || pNodes.classList.contains("box-quote") || pNodes.classList.contains("hr-divider") || pNodes.classList.contains("template-block") || pNodes.classList.contains("editor-image-block"))) {
+        if (pNodes instanceof HTMLElement && (pNodes.classList.contains("dialogue-line") || pNodes.classList.contains("box-quote") || pNodes.classList.contains("hr-divider") || pNodes.classList.contains("template-block") || pNodes.classList.contains("editor-image-block") || pNodes.classList.contains("dlg-editor-marker"))) {
             if (align && !pNodes.classList.contains("editor-image-block") && !pNodes.classList.contains("hr-divider")) pNodes.style.textAlign = align;
             container.appendChild(pNodes);
         } else {
