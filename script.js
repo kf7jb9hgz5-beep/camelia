@@ -1251,7 +1251,10 @@ function buildDialogueBlockHTML(line) {
         const colWidthPx = isNaN(colWidthRaw) ? 88 : colWidthRaw;
         const nameCell = showName ? `<div style="${DLG_FONT}font-weight:700;${nameColor}">${escapeHtml(c.name)}${nameSuffix}</div>` : "";
         const narrationHtml = narrationText ? `<div style="${DLG_FONT}margin-left:${indentPx}px;margin-top:2px;white-space:pre-wrap;">${escapeHtml(narrationText)}</div>` : "";
-        return `<div style="display:grid;grid-template-columns:${colWidthPx}px 1fr;gap:${nameGap}px;align-items:start;text-align:inherit;"><div>${nameCell}</div><div><div style="${DLG_FONT}white-space:pre-wrap;">${quotedText}</div>${narrationHtml}</div></div>`;
+        // ⚠️ CSS grid의 gap 속성은 음수를 허용하지 않아(브라우저가 무시함), 마이너스 간격을 넣어도
+        // 아무 효과가 없었다. 그래서 grid gap은 0으로 고정하고, 대신 오른쪽 칸에 margin-left로
+        // 간격을 주는 방식으로 바꿨다 — margin은 음수도 정상적으로 작동한다.
+        return `<div style="display:grid;grid-template-columns:${colWidthPx}px 1fr;gap:0;align-items:start;text-align:inherit;"><div>${nameCell}</div><div style="margin-left:${nameGap}px;"><div style="${DLG_FONT}white-space:pre-wrap;">${quotedText}</div>${narrationHtml}</div></div>`;
     }
 
     if (mode === "log") {

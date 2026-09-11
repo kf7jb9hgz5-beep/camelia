@@ -1,5 +1,13 @@
 @import url("https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/static/complete/WantedSans.min.css");
 @import url("https://cdn.jsdelivr.net/gh/cartax/webfont-nanum/dist/NanumMyeongjoEco/subset/kr/font.css");
+@import url('https://cdn.jsdelivr.net/gh/MonadABXY/mona-font/web/mona.css');
+
+@font-face {
+    font-family: 'Tangba';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-4@1.1/Tangba12.woff2') format('woff2');
+    font-weight: normal;
+    font-display: swap;
+}
 
 :root {
     --bg-main: #f3f3f1;
@@ -27,37 +35,6 @@
 *::before,
 *::after {
     box-sizing: border-box;
-}
-
-@font-face {
-    font-family: "MaruBuri";
-    src: url(https://hangeul.pstatic.net/hangeul_static/webfont/MaruBuri/MaruBuri-ExtraLight.woff2) format("woff2");
-    font-weight: 200;
-    font-display: swap;
-}
-@font-face {
-    font-family: "MaruBuri";
-    src: url(https://hangeul.pstatic.net/hangeul_static/webfont/MaruBuri/MaruBuri-Light.woff2) format("woff2");
-    font-weight: 300;
-    font-display: swap;
-}
-@font-face {
-    font-family: "MaruBuri";
-    src: url(https://hangeul.pstatic.net/hangeul_static/webfont/MaruBuri/MaruBuri-Regular.woff2) format("woff2");
-    font-weight: 400;
-    font-display: swap;
-}
-@font-face {
-    font-family: "MaruBuri";
-    src: url(https://hangeul.pstatic.net/hangeul_static/webfont/MaruBuri/MaruBuri-SemiBold.woff2) format("woff2");
-    font-weight: 600;
-    font-display: swap;
-}
-@font-face {
-    font-family: "MaruBuri";
-    src: url(https://hangeul.pstatic.net/hangeul_static/webfont/MaruBuri/MaruBuri-Bold.woff2) format("woff2");
-    font-weight: 700;
-    font-display: swap;
 }
 
 @font-face {
@@ -129,15 +106,17 @@
     font-display: swap;
 }
 
-@font-face {
-    font-family: "Ridibatang";
-    src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_twelve@1.0/RIDIBatang.woff") format("woff");
-    font-weight: normal;
-    font-display: swap;
-}
 /* ===========================
     오늘 폰트
 =========================== */
+
+@font-face {
+    font-family: "OnulPyeongahn";
+    src: url("Fonts/OnulPyeongahn.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
 
 @font-face {
     font-family: "OnulDamso";
