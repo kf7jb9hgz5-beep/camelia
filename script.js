@@ -260,7 +260,16 @@ function updateCanvas() {
         // 본문 내용을 그대로 캔버스에 옮긴다. (더 이상 대사 목록을 따로 append하지 않음 — 중복 방지)
         ensureAllDialogueMarkersExist();
         refreshAllDialogueMarkers();
-        const rawHTML = els.editor.innerHTML || "<div><br></div>";
+        // 대사 블록 위에 있는 위/아래 이동 버튼(.dlg-marker-controls)은 편집 편의용이라 실제
+        // 저장/캔버스 결과물에는 나오면 안 되므로, 캔버스용 rawHTML을 만들 때는 항상 제외한다.
+        let rawHTML;
+        if (els.editor.querySelector(".dlg-marker-controls")) {
+            const editorClone = els.editor.cloneNode(true);
+            editorClone.querySelectorAll(".dlg-marker-controls").forEach((el) => el.remove());
+            rawHTML = editorClone.innerHTML || "<div><br></div>";
+        } else {
+            rawHTML = els.editor.innerHTML || "<div><br></div>";
+        }
 
         textWrapper.innerHTML = rawHTML;
         normalizeParagraphs(textWrapper);
@@ -1275,6 +1284,15 @@ function buildDialogueBlockHTML(line) {
     return `<div style="text-align:inherit;">${nameHtml}<span style="${DLG_FONT}white-space:pre-wrap;word-break:break-word;">${escapeHtml(line.text || "")}</span></div>${narrationHtml}`;
 }
 
+// 편집창 속 대사 블록 하나의 최종 내부 HTML: 위/아래 이동 버튼(캔버스에는 안 찍힘) + 실제 대사 내용.
+function buildDialogueMarkerInnerHTML(line) {
+    const controls = `<div class="dlg-marker-controls" contenteditable="false" style="display:flex;justify-content:flex-end;gap:4px;margin-bottom:4px;user-select:none;">`
+        + `<button type="button" onclick="moveDialogueMarker('${line.id}','up')" style="border:1px solid #ddd;background:#fff;border-radius:4px;font-size:11px;line-height:1;padding:3px 7px;color:#888;">▲</button>`
+        + `<button type="button" onclick="moveDialogueMarker('${line.id}','down')" style="border:1px solid #ddd;background:#fff;border-radius:4px;font-size:11px;line-height:1;padding:3px 7px;color:#888;">▼</button>`
+        + `</div>`;
+    return `${controls}<div class="dlg-marker-content">${buildDialogueBlockHTML(line)}</div>`;
+}
+
 // "대사 추가"를 누르면, 그 대사가 본문(편집창)에도 바로 보이도록 편집창 맨 끝에 실제 대사 블록을 넣는다.
 // 이 블록은 contenteditable=false라서 본문 글자로는 타이핑이 안 되고(실수로 안에 글자가 섞이는 걸 방지),
 // 사용자는 이 블록 위/아래에 자유롭게 줄글을 이어서 쓸 수 있다. 캔버스는 이제 이 본문 내용을 그대로
@@ -1286,7 +1304,7 @@ function insertDialogueMarkerIntoEditor(line) {
     marker.dataset.lineId = line.id;
     marker.contentEditable = "false";
     marker.style.cssText = "margin:8px 0;";
-    marker.innerHTML = buildDialogueBlockHTML(line);
+    marker.innerHTML = buildDialogueMarkerInnerHTML(line);
     els.editor.appendChild(marker);
     // 마커 뒤에 계속 이어서 타이핑할 수 있도록 빈 줄을 하나 더 붙여둔다.
     const trailing = document.createElement("div");
@@ -1295,10 +1313,28 @@ function insertDialogueMarkerIntoEditor(line) {
     if (typeof pushHistory === "function") pushHistory(true);
 }
 
+// 편집창에서 대사 블록 위/아래로 자리를 옮긴다. 바로 위·아래에 있는 것(나레이션 문단이든 다른 대사
+// 블록이든)과 순서를 맞바꾸는 방식이라, 원하는 위치에 자유롭게 끼워넣을 수 있다.
+function moveDialogueMarker(lineId, direction) {
+    if (!els.editor) return;
+    const marker = els.editor.querySelector(`.dlg-editor-marker[data-line-id="${lineId}"]`);
+    if (!marker) return;
+    const sibling = direction === "up" ? marker.previousElementSibling : marker.nextElementSibling;
+    if (!sibling) return; // 이미 맨 위/맨 아래라 더 옮길 데가 없음
+    if (direction === "up") {
+        els.editor.insertBefore(marker, sibling);
+    } else {
+        els.editor.insertBefore(sibling, marker);
+    }
+    if (typeof pushHistory === "function") pushHistory(true);
+    updateCanvas();
+}
+window.moveDialogueMarker = moveDialogueMarker;
+
 function updateDialogueMarkerInEditor(line) {
     if (!els.editor) return;
     const marker = els.editor.querySelector(`.dlg-editor-marker[data-line-id="${line.id}"]`);
-    if (marker) marker.innerHTML = buildDialogueBlockHTML(line);
+    if (marker) marker.innerHTML = buildDialogueMarkerInnerHTML(line);
 }
 
 // 편집창에 이미 들어있는 모든 대사 블록을, 현재 설정(이름표시/따옴표/색상/폰트 등)에 맞춰 다시 그린다.
@@ -1308,7 +1344,7 @@ function refreshAllDialogueMarkers() {
     if (!els.editor) return;
     els.editor.querySelectorAll(".dlg-editor-marker").forEach((marker) => {
         const line = dialogueLines.find((l) => l.id === marker.dataset.lineId);
-        if (line) marker.innerHTML = buildDialogueBlockHTML(line);
+        if (line) marker.innerHTML = buildDialogueMarkerInnerHTML(line);
         else marker.remove(); // 삭제된 대사인데 편집창에 블록이 남아있으면 정리
     });
 }
