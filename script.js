@@ -1174,7 +1174,12 @@ function openCharacterEditor(id) {
     const avatarBox = document.getElementById("charEditorAvatar");
     const deleteBtn = document.getElementById("btnDeleteCharacter");
     const colorInput = document.getElementById("charEditorColor");
+    const bubbleSideArea = document.getElementById("charEditorBubbleSideArea");
+    const bubbleSideInput = document.getElementById("charEditorBubbleSide");
     if (!editor || !nameInput || !avatarBox || !deleteBtn) return;
+
+    const mode = document.getElementById("dialogueMode")?.value || "log";
+    if (bubbleSideArea) bubbleSideArea.style.display = mode === "bubble" ? "" : "none";
 
     if (id) {
         const c = characters.find((x) => x.id === id);
@@ -1184,16 +1189,30 @@ function openCharacterEditor(id) {
         avatarBox.dataset.hasImage = c.avatarData ? "true" : "false";
         if (colorInput) colorInput.value = c.color || "#171717";
         deleteBtn.style.display = "block";
+        setSegmentedValue("charEditorBubbleSide", c.bubbleSide || "left");
     } else {
         nameInput.value = "";
         avatarBox.style.backgroundImage = "none";
         avatarBox.dataset.hasImage = "false";
         if (colorInput) colorInput.value = "#171717";
         deleteBtn.style.display = "none";
+        setSegmentedValue("charEditorBubbleSide", "left");
     }
+    if (bubbleSideInput && !id) bubbleSideInput.value = "left";
 
     editor.style.display = "flex";
     editor.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+// 세그먼트 컨트롤(예: 왼쪽/오른쪽 버튼)의 활성 버튼과 숨은 input 값을 코드로 맞춰준다.
+function setSegmentedValue(hiddenInputId, value) {
+    const hiddenInput = document.getElementById(hiddenInputId);
+    if (hiddenInput) hiddenInput.value = value;
+    const group = document.querySelector(`.segmented-control[data-target="${hiddenInputId}"]`);
+    if (!group) return;
+    group.querySelectorAll("button").forEach((b) => {
+        b.classList.toggle("active", b.getAttribute("data-value") === value);
+    });
 }
 
 function closeCharacterEditor() {
@@ -1221,6 +1240,8 @@ function getQuoteChars(style) {
 function syncDialogueModeUI() {
     const mode = document.getElementById("dialogueMode")?.value || "log";
     const isLog = mode === "log";
+    const isBlock = mode === "block";
+    const isBubble = mode === "bubble";
     const hint = document.getElementById("dialogueModeHint");
     const areaMap = {
         dlgShowAvatarArea: isLog,
@@ -1228,20 +1249,29 @@ function syncDialogueModeUI() {
         dlgTranslationArea: isLog,
         dlgContinuationGapArea: isLog,
         dlgLogOnlyTitle: isLog,
-        dlgNameGapArea: !isLog,
-        dlgBlockOnlyTitle: !isLog,
-        dlgParagraphLayoutArea: !isLog
+        dlgNameGapArea: isBlock,
+        dlgBlockOnlyTitle: isBlock,
+        dlgParagraphLayoutArea: isBlock,
+        dlgBubbleOnlyTitle: isBubble,
+        dlgBubblePadYArea: isBubble,
+        dlgBubblePadXArea: isBubble,
+        dlgBubbleRadiusArea: isBubble,
+        dlgBubbleTextColorArea: isBubble
     };
     Object.keys(areaMap).forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.style.display = areaMap[id] ? "" : "none";
     });
+    const bubbleSideArea = document.getElementById("charEditorBubbleSideArea");
+    if (bubbleSideArea) bubbleSideArea.style.display = isBubble ? "" : "none";
     const lineGapLabel = document.getElementById("dlgLineGapLabel");
     if (lineGapLabel) lineGapLabel.textContent = isLog ? "대사(턴) 간 간격 (px)" : "대사 줄 사이 간격 (px)";
     if (hint) {
         hint.textContent = isLog
             ? "이름과 프로필 사진을 앞에 두고, 대사를 한 줄씩 이어 보여줘요."
-            : "이름과 대사를 한 줄씩, 하나의 박스 안에 모아 보여줘요.";
+            : isBubble
+                ? "채팅 앱처럼 둥근 말풍선으로 보여줘요. 캐릭터별로 왼쪽/오른쪽, 색을 따로 정할 수 있어요."
+                : "이름과 대사를 한 줄씩, 하나의 박스 안에 모아 보여줘요.";
     }
     syncParagraphLayoutUI();
     renderDialogueLineList();
@@ -1447,6 +1477,28 @@ function buildDialogueBlockHTML(line) {
     const nameColor = (useCharColor && c.color) ? `color:${c.color};` : "";
     const quotedText = `${quoteChars.open}${escapeHtml(line.text || "")}${quoteChars.close}`;
     const narrationText = (line.narration || "").trim();
+
+    if (mode === "bubble") {
+        const side = c.bubbleSide === "right" ? "right" : "left";
+        const padYRaw = parseFloat(document.getElementById("dlgBubblePadY")?.value);
+        const padY = isNaN(padYRaw) ? 10 : padYRaw;
+        const padXRaw = parseFloat(document.getElementById("dlgBubblePadX")?.value);
+        const padX = isNaN(padXRaw) ? 14 : padXRaw;
+        const radiusRaw = parseFloat(document.getElementById("dlgBubbleRadius")?.value);
+        const radius = isNaN(radiusRaw) ? 18 : radiusRaw;
+        const bubbleTextColor = document.getElementById("dlgBubbleTextColor")?.value || "#ffffff";
+        const bubbleBg = c.color || "#171717";
+        const nameHtml = showName ? `<div style="${DLG_FONT}${nameSizeStyle}font-weight:700;${nameColor}margin-bottom:3px;text-align:${side === "right" ? "right" : "left"};">${escapeHtml(c.name)}</div>` : "";
+        const narrationHtml = narrationText ? `<div style="${DLG_FONT}margin-top:4px;white-space:pre-wrap;text-align:${side === "right" ? "right" : "left"};opacity:0.7;">${escapeHtml(narrationText)}</div>` : "";
+        // 말풍선 자체는 flex로 좌/우 정렬한다. 말풍선 "안쪽" 레이아웃은 텍스트 하나뿐이라
+        // 이전에 겪었던 flex+gap 관련 html2canvas 문제와는 무관하다(그건 아바타처럼 서로 다른
+        // 두 요소를 나란히 놓을 때 생겼던 문제였음). 그래도 안전하게 태그 사이 공백 없이 한 줄로 만든다.
+        const bubbleText = escapeHtml(line.text || "");
+        const bubbleHtml = `<div style="display:flex;justify-content:${side === "right" ? "flex-end" : "flex-start"};">`
+            + `<div style="${DLG_FONT}max-width:78%;background-color:${bubbleBg};color:${bubbleTextColor};padding:${padY}px ${padX}px;border-radius:${radius}px;white-space:pre-wrap;word-break:break-word;box-sizing:border-box;">${bubbleText}</div>`
+            + `</div>`;
+        return `<div>${nameHtml}${bubbleHtml}${narrationHtml}</div>`;
+    }
 
     if (paragraphLayoutOn) {
         const indentRaw = parseFloat(document.getElementById("dlgParagraphIndent")?.value);
@@ -1762,14 +1814,16 @@ onClick("btnSaveCharacter", () => {
     const existing = editingCharacterId ? characters.find((x) => x.id === editingCharacterId) : null;
     const avatarData = pendingCharAvatarData !== null ? pendingCharAvatarData : (existing ? existing.avatarData : null);
     const color = document.getElementById("charEditorColor")?.value || "#171717";
+    const bubbleSide = document.getElementById("charEditorBubbleSide")?.value || "left";
 
     if (existing) {
         existing.name = name;
         existing.avatarData = avatarData;
         existing.color = color;
+        existing.bubbleSide = bubbleSide;
         updateExistingDialogueNames(existing.id);
     } else {
-        characters.push({ id: uid(), name, avatarData, color });
+        characters.push({ id: uid(), name, avatarData, color, bubbleSide });
     }
 
     renderCharacterList();

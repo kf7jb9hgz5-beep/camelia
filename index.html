@@ -702,7 +702,38 @@
                     <div class="segmented-control segmented-control-minimal" data-target="dialogueMode">
                         <button type="button" data-value="log" class="active">로그</button>
                         <button type="button" data-value="block">블록</button>
+                        <button type="button" data-value="bubble">말풍선</button>
                     </div>
+                </div>
+
+                <div class="panel-section-title" id="dlgBubbleOnlyTitle" style="display: none">말풍선 세부 설정</div>
+                <div class="control-minimal-row" id="dlgBubblePadYArea" style="display: none">
+                    <label for="dlgBubblePadY">말풍선 안 여백 · 위아래 (px)</label>
+                    <div class="stepper-minimal">
+                        <button type="button" onclick="stepInput('dlgBubblePadY', -1)">-</button>
+                        <input type="number" id="dlgBubblePadY" value="10" />
+                        <button type="button" onclick="stepInput('dlgBubblePadY', 1)">+</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row" id="dlgBubblePadXArea" style="display: none">
+                    <label for="dlgBubblePadX">말풍선 안 여백 · 좌우 (px)</label>
+                    <div class="stepper-minimal">
+                        <button type="button" onclick="stepInput('dlgBubblePadX', -1)">-</button>
+                        <input type="number" id="dlgBubblePadX" value="14" />
+                        <button type="button" onclick="stepInput('dlgBubblePadX', 1)">+</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row" id="dlgBubbleRadiusArea" style="display: none">
+                    <label for="dlgBubbleRadius">말풍선 모서리 둥글기 (px)</label>
+                    <div class="stepper-minimal">
+                        <button type="button" onclick="stepInput('dlgBubbleRadius', -1)">-</button>
+                        <input type="number" id="dlgBubbleRadius" value="18" />
+                        <button type="button" onclick="stepInput('dlgBubbleRadius', 1)">+</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row" id="dlgBubbleTextColorArea" style="display: none">
+                    <label for="dlgBubbleTextColor">말풍선 글자색</label>
+                    <input type="color" id="dlgBubbleTextColor" value="#ffffff" />
                 </div>
 
                 <div class="panel-section-title">프로필 · 이름</div>
@@ -832,6 +863,14 @@
                     <div class="control-minimal-row char-editor-color-row">
                         <label for="charEditorColor">포인트 색상</label>
                         <input type="color" id="charEditorColor" value="#171717" />
+                    </div>
+                    <div class="control-minimal-row" id="charEditorBubbleSideArea" style="display: none">
+                        <label>말풍선 위치</label>
+                        <div class="segmented-control segmented-control-minimal" data-target="charEditorBubbleSide">
+                            <button type="button" data-value="left" class="active">왼쪽</button>
+                            <button type="button" data-value="right">오른쪽</button>
+                        </div>
+                        <input type="hidden" id="charEditorBubbleSide" value="left" />
                     </div>
                     <div class="char-editor-btn-row">
                         <button type="button" class="btn-minimal-save" id="btnSaveCharacter">저장</button>
