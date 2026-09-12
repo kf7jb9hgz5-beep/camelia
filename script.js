@@ -274,6 +274,18 @@ function updateCanvas() {
         textWrapper.innerHTML = rawHTML;
         normalizeParagraphs(textWrapper);
 
+        // 자동 치환 규칙 적용: 본문(편집창)은 그대로 두고, 캔버스에 표시될 텍스트만 바꿔치기한다.
+        if (replacementRules.some((r) => r.enabled !== false && r.find)) {
+            const walker = document.createTreeWalker(textWrapper, NodeFilter.SHOW_TEXT);
+            const textNodes = [];
+            let node;
+            while ((node = walker.nextNode())) textNodes.push(node);
+            textNodes.forEach((n) => {
+                const replaced = applyReplacementRules(n.nodeValue);
+                if (replaced !== n.nodeValue) n.nodeValue = replaced;
+            });
+        }
+
         textWrapper.style.setProperty("--quote-line-color", els.quoteLineColor.value);
         if (els.editor) els.editor.style.setProperty("--quote-line-color", els.quoteLineColor.value);
         textWrapper.style.setProperty("--box-quote-color", els.boxQuoteColor?.value || "#000000");
@@ -747,6 +759,81 @@ function restoreCanvasAfterCapture(container) {
     });
 }
 
+// ==== 배경 블러를 저장본에도 실제로 반영하기 ====
+// html2canvas는 CSS의 filter:blur()를 아예 지원하지 않아서(무시하고 그냥 그림), 미리보기 화면에서는
+// 블러가 보여도 저장한 이미지에는 블러가 안 걸린 원본 사진이 그대로 나왔었다.
+// 그래서 저장 직전에 배경 사진을 캔버스에 실제로 흐리게(픽셀 자체를) "구워서" 이미지로 바꿔치기하고,
+// CSS filter는 꺼둔다 — 이러면 html2canvas가 "그냥 흐린 사진"을 찍는 것뿐이라 문제없이 반영된다.
+function bakeBackgroundBlurForCapture() {
+    return new Promise((resolve) => {
+        const bgLayer = document.getElementById("bgImageLayer");
+        const blurEl = document.getElementById("bgImageBlur");
+        if (!bgLayer || !blurEl) { resolve(); return; }
+        const blurPx = parseFloat(blurEl.value) || 0;
+        const bgImageCss = bgLayer.style.backgroundImage;
+        const match = bgImageCss && bgImageCss.match(/url\((?:"|')?(.*?)(?:"|')?\)/);
+        if (!blurPx || !match) { resolve(); return; }
+
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+            try {
+                const rect = bgLayer.getBoundingClientRect();
+                const containerW = Math.max(1, Math.round(rect.width));
+                const containerH = Math.max(1, Math.round(rect.height));
+                const sizePercent = parseFloat(document.getElementById("bgImageSize")?.value) || 100;
+                const posX = parseFloat(document.getElementById("bgImageX")?.value);
+                const posY = parseFloat(document.getElementById("bgImageY")?.value);
+                const posXVal = isNaN(posX) ? 50 : posX;
+                const posYVal = isNaN(posY) ? 50 : posY;
+
+                // background-size: N% (한 값만 지정 → 가로 기준, 세로는 원본 비율 유지)와
+                // background-position: X% Y%의 실제 CSS 계산 공식 그대로 좌표를 구한다.
+                const displayedW = containerW * (sizePercent / 100);
+                const displayedH = displayedW * (img.naturalHeight / img.naturalWidth);
+                const offsetX = (containerW - displayedW) * (posXVal / 100);
+                const offsetY = (containerH - displayedH) * (posYVal / 100);
+
+                const pad = Math.ceil(blurPx * 3); // 블러 때 가장자리가 비쳐 보이지 않도록 여유 공간을 둔다
+                const off = document.createElement("canvas");
+                off.width = containerW + pad * 2;
+                off.height = containerH + pad * 2;
+                const ctx = off.getContext("2d");
+                ctx.filter = `blur(${blurPx}px)`;
+                ctx.drawImage(img, offsetX + pad, offsetY + pad, displayedW, displayedH);
+
+                bgLayer.setAttribute("data-orig-bg-image", bgImageCss);
+                bgLayer.setAttribute("data-orig-bg-filter", bgLayer.style.filter || "");
+                bgLayer.setAttribute("data-orig-bg-size", bgLayer.style.backgroundSize || "");
+                bgLayer.setAttribute("data-orig-bg-position", bgLayer.style.backgroundPosition || "");
+                bgLayer.setAttribute("data-orig-bg-repeat", bgLayer.style.backgroundRepeat || "");
+
+                bgLayer.style.backgroundImage = `url(${off.toDataURL("image/png")})`;
+                bgLayer.style.backgroundSize = `${off.width}px ${off.height}px`;
+                bgLayer.style.backgroundPosition = `-${pad}px -${pad}px`;
+                bgLayer.style.backgroundRepeat = "no-repeat";
+                bgLayer.style.filter = "none";
+            } catch (e) {
+                console.warn("배경 블러 굽기 실패:", e);
+            }
+            resolve();
+        };
+        img.onerror = () => resolve();
+        img.src = match[1];
+    });
+}
+
+function restoreBackgroundBlurAfterCapture() {
+    const bgLayer = document.getElementById("bgImageLayer");
+    if (!bgLayer || !bgLayer.hasAttribute("data-orig-bg-image")) return;
+    bgLayer.style.backgroundImage = bgLayer.getAttribute("data-orig-bg-image");
+    bgLayer.style.filter = bgLayer.getAttribute("data-orig-bg-filter");
+    bgLayer.style.backgroundSize = bgLayer.getAttribute("data-orig-bg-size");
+    bgLayer.style.backgroundPosition = bgLayer.getAttribute("data-orig-bg-position");
+    bgLayer.style.backgroundRepeat = bgLayer.getAttribute("data-orig-bg-repeat");
+    ["data-orig-bg-image", "data-orig-bg-filter", "data-orig-bg-size", "data-orig-bg-position", "data-orig-bg-repeat"].forEach((attr) => bgLayer.removeAttribute(attr));
+}
+
 document.getElementById("btnBold").addEventListener("click", () => { document.execCommand("bold", false, null); updateCanvas(); });
 document.getElementById("btnItalic").addEventListener("click", () => { document.execCommand("italic", false, null); updateCanvas(); });
 
@@ -1166,7 +1253,7 @@ function syncParagraphLayoutUI() {
     const mode = document.getElementById("dialogueMode")?.value || "log";
     const checkbox = document.getElementById("dlgParagraphLayout");
     const on = mode === "block" && !!(checkbox && checkbox.checked);
-    ["dlgParagraphLayoutHint", "dlgParagraphIndentArea", "dlgNameColumnWidthArea"].forEach((id) => {
+    ["dlgParagraphIndentArea", "dlgNameColumnWidthArea"].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.style.display = on ? "" : "none";
     });
@@ -1207,6 +1294,111 @@ function loadDialogueLinesFromStorage() {
     }
 }
 
+// ==== 자동 치환 규칙 (JS 배열 + localStorage — 한 번 등록하면 지우기 전까지 계속 유지) ====
+const DEFAULT_REPLACEMENT_RULES = [
+    { id: "rp1", find: "......", replace: "·", desc: "말줄임표를 가운데 점으로 — 점 3개당 한 개", enabled: true },
+    { id: "rp2", find: "…", replace: "·", desc: "말줄임표(…) 하나를 가운데 점 하나로", enabled: true },
+];
+let replacementRules = [];
+
+function saveReplacementRulesToStorage() {
+    try {
+        localStorage.setItem("quoteStudioReplacementRules", JSON.stringify(replacementRules));
+    } catch (e) {
+        console.warn("치환 규칙 저장 실패:", e);
+    }
+}
+
+function loadReplacementRulesFromStorage() {
+    try {
+        const raw = localStorage.getItem("quoteStudioReplacementRules");
+        replacementRules = raw ? JSON.parse(raw) : DEFAULT_REPLACEMENT_RULES.map((r) => ({ ...r }));
+    } catch (e) {
+        replacementRules = DEFAULT_REPLACEMENT_RULES.map((r) => ({ ...r }));
+    }
+}
+
+function addReplacementRule() {
+    replacementRules.push({ id: uid(), find: "", replace: "", desc: "", enabled: true });
+    saveReplacementRulesToStorage();
+    renderReplacementRuleList();
+}
+
+function deleteReplacementRule(id) {
+    replacementRules = replacementRules.filter((r) => r.id !== id);
+    saveReplacementRulesToStorage();
+    renderReplacementRuleList();
+    updateCanvas();
+}
+
+function renderReplacementRuleList() {
+    const container = document.getElementById("replacementRuleList");
+    if (!container) return;
+    container.innerHTML = "";
+    replacementRules.forEach((rule) => {
+        const cell = document.createElement("div");
+        cell.className = "replacement-rule-cell";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = rule.enabled !== false;
+        checkbox.addEventListener("change", () => {
+            rule.enabled = checkbox.checked;
+            saveReplacementRulesToStorage();
+            updateCanvas();
+        });
+
+        const findInput = document.createElement("input");
+        findInput.type = "text";
+        findInput.value = rule.find || "";
+        findInput.placeholder = "찾을 글자";
+        findInput.addEventListener("input", () => {
+            rule.find = findInput.value;
+            saveReplacementRulesToStorage();
+            updateCanvas();
+        });
+
+        const arrow = document.createElement("span");
+        arrow.className = "replacement-rule-arrow";
+        arrow.textContent = "→";
+
+        const replaceInput = document.createElement("input");
+        replaceInput.type = "text";
+        replaceInput.value = rule.replace || "";
+        replaceInput.placeholder = "바꿀 글자";
+        replaceInput.addEventListener("input", () => {
+            rule.replace = replaceInput.value;
+            saveReplacementRulesToStorage();
+            updateCanvas();
+        });
+
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "replacement-rule-delete";
+        delBtn.textContent = "×";
+        delBtn.addEventListener("click", () => deleteReplacementRule(rule.id));
+
+        cell.appendChild(checkbox);
+        cell.appendChild(findInput);
+        cell.appendChild(arrow);
+        cell.appendChild(replaceInput);
+        cell.appendChild(delBtn);
+        container.appendChild(cell);
+    });
+}
+
+// 활성화된 규칙들을 순서대로 텍스트에 적용한다. (본문은 그대로 두고, 캔버스에 그릴 때만 바꿔치기해서
+// 보여주는 방식이라 원본 타이핑 내용은 안 건드림 — 실행취소·재수정에 안전함)
+function applyReplacementRules(text) {
+    let result = text;
+    replacementRules.forEach((rule) => {
+        if (rule.enabled === false) return;
+        if (!rule.find) return;
+        result = result.split(rule.find).join(rule.replace ?? "");
+    });
+    return result;
+}
+
 function addDialogueLine(charId) {
     const line = { id: uid(), charId, text: "", translation: "", narration: "", stage: "" };
     dialogueLines.push(line);
@@ -1245,6 +1437,9 @@ function buildDialogueBlockHTML(line) {
     const quoteChars = getQuoteChars(document.getElementById("dlgQuoteStyle")?.value || "none");
     const nameGapRaw = parseFloat(document.getElementById("dlgNameGap")?.value);
     const nameGap = isNaN(nameGapRaw) ? 14 : nameGapRaw;
+    const nameFontSizeRaw = parseFloat(document.getElementById("dlgNameFontSize")?.value);
+    const nameFontSize = isNaN(nameFontSizeRaw) ? 16 : nameFontSizeRaw;
+    const nameSizeStyle = `font-size:${nameFontSize}px;`;
     const avatarSizeRaw = parseFloat(document.getElementById("dlgAvatarSize")?.value);
     const avatarSize = isNaN(avatarSizeRaw) ? 32 : avatarSizeRaw;
     const avatarRadius = document.getElementById("dlgAvatarShape")?.value === "square" ? "22%" : "50%";
@@ -1258,7 +1453,7 @@ function buildDialogueBlockHTML(line) {
         const indentPx = isNaN(indentRaw) ? 16 : indentRaw;
         const colWidthRaw = parseFloat(document.getElementById("dlgNameColumnWidth")?.value);
         const colWidthPx = isNaN(colWidthRaw) ? 88 : colWidthRaw;
-        const nameCell = showName ? `<div style="${DLG_FONT}font-weight:700;${nameColor}">${escapeHtml(c.name)}${nameSuffix}</div>` : "";
+        const nameCell = showName ? `<div style="${DLG_FONT}${nameSizeStyle}font-weight:700;${nameColor}">${escapeHtml(c.name)}${nameSuffix}</div>` : "";
         const narrationHtml = narrationText ? `<div style="${DLG_FONT}margin-left:${indentPx}px;margin-top:2px;white-space:pre-wrap;">${escapeHtml(narrationText)}</div>` : "";
         // ⚠️ CSS grid의 gap 속성은 음수를 허용하지 않아(브라우저가 무시함), 마이너스 간격을 넣어도
         // 아무 효과가 없었다. 그래서 grid gap은 0으로 고정하고, 대신 오른쪽 칸에 margin-left로
@@ -1271,7 +1466,7 @@ function buildDialogueBlockHTML(line) {
         const leftOffset = showAvatar ? avatarSize + avatarGap : 0;
         const avatarStyle = `position:absolute;top:0;left:0;width:${avatarSize}px;height:${avatarSize}px;border-radius:${avatarRadius};background-color:#f3f3f1;border:1px solid #eaeaea;background-size:cover;background-position:center;box-sizing:border-box;${c.avatarData ? `background-image:url(${c.avatarData});` : ""}`;
         const avatarHtml = showAvatar ? `<div style="${avatarStyle}"></div>` : "";
-        const nameHtml = showName ? `<div style="${DLG_FONT}font-size:13px;font-weight:700;${nameColor}margin-bottom:3px;">${escapeHtml(c.name)}${nameSuffix}</div>` : "";
+        const nameHtml = showName ? `<div style="${DLG_FONT}${nameSizeStyle}font-weight:700;${nameColor}margin-bottom:3px;">${escapeHtml(c.name)}${nameSuffix}</div>` : "";
         const translationHtml = (showTranslation && line.translation) ? `<div style="${DLG_FONT}font-size:14px;white-space:pre-wrap;opacity:0.65;">${escapeHtml(line.translation)}</div>` : "";
         const narrationHtml = narrationText ? `<div style="${DLG_FONT}margin-top:2px;white-space:pre-wrap;">${escapeHtml(narrationText)}</div>` : "";
         const minHeight = showAvatar ? `min-height:${avatarSize}px;` : "";
@@ -1279,19 +1474,88 @@ function buildDialogueBlockHTML(line) {
     }
 
     // 기본 블록 모드(단락분리 미사용): 이름 + 대사 한 줄
-    const nameHtml = showName ? `<span style="${DLG_FONT}display:inline-block;font-weight:700;${nameColor}margin-right:${nameGap}px;">${escapeHtml(c.name)}</span>` : "";
+    const nameHtml = showName ? `<span style="${DLG_FONT}${nameSizeStyle}display:inline-block;font-weight:700;${nameColor}margin-right:${nameGap}px;">${escapeHtml(c.name)}</span>` : "";
     const narrationHtml = narrationText ? `<div style="${DLG_FONT}margin-top:2px;white-space:pre-wrap;">${escapeHtml(narrationText)}</div>` : "";
     return `<div style="text-align:inherit;">${nameHtml}<span style="${DLG_FONT}white-space:pre-wrap;word-break:break-word;">${escapeHtml(line.text || "")}</span></div>${narrationHtml}`;
 }
 
-// 편집창 속 대사 블록 하나의 최종 내부 HTML: 위/아래 이동 버튼(캔버스에는 안 찍힘) + 실제 대사 내용.
+// 편집창 속 대사 블록 하나의 최종 내부 HTML: 위/아래 이동 버튼 + 드래그 손잡이(캔버스에는 안 찍힘) + 실제 대사 내용.
 function buildDialogueMarkerInnerHTML(line) {
-    const controls = `<div class="dlg-marker-controls" contenteditable="false" style="display:flex;justify-content:flex-end;gap:4px;margin-bottom:4px;user-select:none;">`
+    const controls = `<div class="dlg-marker-controls" contenteditable="false" style="display:flex;justify-content:flex-end;align-items:center;gap:4px;margin-bottom:4px;user-select:none;">`
+        + `<span class="dlg-marker-drag" data-line-id="${line.id}" title="길게 눌러 드래그" style="touch-action:none;cursor:grab;border:1px solid #ddd;background:#fff;border-radius:4px;font-size:13px;line-height:1;padding:3px 8px;color:#888;letter-spacing:1px;">⠿</span>`
         + `<button type="button" onclick="moveDialogueMarker('${line.id}','up')" style="border:1px solid #ddd;background:#fff;border-radius:4px;font-size:11px;line-height:1;padding:3px 7px;color:#888;">▲</button>`
         + `<button type="button" onclick="moveDialogueMarker('${line.id}','down')" style="border:1px solid #ddd;background:#fff;border-radius:4px;font-size:11px;line-height:1;padding:3px 7px;color:#888;">▼</button>`
         + `</div>`;
     return `${controls}<div class="dlg-marker-content">${buildDialogueBlockHTML(line)}</div>`;
 }
+
+// ==== 대사 블록 드래그로 순서 바꾸기 ====
+// HTML5 draggable API는 모바일 사파리에서 터치로는 아예 작동하지 않기 때문에,
+// 포인터 이벤트(마우스·터치 공용)로 직접 드래그를 구현한다.
+(function setupDialogueMarkerDrag() {
+    let draggingMarker = null;
+    let pointerId = null;
+
+    function getEditorTopLevelChildren() {
+        return els.editor ? Array.from(els.editor.children) : [];
+    }
+
+    function onPointerMove(e) {
+        if (!draggingMarker || e.pointerId !== pointerId) return;
+        e.preventDefault();
+        const x = e.clientX;
+        const y = e.clientY;
+        const children = getEditorTopLevelChildren().filter((el) => el !== draggingMarker);
+        let target = null;
+        let insertBefore = true;
+        for (const child of children) {
+            const rect = child.getBoundingClientRect();
+            if (y < rect.top || y > rect.bottom) continue;
+            target = child;
+            insertBefore = y < rect.top + rect.height / 2;
+            break;
+        }
+        if (!target && children.length > 0) {
+            // 목록 맨 위/아래 바깥으로 나간 경우, 가장 가까운 쪽 끝으로 취급한다.
+            const first = children[0].getBoundingClientRect();
+            const last = children[children.length - 1].getBoundingClientRect();
+            if (y < first.top) { target = children[0]; insertBefore = true; }
+            else if (y > last.bottom) { target = children[children.length - 1]; insertBefore = false; }
+        }
+        if (target) {
+            if (insertBefore) els.editor.insertBefore(draggingMarker, target);
+            else els.editor.insertBefore(draggingMarker, target.nextSibling);
+        }
+    }
+
+    function onPointerUp(e) {
+        if (!draggingMarker || e.pointerId !== pointerId) return;
+        draggingMarker.style.opacity = "";
+        draggingMarker.style.boxShadow = "";
+        draggingMarker = null;
+        pointerId = null;
+        document.removeEventListener("pointermove", onPointerMove);
+        document.removeEventListener("pointerup", onPointerUp);
+        document.removeEventListener("pointercancel", onPointerUp);
+        if (typeof pushHistory === "function") pushHistory(true);
+        updateCanvas();
+    }
+
+    document.addEventListener("pointerdown", (e) => {
+        const handle = e.target.closest(".dlg-marker-drag");
+        if (!handle) return;
+        const marker = handle.closest(".dlg-editor-marker");
+        if (!marker) return;
+        e.preventDefault();
+        draggingMarker = marker;
+        pointerId = e.pointerId;
+        marker.style.opacity = "0.5";
+        marker.style.boxShadow = "0 0 0 2px #bbb";
+        document.addEventListener("pointermove", onPointerMove);
+        document.addEventListener("pointerup", onPointerUp);
+        document.addEventListener("pointercancel", onPointerUp);
+    });
+})();
 
 // "대사 추가"를 누르면, 그 대사가 본문(편집창)에도 바로 보이도록 편집창 맨 끝에 실제 대사 블록을 넣는다.
 // 이 블록은 contenteditable=false라서 본문 글자로는 타이핑이 안 되고(실수로 안에 글자가 섞이는 걸 방지),
@@ -1303,13 +1567,9 @@ function insertDialogueMarkerIntoEditor(line) {
     marker.className = "dlg-editor-marker";
     marker.dataset.lineId = line.id;
     marker.contentEditable = "false";
-    marker.style.cssText = "margin:8px 0;";
+    marker.style.cssText = "";
     marker.innerHTML = buildDialogueMarkerInnerHTML(line);
     els.editor.appendChild(marker);
-    // 마커 뒤에 계속 이어서 타이핑할 수 있도록 빈 줄을 하나 더 붙여둔다.
-    const trailing = document.createElement("div");
-    trailing.appendChild(document.createElement("br"));
-    els.editor.appendChild(trailing);
     if (typeof pushHistory === "function") pushHistory(true);
 }
 
@@ -1444,7 +1704,7 @@ function renderDialogueLineList() {
         if (mode === "block" && document.getElementById("dlgParagraphLayout")?.checked) {
             const narrationArea = document.createElement("textarea");
             narrationArea.className = "dlc-translation";
-            narrationArea.placeholder = "줄글 (선택) — 이 대사 아래에 들여쓰기로 표시돼요";
+            narrationArea.placeholder = "줄글 (선택)";
             narrationArea.value = line.narration || "";
             narrationArea.addEventListener("input", () => {
                 line.narration = narrationArea.value;
@@ -1489,130 +1749,6 @@ function getDialogueFontStyle() {
     const lineHeightRaw = parseFloat(document.getElementById("lineHeight")?.value);
     const lineHeight = isNaN(lineHeightRaw) ? Math.round(fontSize * 1.6) : lineHeightRaw;
     return `font-size:${fontSize}px;line-height:${lineHeight}px;letter-spacing:${letterSpacing}px;`;
-}
-
-function renderSpeakerParagraphLayout(textWrapper) {
-    const runs = groupDialogueLinesByRun(dialogueLines);
-    const quoteChars = getQuoteChars(document.getElementById("dlgQuoteStyle")?.value || "none");
-    const useCharColor = document.getElementById("dlgUseCharColor")?.checked;
-    const showName = document.getElementById("dlgShowName")?.checked !== false;
-    const nameSuffix = document.getElementById("dlgNameSuffix")?.value ?? ":";
-    const lineGap = parseFloat(document.getElementById("dlgLineGap")?.value);
-    const safeLineGap = isNaN(lineGap) ? 10 : lineGap;
-    const indentRaw = parseFloat(document.getElementById("dlgParagraphIndent")?.value);
-    const indentPx = isNaN(indentRaw) ? 16 : indentRaw;
-    const colWidthRaw = parseFloat(document.getElementById("dlgNameColumnWidth")?.value);
-    const colWidthPx = isNaN(colWidthRaw) ? 88 : colWidthRaw;
-    // "이름-대사 사이 간격" 설정을 그리드 두 칸(이름 칸 / 대사 칸) 사이 간격으로도 그대로 쓴다.
-    const nameGapRaw = parseFloat(document.getElementById("dlgNameGap")?.value);
-    const nameGap = isNaN(nameGapRaw) ? 14 : nameGapRaw;
-    const DLG_FONT = getDialogueFontStyle();
-
-    const rowsHtml = runs.map((run) => {
-        const c = characters.find((x) => x.id === run.charId);
-        if (!c) return "";
-        const nameColor = (useCharColor && c.color) ? `color:${c.color};` : "";
-        // 같은 인물이 대사를 여러 줄(항목)로 나눠 말한 경우, 항목 사이에 줄바꿈(\n)을 넣어서 붙지 않게 한다.
-        // (white-space:pre-wrap이라 \n이 실제 줄바꿈으로 그려짐)
-        const dialogueText = run.lines.map((l) => `${quoteChars.open}${escapeHtml(l.text || "")}${quoteChars.close}`).join("\n");
-        const narrationParas = run.lines.map((l) => (l.narration || "").trim()).filter(Boolean);
-        const narrationHtml = narrationParas.map((t) => `<div style="${DLG_FONT}margin-left:${indentPx}px;margin-top:2px;white-space:pre-wrap;">${escapeHtml(t)}</div>`).join("");
-        const nameCell = showName ? `<div style="${DLG_FONT}font-weight:700;${nameColor}">${escapeHtml(c.name)}${nameSuffix}</div>` : "";
-        const contentCell = `<div style="${DLG_FONT}white-space:pre-wrap;">${dialogueText}</div>${narrationHtml}`;
-        return `<div style="display:grid;grid-template-columns:${colWidthPx}px 1fr;gap:${nameGap}px;align-items:start;margin-bottom:${safeLineGap}px;text-align:inherit;"><div>${nameCell}</div><div>${contentCell}</div></div>`;
-    }).join("");
-
-    textWrapper.innerHTML = rowsHtml;
-}
-
-function appendDialogueLinesToCanvas(textWrapper) {
-    if (!textWrapper || dialogueLines.length === 0) return;
-
-    const mode = document.getElementById("dialogueMode")?.value || "log";
-    const showAvatar = mode === "log" && document.getElementById("dlgShowAvatar")?.checked;
-    const showName = document.getElementById("dlgShowName")?.checked !== false;
-    const showTranslation = document.getElementById("dlgShowTranslation")?.checked;
-    const useCharColor = document.getElementById("dlgUseCharColor")?.checked;
-    const nameSuffix = document.getElementById("dlgNameSuffix")?.value ?? ":";
-    const quoteChars = getQuoteChars(document.getElementById("dlgQuoteStyle")?.value || "none");
-    const lineGap = parseFloat(document.getElementById("dlgLineGap")?.value);
-    const safeLineGap = isNaN(lineGap) ? 10 : lineGap;
-    const continuationGapRaw = parseFloat(document.getElementById("dlgContinuationGap")?.value);
-    const continuationGap = isNaN(continuationGapRaw) ? 4 : continuationGapRaw;
-    const nameGapRaw = parseFloat(document.getElementById("dlgNameGap")?.value);
-    const nameGap = isNaN(nameGapRaw) ? 14 : nameGapRaw;
-    const avatarSizeRaw = parseFloat(document.getElementById("dlgAvatarSize")?.value);
-    const avatarSize = isNaN(avatarSizeRaw) ? 32 : avatarSizeRaw;
-    const avatarRadius = document.getElementById("dlgAvatarShape")?.value === "square" ? "22%" : "50%";
-    // 대사 영역도 이제 "폰트" 탭의 크기·자간·행간 설정을 그대로 따라간다(고정값 아님).
-    const DLG_FONT = getDialogueFontStyle();
-
-    if (mode === "log") {
-        // 로그 모드: 같은 인물이 이어 말하면 이름·프사는 처음 한 번만, 이후는 좁은 간격으로 붙여서 보여준다.
-        const runs = groupDialogueLinesByRun(dialogueLines);
-        runs.forEach((run, runIndex) => {
-            const c = characters.find((x) => x.id === run.charId);
-            if (!c) return;
-            // html2canvas(저장/캡처용 라이브러리)는 display:flex + gap 조합을 안정적으로 그리지 못해서
-            // 화면에는 프사/이름/대사가 가로로 나란히 보여도, 저장한 이미지에서는 세로로 떨어져 찍히는 문제가 있었다.
-            // 그래서 flex 대신 "프사는 absolute로 왼쪽에 고정 + 텍스트는 margin-left로 밀기" 방식으로 그린다.
-            // (position:absolute + margin은 html2canvas가 항상 정확히 그려주는 안전한 조합)
-            const avatarGap = 8;
-            const leftOffset = showAvatar ? avatarSize + avatarGap : 0;
-            const avatarStyle = `position:absolute;top:0;left:0;width:${avatarSize}px;height:${avatarSize}px;border-radius:${avatarRadius};background-color:#f3f3f1;border:1px solid #eaeaea;background-size:cover;background-position:center;box-sizing:border-box;${c.avatarData ? `background-image:url(${c.avatarData});` : ""}`;
-            const avatarHtml = `<div style="${avatarStyle}"></div>`;
-            const nameColor = (useCharColor && c.color) ? `color:${c.color};` : "";
-            const isLast = runIndex === runs.length - 1;
-
-            run.lines.forEach((line, i) => {
-                const continued = i > 0;
-                const wrapper = document.createElement("div");
-                const quotedText = `${quoteChars.open}${escapeHtml(line.text || "")}${quoteChars.close}`;
-                const minHeight = (showAvatar && !continued) ? `min-height:${avatarSize}px;` : "";
-                // ⚠️ 진짜 원인이었던 버그: #canvasTextWrapper 전체에 white-space:pre-wrap이 걸려 있어서
-                // (사용자가 본문에 직접 입력한 줄바꿈을 보존하기 위함), 아래처럼 보기 좋게 들여쓰기한
-                // template literal 안의 줄바꿈·공백까지 전부 "진짜 빈 줄"로 화면에 그려져 버렸다.
-                // 그게 프사와 이름·대사 사이를 갈라놓던 진짜 원인. 그래서 태그 사이 줄바꿈/들여쓰기가
-                // 전혀 없는 한 줄짜리 문자열로 만들고, 혹시 몰라 바깥 두 div에도 white-space:normal을
-                // 명시적으로 걸어 pre-wrap 상속을 막는다(안쪽 대사·번역 줄은 그대로 pre-wrap 유지).
-                const nameHtml2 = (showName && !continued) ? `<div style="${DLG_FONT}font-size:13px;font-weight:700;${nameColor}margin-bottom:3px;">${escapeHtml(c.name)}${nameSuffix}</div>` : "";
-                const translationHtml = (showTranslation && line.translation) ? `<div style="${DLG_FONT}font-size:14px;display:block;white-space:pre-wrap;opacity:0.65;">${escapeHtml(line.translation)}</div>` : "";
-                wrapper.innerHTML = `<div style="position:relative;${minHeight}text-align:inherit;box-sizing:border-box;white-space:normal;">${(showAvatar && !continued) ? avatarHtml : ""}<div style="margin-left:${leftOffset}px;white-space:normal;">${nameHtml2}<div style="${DLG_FONT}display:block;white-space:pre-wrap;">${quotedText}</div>${translationHtml}</div></div>`;
-                const node = wrapper.firstElementChild;
-                if (!node) return;
-                const notLastLine = !(isLast && i === run.lines.length - 1);
-                node.style.marginBottom = notLastLine ? `${continued ? continuationGap : safeLineGap}px` : "0";
-                textWrapper.appendChild(node);
-            });
-        });
-    } else {
-        // 블록 모드: 박스 없이, "이름 대사" 한 줄씩 모아서 보여준다. (전부 인라인 스타일)
-        // 여기도 flex 대신 일반 인라인 흐름(span)만 써서 html2canvas 저장 시에도 화면과 동일하게 찍히게 한다.
-        // 같은 인물이 연속으로 여러 줄 말하면, 이름은 그 묶음의 첫 줄에만 보여주고 이후 줄은 이름 없이 붙인다.
-        const runs = groupDialogueLinesByRun(dialogueLines);
-        let rowIndex = 0;
-        const linesHtml = runs.map((run) => {
-            const c = characters.find((x) => x.id === run.charId);
-            if (!c) return "";
-            const nameColor = (useCharColor && c.color) ? `color:${c.color};` : "";
-            return run.lines.map((line, i) => {
-                const rowMargin = rowIndex > 0 ? `margin-top:${safeLineGap}px;` : "";
-                rowIndex++;
-                const nameHtml = (showName && i === 0)
-                    ? `<span style="${DLG_FONT}display:inline-block;font-weight:700;${nameColor}margin-right:${nameGap}px;">${escapeHtml(c.name)}</span>`
-                    : "";
-                return `<div style="${DLG_FONT}${rowMargin}text-align:inherit;">${nameHtml}<span style="${DLG_FONT}white-space:pre-wrap;word-break:break-word;">${escapeHtml(line.text || "")}</span></div>`;
-            }).join("");
-        }).join("");
-
-        const wrapper = document.createElement("div");
-        wrapper.innerHTML = `<div style="text-align:inherit;">${linesHtml}</div>`.trim();
-        const node = wrapper.firstElementChild;
-        if (node) {
-            node.style.marginBottom = "0";
-            textWrapper.appendChild(node);
-        }
-    }
 }
 
 onClick("btnAddCharacter", () => openCharacterEditor(null));
@@ -1685,6 +1821,8 @@ loadCharactersFromStorage();
 renderCharacterList();
 loadDialogueLinesFromStorage();
 renderDialogueLineList();
+loadReplacementRulesFromStorage();
+renderReplacementRuleList();
 
 onClick("btnClearAll", () => {
     if (!els.editor) return;
@@ -2047,7 +2185,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => updateCanvas(), 1200);
 });
 
-document.getElementById("btnCopy").addEventListener("click", () => {
+document.getElementById("btnCopy").addEventListener("click", async () => {
     if (!els.captureArea) return;
     const originalHeight = els.captureArea.style.height;
     const originalOverflow = els.captureArea.style.overflow;
@@ -2058,9 +2196,11 @@ document.getElementById("btnCopy").addEventListener("click", () => {
     }
     els.captureArea.style.overflow = "visible";
     prepareCanvasForCapture(els.captureArea);
+    await bakeBackgroundBlurForCapture();
     html2canvas(els.captureArea, { useCORS: true, allowTaint: true, backgroundColor: null, scale: 2 })
         .then((canvas) => {
             restoreCanvasAfterCapture(els.captureArea);
+            restoreBackgroundBlurAfterCapture();
             els.captureArea.style.height = originalHeight;
             els.captureArea.style.overflow = originalOverflow;
             els.captureArea.style.transform = originalTransform;
@@ -2075,6 +2215,7 @@ document.getElementById("btnCopy").addEventListener("click", () => {
         })
         .catch(() => {
             restoreCanvasAfterCapture(els.captureArea);
+            restoreBackgroundBlurAfterCapture();
             els.captureArea.style.height = originalHeight;
             els.captureArea.style.overflow = originalOverflow;
             els.captureArea.style.transform = originalTransform;
@@ -2082,7 +2223,7 @@ document.getElementById("btnCopy").addEventListener("click", () => {
         });
 });
 
-document.getElementById("btnSave").addEventListener("click", () => {
+document.getElementById("btnSave").addEventListener("click", async () => {
     if (!els.captureArea) return;
     const originalHeight = els.captureArea.style.height;
     const originalOverflow = els.captureArea.style.overflow;
@@ -2093,9 +2234,11 @@ document.getElementById("btnSave").addEventListener("click", () => {
     }
     els.captureArea.style.overflow = "visible";
     prepareCanvasForCapture(els.captureArea);
+    await bakeBackgroundBlurForCapture();
     html2canvas(els.captureArea, { useCORS: true, allowTaint: true, backgroundColor: null, scale: 2 })
         .then((canvas) => {
             restoreCanvasAfterCapture(els.captureArea);
+            restoreBackgroundBlurAfterCapture();
             els.captureArea.style.height = originalHeight;
             els.captureArea.style.overflow = originalOverflow;
             els.captureArea.style.transform = originalTransform;
@@ -2114,6 +2257,7 @@ document.getElementById("btnSave").addEventListener("click", () => {
         })
         .catch(() => {
             restoreCanvasAfterCapture(els.captureArea);
+            restoreBackgroundBlurAfterCapture();
             els.captureArea.style.height = originalHeight;
             els.captureArea.style.overflow = originalOverflow;
             els.captureArea.style.transform = originalTransform;
@@ -2134,9 +2278,11 @@ function captureCanvasAsPNG(filename) {
         }
         els.captureArea.style.overflow = "visible";
         prepareCanvasForCapture(els.captureArea);
+        bakeBackgroundBlurForCapture().then(() => {
         html2canvas(els.captureArea, { useCORS: true, allowTaint: true, backgroundColor: null, scale: 2 })
             .then((canvas) => {
                 restoreCanvasAfterCapture(els.captureArea);
+                restoreBackgroundBlurAfterCapture();
                 els.captureArea.style.height = originalHeight;
                 els.captureArea.style.overflow = originalOverflow;
                 els.captureArea.style.transform = originalTransform;
@@ -2157,12 +2303,14 @@ function captureCanvasAsPNG(filename) {
             })
             .catch(() => {
                 restoreCanvasAfterCapture(els.captureArea);
+                restoreBackgroundBlurAfterCapture();
                 els.captureArea.style.height = originalHeight;
                 els.captureArea.style.overflow = originalOverflow;
                 els.captureArea.style.transform = originalTransform;
                 applyPreviewScale();
                 resolve();
             });
+        });
     });
 }
 

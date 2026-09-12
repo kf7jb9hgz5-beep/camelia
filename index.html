@@ -645,6 +645,11 @@
                         <span>괄호색</span>
                     </div>
                 </div>
+
+                <div class="panel-section-title">자동 치환</div>
+                <div class="field-hint">여기 등록한 글자는 본문에 그대로 쳐도, 저장되는 결과물에는 자동으로 바뀐 글자로 나와요. 체크를 끄면 잠깐 꺼둘 수 있고, 한 번 등록하면 지우기 전까진 계속 남아있어요.</div>
+                <div id="replacementRuleList" class="replacement-rule-list"></div>
+                <button type="button" class="btn-minimal-save" style="width:100%;margin-top:8px;" onclick="addReplacementRule()">+ 치환 규칙 추가</button>
             </div>
             <div class="tab-panel" id="panel-image">
                 <div id="imageBlockEmptyHint" class="field-hint">본문 안에 넣은 사진을 탭해서 선택하면 여기서 조절할 수 있어요. 아직 선택된 사진이 없어요.</div>
@@ -699,7 +704,6 @@
                         <button type="button" data-value="block">블록</button>
                     </div>
                 </div>
-                <div class="field-hint" id="dialogueModeHint">이름과 프로필 사진을 앞에 두고, 대사를 한 줄씩 이어 보여줘요.</div>
 
                 <div class="panel-section-title">프로필 · 이름</div>
                 <div class="control-minimal-row" id="dlgShowAvatarArea">
@@ -726,6 +730,14 @@
                 <div class="control-minimal-row">
                     <div class="checkbox-minimal-group">
                         <label><input type="checkbox" id="dlgShowName" checked /> 이름 표시</label>
+                    </div>
+                </div>
+                <div class="control-minimal-row" id="dlgNameFontSizeArea">
+                    <label for="dlgNameFontSize">이름 크기 (px)</label>
+                    <div class="stepper-minimal">
+                        <button type="button" onclick="stepInput('dlgNameFontSize', -1)">-</button>
+                        <input type="number" id="dlgNameFontSize" value="16" />
+                        <button type="button" onclick="stepInput('dlgNameFontSize', 1)">+</button>
                     </div>
                 </div>
                 <div class="control-minimal-row" id="dlgUseCharColorArea">
@@ -780,9 +792,6 @@
                         <label><input type="checkbox" id="dlgParagraphLayout" /> 화자 · 줄글 단락 분리</label>
                     </div>
                 </div>
-                <div class="field-hint" id="dlgParagraphLayoutHint" style="display: none">
-                    켜면 화자 이름을 왼쪽에 따로 두고, 오른쪽엔 그 화자의 대사를 먼저 쓴 다음, 아래 "대사 목록"에서 각 줄마다 새로 생기는 "줄글" 칸에 입력한 나레이션을 이어서 들여쓰기로 보여줘요.
-                </div>
                 <div class="control-minimal-row" id="dlgParagraphIndentArea" style="display: none">
                     <label for="dlgParagraphIndent">줄글 들여쓰기 (px)</label>
                     <div class="stepper-minimal">
@@ -832,7 +841,6 @@
                 </div>
 
                 <div class="panel-section-title">대사 목록</div>
-                <div class="field-hint">여기서 직접 입력해요. 탭을 나갔다 와도, 새로고침해도 내용이 남아있어요. 캐릭터의 "대사 추가"를 누르면 목록에 새 칸이 생겨요.</div>
                 <div id="dialogueLineList" class="dialogue-line-list"></div>
             </div>
 

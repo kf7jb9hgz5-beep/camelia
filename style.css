@@ -1646,6 +1646,55 @@ input[type="file"]::file-selector-button {
     padding: 10px 12px;
 }
 
+.replacement-rule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.replacement-rule-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-main);
+    padding: 10px 12px;
+}
+
+.replacement-rule-cell input[type="checkbox"] {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+}
+
+.replacement-rule-cell input[type="text"] {
+    flex: 1 1 0;
+    min-width: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 14px;
+    background-color: var(--bg-card);
+}
+
+.replacement-rule-arrow {
+    flex: 0 0 auto;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.replacement-rule-delete {
+    flex: 0 0 auto;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-size: 18px;
+    line-height: 1;
+    padding: 4px 6px;
+    cursor: pointer;
+}
+
 .dlc-header {
     display: flex;
     align-items: center;
