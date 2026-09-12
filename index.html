@@ -712,11 +712,19 @@
                     <input type="hidden" id="dlgBubbleTheme" value="soft" />
                     <div class="segmented-control segmented-control-minimal" data-target="dlgBubbleTheme">
                         <button type="button" data-value="soft" class="active">말랑</button>
-                        <button type="button" data-value="simple">심플</button>
+                        <button type="button" data-value="tail">꼬리형</button>
                         <button type="button" data-value="kakao">카톡형</button>
                     </div>
                 </div>
-                <div class="field-hint" id="dlgBubbleThemeHint" style="display: none">말랑: 양쪽 다 둥근 알약 모양 · 심플: 각진 느낌의 모던한 사각 말풍선 · 카톡형: 프로필 쪽 모서리만 각져서 꼬리처럼 보이는 모양</div>
+                <div class="field-hint" id="dlgBubbleThemeHint" style="display: none">말랑: 양쪽 다 둥근 알약 모양 · 꼬리형: 말풍선 아래에 작은 꼬리가 달린 모양 · 카톡형: 프로필 쪽 모서리만 각져서 꼬리처럼 보이는 모양</div>
+                <div class="control-minimal-row" id="dlgBubbleOpacityArea" style="display: none">
+                    <label for="dlgBubbleOpacity">말풍선 투명도 (%)</label>
+                    <div class="stepper-minimal">
+                        <button type="button" onclick="stepInput('dlgBubbleOpacity', -5)">-</button>
+                        <input type="number" id="dlgBubbleOpacity" value="100" min="0" max="100" />
+                        <button type="button" onclick="stepInput('dlgBubbleOpacity', 5)">+</button>
+                    </div>
+                </div>
                 <div class="control-minimal-row" id="dlgBubblePadYArea" style="display: none">
                     <label for="dlgBubblePadY">말풍선 안 여백 · 위아래 (px)</label>
                     <div class="stepper-minimal">

@@ -1244,7 +1244,7 @@ function syncDialogueModeUI() {
     const isBubble = mode === "bubble";
     const hint = document.getElementById("dialogueModeHint");
     const areaMap = {
-        dlgShowAvatarArea: isLog,
+        dlgShowAvatarArea: isLog || isBubble,
         dlgQuoteStyleArea: isLog,
         dlgTranslationArea: isLog,
         dlgContinuationGapArea: isLog,
@@ -1255,6 +1255,7 @@ function syncDialogueModeUI() {
         dlgBubbleOnlyTitle: isBubble,
         dlgBubbleThemeArea: isBubble,
         dlgBubbleThemeHint: isBubble,
+        dlgBubbleOpacityArea: isBubble,
         dlgBubblePadYArea: isBubble,
         dlgBubblePadXArea: isBubble,
         dlgBubbleRadiusArea: isBubble,
@@ -1461,7 +1462,7 @@ function buildDialogueBlockHTML(line) {
 
     const mode = document.getElementById("dialogueMode")?.value || "log";
     const paragraphLayoutOn = mode === "block" && document.getElementById("dlgParagraphLayout")?.checked;
-    const showAvatar = mode === "log" && document.getElementById("dlgShowAvatar")?.checked;
+    const showAvatar = mode !== "block" && document.getElementById("dlgShowAvatar")?.checked;
     const showName = document.getElementById("dlgShowName")?.checked !== false;
     const showTranslation = document.getElementById("dlgShowTranslation")?.checked;
     const useCharColor = document.getElementById("dlgUseCharColor")?.checked;
@@ -1489,8 +1490,12 @@ function buildDialogueBlockHTML(line) {
         const radiusRaw = parseFloat(document.getElementById("dlgBubbleRadius")?.value);
         const radius = isNaN(radiusRaw) ? 18 : radiusRaw;
         const theme = document.getElementById("dlgBubbleTheme")?.value || "soft";
-        // 테마 3가지: 말랑(양쪽 다 완전히 둥근 알약 모양) / 심플(네 모서리 균일하게 살짝 둥근 사각형) /
-        // 카톡형(프로필이 있는 쪽 모서리 하나만 거의 각지게 만들어서 카카오톡처럼 꼬리가 있는 듯한 느낌).
+        const opacityRaw = parseFloat(document.getElementById("dlgBubbleOpacity")?.value);
+        const opacityPct = isNaN(opacityRaw) ? 100 : Math.min(100, Math.max(0, opacityRaw));
+
+        // 테마 3가지: 말랑(양쪽 다 완전히 둥근 알약 모양) / 꼬리형(말풍선 아래에 작은 삼각형 꼬리가
+        // 달린 모양) / 카톡형(프로필이 있는 쪽 모서리 하나만 거의 각지게 만들어서 카카오톡처럼
+        // 꼬리가 있는 듯한 느낌).
         let borderRadiusCss;
         if (theme === "soft") {
             borderRadiusCss = "999px";
@@ -1502,8 +1507,20 @@ function buildDialogueBlockHTML(line) {
         } else {
             borderRadiusCss = `${radius}px`;
         }
+
         const bubbleTextColor = document.getElementById("dlgBubbleTextColor")?.value || "#ffffff";
-        const bubbleBg = c.color || "#171717";
+        const bubbleHex = c.color || "#171717";
+        const bubbleRgb = hexToRgb(bubbleHex).replace("rgb(", "").replace(")", "");
+        const bubbleBg = `rgba(${bubbleRgb}, ${opacityPct / 100})`;
+
+        // 꼬리형 테마일 때만, 말풍선 아래쪽에 작은 삼각형 꼬리를 테두리(border) 트릭으로 그린다.
+        // (border는 html2canvas가 항상 정확히 그려주는 안전한 속성이라 이전에 겪었던
+        // filter:blur() 같은 문제와는 다르다.)
+        const tailSide = side === "right" ? "right" : "left";
+        const tailHtml = theme === "tail"
+            ? `<div style="position:absolute;bottom:-7px;${tailSide}:14px;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:9px solid ${bubbleBg};"></div>`
+            : "";
+
         const nameHtml = showName ? `<div style="${DLG_FONT}${nameSizeStyle}font-weight:700;${nameColor}margin-bottom:3px;text-align:${side === "right" ? "right" : "left"};">${escapeHtml(c.name)}</div>` : "";
         const narrationHtml = narrationText ? `<div style="${DLG_FONT}margin-top:4px;white-space:pre-wrap;text-align:${side === "right" ? "right" : "left"};opacity:0.7;">${escapeHtml(narrationText)}</div>` : "";
         // 말풍선 자체는 flex로 좌/우 정렬한다. 말풍선 "안쪽" 레이아웃은 텍스트 하나뿐이라
@@ -1511,9 +1528,18 @@ function buildDialogueBlockHTML(line) {
         // 두 요소를 나란히 놓을 때 생겼던 문제였음). 그래도 안전하게 태그 사이 공백 없이 한 줄로 만든다.
         const bubbleText = escapeHtml(line.text || "");
         const bubbleHtml = `<div style="display:flex;justify-content:${side === "right" ? "flex-end" : "flex-start"};">`
-            + `<div style="${DLG_FONT}max-width:78%;background-color:${bubbleBg};color:${bubbleTextColor};padding:${padY}px ${padX}px;border-radius:${borderRadiusCss};white-space:pre-wrap;word-break:break-word;box-sizing:border-box;">${bubbleText}</div>`
+            + `<div style="position:relative;${DLG_FONT}max-width:78%;background-color:${bubbleBg};color:${bubbleTextColor};padding:${padY}px ${padX}px;border-radius:${borderRadiusCss};white-space:pre-wrap;word-break:break-word;box-sizing:border-box;">${bubbleText}${tailHtml}</div>`
             + `</div>`;
-        return `<div>${nameHtml}${bubbleHtml}${narrationHtml}</div>`;
+
+        const bodyHtml = `${nameHtml}${bubbleHtml}${narrationHtml}`;
+
+        // 프사 표시: 왼쪽(상대) 말풍선일 때만 옆에 프사를 보여준다(카톡·아이메시지 등 흔한 채팅 UI 관례).
+        // 내 말풍선(오른쪽)엔 보통 프사를 안 보여주므로 여긴 항상 생략한다.
+        if (showAvatar && side === "left") {
+            const avatarStyle = `flex:0 0 ${avatarSize}px;width:${avatarSize}px;height:${avatarSize}px;border-radius:${avatarRadius};background-color:#f3f3f1;border:1px solid #eaeaea;background-size:cover;background-position:center;box-sizing:border-box;align-self:flex-end;${c.avatarData ? `background-image:url(${c.avatarData});` : ""}`;
+            return `<div style="display:flex;align-items:flex-end;gap:8px;"><div style="${avatarStyle}"></div><div style="flex:1 1 auto;min-width:0;">${bodyHtml}</div></div>`;
+        }
+        return `<div>${bodyHtml}</div>`;
     }
 
     if (paragraphLayoutOn) {
