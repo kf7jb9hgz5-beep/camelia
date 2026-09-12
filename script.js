@@ -795,12 +795,24 @@ function bakeBackgroundBlurForCapture() {
                 const offsetY = (containerH - displayedH) * (posYVal / 100);
 
                 const pad = Math.ceil(blurPx * 3); // 블러 때 가장자리가 비쳐 보이지 않도록 여유 공간을 둔다
+
+                // ⚠️ 저장(html2canvas)은 scale:2로 두 배 해상도로 찍는데, 여기서 구운 배경 이미지가
+                // 화면 표시 크기(1배) 그대로면 저장할 때 두 배로 늘어나면서 화질이 뚝 떨어졌었다.
+                // 그래서 실제 그리는 캔버스 자체를 EXPORT_SCALE배 더 크게 만들고(블러 반경도 같이 배율
+                // 적용), CSS로 보여주는 크기(backgroundSize)만 원래 크기로 맞춰서 고해상도를 유지한다.
+                const EXPORT_SCALE = 2;
                 const off = document.createElement("canvas");
-                off.width = containerW + pad * 2;
-                off.height = containerH + pad * 2;
+                off.width = (containerW + pad * 2) * EXPORT_SCALE;
+                off.height = (containerH + pad * 2) * EXPORT_SCALE;
                 const ctx = off.getContext("2d");
-                ctx.filter = `blur(${blurPx}px)`;
-                ctx.drawImage(img, offsetX + pad, offsetY + pad, displayedW, displayedH);
+                ctx.filter = `blur(${blurPx * EXPORT_SCALE}px)`;
+                ctx.drawImage(
+                    img,
+                    (offsetX + pad) * EXPORT_SCALE,
+                    (offsetY + pad) * EXPORT_SCALE,
+                    displayedW * EXPORT_SCALE,
+                    displayedH * EXPORT_SCALE
+                );
 
                 bgLayer.setAttribute("data-orig-bg-image", bgImageCss);
                 bgLayer.setAttribute("data-orig-bg-filter", bgLayer.style.filter || "");
@@ -809,7 +821,7 @@ function bakeBackgroundBlurForCapture() {
                 bgLayer.setAttribute("data-orig-bg-repeat", bgLayer.style.backgroundRepeat || "");
 
                 bgLayer.style.backgroundImage = `url(${off.toDataURL("image/png")})`;
-                bgLayer.style.backgroundSize = `${off.width}px ${off.height}px`;
+                bgLayer.style.backgroundSize = `${containerW + pad * 2}px ${containerH + pad * 2}px`;
                 bgLayer.style.backgroundPosition = `-${pad}px -${pad}px`;
                 bgLayer.style.backgroundRepeat = "no-repeat";
                 bgLayer.style.filter = "none";
@@ -1513,12 +1525,13 @@ function buildDialogueBlockHTML(line) {
         const bubbleRgb = hexToRgb(bubbleHex).replace("rgb(", "").replace(")", "");
         const bubbleBg = `rgba(${bubbleRgb}, ${opacityPct / 100})`;
 
-        // 꼬리형 테마일 때만, 말풍선 아래쪽에 작은 삼각형 꼬리를 테두리(border) 트릭으로 그린다.
-        // (border는 html2canvas가 항상 정확히 그려주는 안전한 속성이라 이전에 겪었던
-        // filter:blur() 같은 문제와는 다르다.)
-        const tailSide = side === "right" ? "right" : "left";
+        // 꼬리형 테마일 때만, 말풍선 아래쪽 모서리에 옆으로 삐져나온 꼬리를 붙인다.
+        // 밑에 툭 떨어진 모양이 아니라 말풍선 테두리에 딱 붙게, 그리고 겹치는 부분이 전혀 없이
+        // 모서리 한 점만 맞닿게 만들어서 — 투명도를 줄여도 겹친 부분이 진하게 보이는 문제가 없다.
         const tailHtml = theme === "tail"
-            ? `<div style="position:absolute;bottom:-7px;${tailSide}:14px;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:9px solid ${bubbleBg};"></div>`
+            ? (side === "right"
+                ? `<div style="position:absolute;bottom:0;right:-9px;width:0;height:0;border-top:10px solid ${bubbleBg};border-right:10px solid transparent;"></div>`
+                : `<div style="position:absolute;bottom:0;left:-9px;width:0;height:0;border-top:10px solid ${bubbleBg};border-left:10px solid transparent;"></div>`)
             : "";
 
         const nameHtml = showName ? `<div style="${DLG_FONT}${nameSizeStyle}font-weight:700;${nameColor}margin-bottom:3px;text-align:${side === "right" ? "right" : "left"};">${escapeHtml(c.name)}</div>` : "";
