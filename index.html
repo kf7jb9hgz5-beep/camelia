@@ -707,6 +707,16 @@
                 </div>
 
                 <div class="panel-section-title" id="dlgBubbleOnlyTitle" style="display: none">말풍선 세부 설정</div>
+                <div class="control-minimal-row" id="dlgBubbleThemeArea" style="display: none">
+                    <label>말풍선 테마</label>
+                    <input type="hidden" id="dlgBubbleTheme" value="soft" />
+                    <div class="segmented-control segmented-control-minimal" data-target="dlgBubbleTheme">
+                        <button type="button" data-value="soft" class="active">말랑</button>
+                        <button type="button" data-value="simple">심플</button>
+                        <button type="button" data-value="kakao">카톡형</button>
+                    </div>
+                </div>
+                <div class="field-hint" id="dlgBubbleThemeHint" style="display: none">말랑: 양쪽 다 둥근 알약 모양 · 심플: 각진 느낌의 모던한 사각 말풍선 · 카톡형: 프로필 쪽 모서리만 각져서 꼬리처럼 보이는 모양</div>
                 <div class="control-minimal-row" id="dlgBubblePadYArea" style="display: none">
                     <label for="dlgBubblePadY">말풍선 안 여백 · 위아래 (px)</label>
                     <div class="stepper-minimal">

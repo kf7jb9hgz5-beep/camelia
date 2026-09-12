@@ -1253,6 +1253,8 @@ function syncDialogueModeUI() {
         dlgBlockOnlyTitle: isBlock,
         dlgParagraphLayoutArea: isBlock,
         dlgBubbleOnlyTitle: isBubble,
+        dlgBubbleThemeArea: isBubble,
+        dlgBubbleThemeHint: isBubble,
         dlgBubblePadYArea: isBubble,
         dlgBubblePadXArea: isBubble,
         dlgBubbleRadiusArea: isBubble,
@@ -1486,6 +1488,20 @@ function buildDialogueBlockHTML(line) {
         const padX = isNaN(padXRaw) ? 14 : padXRaw;
         const radiusRaw = parseFloat(document.getElementById("dlgBubbleRadius")?.value);
         const radius = isNaN(radiusRaw) ? 18 : radiusRaw;
+        const theme = document.getElementById("dlgBubbleTheme")?.value || "soft";
+        // 테마 3가지: 말랑(양쪽 다 완전히 둥근 알약 모양) / 심플(네 모서리 균일하게 살짝 둥근 사각형) /
+        // 카톡형(프로필이 있는 쪽 모서리 하나만 거의 각지게 만들어서 카카오톡처럼 꼬리가 있는 듯한 느낌).
+        let borderRadiusCss;
+        if (theme === "soft") {
+            borderRadiusCss = "999px";
+        } else if (theme === "kakao") {
+            const sharp = "4px";
+            borderRadiusCss = side === "right"
+                ? `${radius}px ${radius}px ${sharp} ${radius}px`
+                : `${radius}px ${radius}px ${radius}px ${sharp}`;
+        } else {
+            borderRadiusCss = `${radius}px`;
+        }
         const bubbleTextColor = document.getElementById("dlgBubbleTextColor")?.value || "#ffffff";
         const bubbleBg = c.color || "#171717";
         const nameHtml = showName ? `<div style="${DLG_FONT}${nameSizeStyle}font-weight:700;${nameColor}margin-bottom:3px;text-align:${side === "right" ? "right" : "left"};">${escapeHtml(c.name)}</div>` : "";
@@ -1495,7 +1511,7 @@ function buildDialogueBlockHTML(line) {
         // 두 요소를 나란히 놓을 때 생겼던 문제였음). 그래도 안전하게 태그 사이 공백 없이 한 줄로 만든다.
         const bubbleText = escapeHtml(line.text || "");
         const bubbleHtml = `<div style="display:flex;justify-content:${side === "right" ? "flex-end" : "flex-start"};">`
-            + `<div style="${DLG_FONT}max-width:78%;background-color:${bubbleBg};color:${bubbleTextColor};padding:${padY}px ${padX}px;border-radius:${radius}px;white-space:pre-wrap;word-break:break-word;box-sizing:border-box;">${bubbleText}</div>`
+            + `<div style="${DLG_FONT}max-width:78%;background-color:${bubbleBg};color:${bubbleTextColor};padding:${padY}px ${padX}px;border-radius:${borderRadiusCss};white-space:pre-wrap;word-break:break-word;box-sizing:border-box;">${bubbleText}</div>`
             + `</div>`;
         return `<div>${nameHtml}${bubbleHtml}${narrationHtml}</div>`;
     }
