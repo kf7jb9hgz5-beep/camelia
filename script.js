@@ -444,13 +444,52 @@ function updateCanvas() {
     }
 
     if (infoContainer && textContainer) {
-        if (infoContainer.parentNode !== textContainer) textContainer.appendChild(infoContainer);
+        const infoPosV = document.getElementById("infoPositionV")?.value || "drag";
+        const infoPosH = document.getElementById("infoPositionH")?.value || "right";
+        const justifyMap = { left: "flex-start", center: "center", right: "flex-end" };
+        infoContainer.style.justifyContent = justifyMap[infoPosH] || "flex-end";
 
-        infoContainer.style.justifyContent = "flex-end";
-
-        const bodyFontSize = parseFloat(els.fontSize.value) || 16;
-        const bodyLineHeight = parseFloat(els.lineHeight.value) || 1.6;
-        infoContainer.style.marginTop = `${bodyFontSize * bodyLineHeight}px`;
+        if (infoPosV === "drag") {
+            // 직접 지정: 본문 흐름에서 빼서 캔버스 안에 절대 위치로 띄운다. 세로 %는 슬라이더로도,
+            // 미리보기에서 직접 눌러 드래그해서도 바꿀 수 있다 (setupInfoDragPositioning 참고).
+            if (els.captureArea && infoContainer.parentNode !== els.captureArea) {
+                els.captureArea.appendChild(infoContainer);
+            }
+            const yPercentRaw = parseFloat(document.getElementById("infoPositionY")?.value);
+            const yPercent = isNaN(yPercentRaw) ? 90 : Math.min(100, Math.max(0, yPercentRaw));
+            infoContainer.style.position = "absolute";
+            infoContainer.style.left = "0";
+            infoContainer.style.right = "0";
+            infoContainer.style.top = `${yPercent}%`;
+            infoContainer.style.transform = "translateY(-50%)";
+            infoContainer.style.marginTop = "0";
+            infoContainer.style.marginBottom = "0";
+            infoContainer.style.padding = "0 20px";
+            infoContainer.style.boxSizing = "border-box";
+            infoContainer.style.zIndex = "5";
+            infoContainer.style.cursor = "grab";
+        } else {
+            infoContainer.style.position = "static";
+            infoContainer.style.transform = "none";
+            infoContainer.style.padding = "0";
+            infoContainer.style.zIndex = "";
+            infoContainer.style.cursor = "";
+            // 세로 위치: 본문 위/아래 — textContainer 안에서 textWrapper보다 앞/뒤에 두는 것으로 결정한다.
+            if (infoPosV === "top") {
+                if (infoContainer.nextSibling !== textWrapper) textContainer.insertBefore(infoContainer, textWrapper);
+            } else {
+                if (infoContainer.parentNode !== textContainer || infoContainer.previousSibling !== textWrapper) textContainer.appendChild(infoContainer);
+            }
+            const bodyFontSize = parseFloat(els.fontSize.value) || 16;
+            const bodyLineHeight = parseFloat(els.lineHeight.value) || 1.6;
+            if (infoPosV === "top") {
+                infoContainer.style.marginTop = "0";
+                infoContainer.style.marginBottom = `${bodyFontSize * bodyLineHeight}px`;
+            } else {
+                infoContainer.style.marginTop = `${bodyFontSize * bodyLineHeight}px`;
+                infoContainer.style.marginBottom = "0";
+            }
+        }
 
         const baseColor = els.globalTextColor.value;
         const fontName = els.fontSelect.value;
@@ -1511,8 +1550,15 @@ function buildDialogueBlockHTML(line) {
         let borderRadiusCss;
         if (theme === "soft") {
             borderRadiusCss = "999px";
-        } else if (theme === "kakao" || theme === "tail") {
+        } else if (theme === "kakao") {
             const sharp = "4px";
+            borderRadiusCss = side === "right"
+                ? `${radius}px ${radius}px ${sharp} ${radius}px`
+                : `${radius}px ${radius}px ${radius}px ${sharp}`;
+        } else if (theme === "tail") {
+            // 꼬리형: 글자가 짧아서 말풍선 자체가 작을 때도 뭉개져 보이지 않도록,
+            // 모서리를 카톡형만큼 확 깎지 않고 살짝만 깎아서(라운드 유지) 둥근 사각형 느낌을 지킨다.
+            const sharp = `${Math.max(6, radius * 0.4)}px`;
             borderRadiusCss = side === "right"
                 ? `${radius}px ${radius}px ${sharp} ${radius}px`
                 : `${radius}px ${radius}px ${radius}px ${sharp}`;
@@ -1531,10 +1577,11 @@ function buildDialogueBlockHTML(line) {
         // (아래에) 그리고, 말풍선 자체는 그 위에 나중에 그려서 겹치는 부분을 말풍선이 그냥
         // 덮어버리게 했다 — 이러면 겹친 부분도 항상 말풍선 하나 분량의 색만 보이고,
         // 꼬리가 말풍선 밖으로 삐져나온 부분만 꼬리 색이 보여서 이중으로 진해지지 않는다.
+        const tailSize = Math.max(9, Math.min(14, radius * 0.7));
         const tailHtml = theme === "tail"
             ? (side === "right"
-                ? `<div style="position:absolute;bottom:-2px;right:-2px;width:18px;height:18px;background-color:${bubbleBg};border-radius:18px 0 18px 18px;"></div>`
-                : `<div style="position:absolute;bottom:-2px;left:-2px;width:18px;height:18px;background-color:${bubbleBg};border-radius:0 18px 18px 18px;"></div>`)
+                ? `<div style="position:absolute;bottom:-1px;right:-1px;width:${tailSize}px;height:${tailSize}px;background-color:${bubbleBg};border-radius:${tailSize}px 0 ${tailSize}px ${tailSize}px;"></div>`
+                : `<div style="position:absolute;bottom:-1px;left:-1px;width:${tailSize}px;height:${tailSize}px;background-color:${bubbleBg};border-radius:0 ${tailSize}px ${tailSize}px ${tailSize}px;"></div>`)
             : "";
 
         const nameHtml = showName ? `<div style="${DLG_FONT}${nameSizeStyle}font-weight:700;${nameColor}margin-bottom:3px;text-align:${side === "right" ? "right" : "left"};">${escapeHtml(c.name)}</div>` : "";
@@ -1668,6 +1715,73 @@ function buildDialogueMarkerInnerHTML(line) {
         document.addEventListener("pointerup", onPointerUp);
         document.addEventListener("pointercancel", onPointerUp);
     });
+})();
+
+// ==== 작품명·제작자(A¹/B²) 표시, 미리보기에서 직접 드래그로 세로 위치 옮기기 ====
+// 세로 위치가 "직접 지정"일 때만 작동한다. 미리보기가 화면 크기에 맞춰 축소되어 있을 수 있어서
+// (applyPreviewScale), 픽셀이 아니라 캔버스 기준 백분율로 계산해야 어느 화면에서도 정확하다.
+(function setupInfoDragPositioning() {
+    let dragging = false;
+    let pointerId = null;
+
+    function clientYToPercent(clientY) {
+        const rect = els.captureArea.getBoundingClientRect();
+        const pct = ((clientY - rect.top) / rect.height) * 100;
+        return Math.min(100, Math.max(0, pct));
+    }
+
+    function onPointerMove(e) {
+        if (!dragging || e.pointerId !== pointerId) return;
+        e.preventDefault();
+        const pct = clientYToPercent(e.clientY);
+        const yInput = document.getElementById("infoPositionY");
+        const ySlider = document.getElementById("infoPositionYSlider");
+        if (yInput) yInput.value = String(Math.round(pct));
+        if (ySlider) ySlider.value = String(Math.round(pct));
+        const infoContainer = document.getElementById("canvasInfo");
+        if (infoContainer) infoContainer.style.top = `${pct}%`;
+    }
+
+    function onPointerUp(e) {
+        if (!dragging || e.pointerId !== pointerId) return;
+        dragging = false;
+        pointerId = null;
+        document.removeEventListener("pointermove", onPointerMove);
+        document.removeEventListener("pointerup", onPointerUp);
+        document.removeEventListener("pointercancel", onPointerUp);
+        const infoContainer = document.getElementById("canvasInfo");
+        if (infoContainer) infoContainer.style.cursor = "grab";
+        updateCanvas();
+    }
+
+    document.addEventListener("pointerdown", (e) => {
+        const infoContainer = e.target.closest("#canvasInfo");
+        if (!infoContainer) return;
+        if ((document.getElementById("infoPositionV")?.value || "drag") !== "drag") return;
+        e.preventDefault();
+        dragging = true;
+        pointerId = e.pointerId;
+        infoContainer.style.cursor = "grabbing";
+        document.addEventListener("pointermove", onPointerMove);
+        document.addEventListener("pointerup", onPointerUp);
+        document.addEventListener("pointercancel", onPointerUp);
+    });
+})();
+
+// "세로 위치" 선택에 따라 슬라이더/안내문구를 보이거나 숨긴다.
+(function setupInfoPositionVToggle() {
+    const group = document.querySelector('.segmented-control[data-target="infoPositionV"]');
+    if (!group) return;
+    const syncWith = (val) => {
+        const area = document.getElementById("infoPositionYArea");
+        const hint = document.getElementById("infoPositionYHint");
+        if (area) area.style.display = val === "drag" ? "" : "none";
+        if (hint) hint.style.display = val === "drag" ? "" : "none";
+    };
+    // ⚠️ 이 리스너가 세그먼트 버튼 공통 처리(숨은 input 값 갱신)보다 먼저 등록돼서 먼저 실행되기
+    // 때문에, 숨은 input 값을 다시 읽지 않고 클릭한 버튼 자신의 data-value를 바로 사용한다.
+    group.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => syncWith(b.getAttribute("data-value"))));
+    syncWith(document.getElementById("infoPositionV")?.value || "drag");
 })();
 
 // "대사 추가"를 누르면, 그 대사가 본문(편집창)에도 바로 보이도록 편집창 맨 끝에 실제 대사 블록을 넣는다.
