@@ -1511,7 +1511,7 @@ function buildDialogueBlockHTML(line) {
         let borderRadiusCss;
         if (theme === "soft") {
             borderRadiusCss = "999px";
-        } else if (theme === "kakao") {
+        } else if (theme === "kakao" || theme === "tail") {
             const sharp = "4px";
             borderRadiusCss = side === "right"
                 ? `${radius}px ${radius}px ${sharp} ${radius}px`
@@ -1525,13 +1525,16 @@ function buildDialogueBlockHTML(line) {
         const bubbleRgb = hexToRgb(bubbleHex).replace("rgb(", "").replace(")", "");
         const bubbleBg = `rgba(${bubbleRgb}, ${opacityPct / 100})`;
 
-        // 꼬리형 테마일 때만, 말풍선 아래쪽 모서리에 옆으로 삐져나온 꼬리를 붙인다.
-        // 밑에 툭 떨어진 모양이 아니라 말풍선 테두리에 딱 붙게, 그리고 겹치는 부분이 전혀 없이
-        // 모서리 한 점만 맞닿게 만들어서 — 투명도를 줄여도 겹친 부분이 진하게 보이는 문제가 없다.
+        // 꼬리형 테마일 때만, 말풍선 모서리에 둥근 물방울 모양 꼬리를 붙인다(아이메시지 느낌).
+        // ⚠️ 꼬리를 말풍선 "안쪽 자식"으로 넣으면, 투명도가 있을 때 겹치는 부분이 두 겹으로
+        // 칠해져서 그 자리만 유독 진하게 보이는 문제가 있었다. 그래서 꼬리를 말풍선보다 먼저
+        // (아래에) 그리고, 말풍선 자체는 그 위에 나중에 그려서 겹치는 부분을 말풍선이 그냥
+        // 덮어버리게 했다 — 이러면 겹친 부분도 항상 말풍선 하나 분량의 색만 보이고,
+        // 꼬리가 말풍선 밖으로 삐져나온 부분만 꼬리 색이 보여서 이중으로 진해지지 않는다.
         const tailHtml = theme === "tail"
             ? (side === "right"
-                ? `<div style="position:absolute;bottom:0;right:-9px;width:0;height:0;border-top:10px solid ${bubbleBg};border-right:10px solid transparent;"></div>`
-                : `<div style="position:absolute;bottom:0;left:-9px;width:0;height:0;border-top:10px solid ${bubbleBg};border-left:10px solid transparent;"></div>`)
+                ? `<div style="position:absolute;bottom:-2px;right:-2px;width:18px;height:18px;background-color:${bubbleBg};border-radius:18px 0 18px 18px;"></div>`
+                : `<div style="position:absolute;bottom:-2px;left:-2px;width:18px;height:18px;background-color:${bubbleBg};border-radius:0 18px 18px 18px;"></div>`)
             : "";
 
         const nameHtml = showName ? `<div style="${DLG_FONT}${nameSizeStyle}font-weight:700;${nameColor}margin-bottom:3px;text-align:${side === "right" ? "right" : "left"};">${escapeHtml(c.name)}</div>` : "";
@@ -1541,7 +1544,10 @@ function buildDialogueBlockHTML(line) {
         // 두 요소를 나란히 놓을 때 생겼던 문제였음). 그래도 안전하게 태그 사이 공백 없이 한 줄로 만든다.
         const bubbleText = escapeHtml(line.text || "");
         const bubbleHtml = `<div style="display:flex;justify-content:${side === "right" ? "flex-end" : "flex-start"};">`
-            + `<div style="position:relative;${DLG_FONT}max-width:78%;background-color:${bubbleBg};color:${bubbleTextColor};padding:${padY}px ${padX}px;border-radius:${borderRadiusCss};white-space:pre-wrap;word-break:break-word;box-sizing:border-box;">${bubbleText}${tailHtml}</div>`
+            + `<div style="position:relative;max-width:78%;">`
+            + tailHtml
+            + `<div style="position:relative;${DLG_FONT}background-color:${bubbleBg};color:${bubbleTextColor};padding:${padY}px ${padX}px;border-radius:${borderRadiusCss};white-space:pre-wrap;word-break:break-word;box-sizing:border-box;">${bubbleText}</div>`
+            + `</div>`
             + `</div>`;
 
         const bodyHtml = `${nameHtml}${bubbleHtml}${narrationHtml}`;
