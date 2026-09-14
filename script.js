@@ -445,32 +445,42 @@ function updateCanvas() {
 
     if (infoContainer && textContainer) {
         const infoPosV = document.getElementById("infoPositionV")?.value || "drag";
-        const infoPosH = document.getElementById("infoPositionH")?.value || "right";
-        const justifyMap = { left: "flex-start", center: "center", right: "flex-end" };
-        infoContainer.style.justifyContent = justifyMap[infoPosH] || "flex-end";
+        const xPercentRaw = parseFloat(document.getElementById("infoPositionX")?.value);
+        const xPercent = isNaN(xPercentRaw) ? 100 : Math.min(100, Math.max(0, xPercentRaw));
 
         if (infoPosV === "drag") {
-            // 직접 지정: 본문 흐름에서 빼서 캔버스 안에 절대 위치로 띄운다. 세로 %는 슬라이더로도,
-            // 미리보기에서 직접 눌러 드래그해서도 바꿀 수 있다 (setupInfoDragPositioning 참고).
+            // 직접 지정: 본문 흐름에서 빼서 캔버스 안에 절대 위치로 띄운다.
+            // ⚠️ absolute 자식은 부모의 padding을 무시하고 테두리까지 붙을 수 있다(흐름 안의 요소만
+            // padding 안쪽으로 밀려남) — 그래서 0%/100%가 진짜 캔버스 맨 끝까지 붙어버렸었다.
+            // 그래서 캔버스 자체의 위/아래/좌/우 여백(padding) 값만큼을 직접 계산해서 안쪽으로 들여놓고,
+            // 그 안에서만 0~100%가 움직이게 만들었다 — 이러면 본문이 있는 폭 안에서만 움직인다.
             if (els.captureArea && infoContainer.parentNode !== els.captureArea) {
                 els.captureArea.appendChild(infoContainer);
             }
+            const padT = parseFloat(els.paddingTop?.value) || 0;
+            const padB = parseFloat(els.paddingBottom?.value) || 0;
+            const padL = parseFloat(els.paddingLeft?.value) || 0;
+            const padR = parseFloat(els.paddingRight?.value) || 0;
             const yPercentRaw = parseFloat(document.getElementById("infoPositionY")?.value);
             const yPercent = isNaN(yPercentRaw) ? 90 : Math.min(100, Math.max(0, yPercentRaw));
             infoContainer.style.position = "absolute";
-            infoContainer.style.left = "0";
-            infoContainer.style.right = "0";
-            infoContainer.style.top = `${yPercent}%`;
-            infoContainer.style.transform = "translateY(-50%)";
+            infoContainer.style.left = `calc(${padL}px + (100% - ${padL + padR}px) * ${xPercent / 100})`;
+            infoContainer.style.right = "auto";
+            infoContainer.style.top = `calc(${padT}px + (100% - ${padT + padB}px) * ${yPercent / 100})`;
+            infoContainer.style.transform = `translate(-${xPercent}%, -50%)`;
+            infoContainer.style.width = "max-content";
+            infoContainer.style.maxWidth = `calc(100% - ${padL + padR}px)`;
             infoContainer.style.marginTop = "0";
             infoContainer.style.marginBottom = "0";
-            infoContainer.style.padding = "0 20px";
+            infoContainer.style.padding = "0";
             infoContainer.style.boxSizing = "border-box";
             infoContainer.style.zIndex = "5";
             infoContainer.style.cursor = "grab";
         } else {
             infoContainer.style.position = "static";
             infoContainer.style.transform = "none";
+            infoContainer.style.width = "auto";
+            infoContainer.style.maxWidth = "none";
             infoContainer.style.padding = "0";
             infoContainer.style.zIndex = "";
             infoContainer.style.cursor = "";
@@ -480,6 +490,11 @@ function updateCanvas() {
             } else {
                 if (infoContainer.parentNode !== textContainer || infoContainer.previousSibling !== textWrapper) textContainer.appendChild(infoContainer);
             }
+            // 가로 위치: 슬라이더 값을 3구간으로 나눠 좌/중앙/우 정렬로 근사한다(흐름 안에 있는 줄이라
+            // 드래그 모드처럼 완전히 자유롭게 두기 어려움).
+            const justifyMap = { left: "flex-start", center: "center", right: "flex-end" };
+            const bucket = xPercent < 33 ? "left" : xPercent > 67 ? "right" : "center";
+            infoContainer.style.justifyContent = justifyMap[bucket];
             const bodyFontSize = parseFloat(els.fontSize.value) || 16;
             const bodyLineHeight = parseFloat(els.lineHeight.value) || 1.6;
             if (infoPosV === "top") {
@@ -1724,22 +1739,44 @@ function buildDialogueMarkerInnerHTML(line) {
     let dragging = false;
     let pointerId = null;
 
-    function clientYToPercent(clientY) {
+    function clientToPercent(clientX, clientY) {
         const rect = els.captureArea.getBoundingClientRect();
-        const pct = ((clientY - rect.top) / rect.height) * 100;
-        return Math.min(100, Math.max(0, pct));
+        const padT = parseFloat(els.paddingTop?.value) || 0;
+        const padB = parseFloat(els.paddingBottom?.value) || 0;
+        const padL = parseFloat(els.paddingLeft?.value) || 0;
+        const padR = parseFloat(els.paddingRight?.value) || 0;
+        const usableW = Math.max(1, rect.width - padL - padR);
+        const usableH = Math.max(1, rect.height - padT - padB);
+        const xPct = ((clientX - rect.left - padL) / usableW) * 100;
+        const yPct = ((clientY - rect.top - padT) / usableH) * 100;
+        return {
+            x: Math.min(100, Math.max(0, xPct)),
+            y: Math.min(100, Math.max(0, yPct))
+        };
     }
 
     function onPointerMove(e) {
         if (!dragging || e.pointerId !== pointerId) return;
         e.preventDefault();
-        const pct = clientYToPercent(e.clientY);
+        const { x, y } = clientToPercent(e.clientX, e.clientY);
+        const xInput = document.getElementById("infoPositionX");
+        const xSlider = document.getElementById("infoPositionXSlider");
         const yInput = document.getElementById("infoPositionY");
         const ySlider = document.getElementById("infoPositionYSlider");
-        if (yInput) yInput.value = String(Math.round(pct));
-        if (ySlider) ySlider.value = String(Math.round(pct));
+        if (xInput) xInput.value = String(Math.round(x));
+        if (xSlider) xSlider.value = String(Math.round(x));
+        if (yInput) yInput.value = String(Math.round(y));
+        if (ySlider) ySlider.value = String(Math.round(y));
         const infoContainer = document.getElementById("canvasInfo");
-        if (infoContainer) infoContainer.style.top = `${pct}%`;
+        if (infoContainer) {
+            const padT = parseFloat(els.paddingTop?.value) || 0;
+            const padB = parseFloat(els.paddingBottom?.value) || 0;
+            const padL = parseFloat(els.paddingLeft?.value) || 0;
+            const padR = parseFloat(els.paddingRight?.value) || 0;
+            infoContainer.style.left = `calc(${padL}px + (100% - ${padL + padR}px) * ${x / 100})`;
+            infoContainer.style.top = `calc(${padT}px + (100% - ${padT + padB}px) * ${y / 100})`;
+            infoContainer.style.transform = `translate(-${x}%, -50%)`;
+        }
     }
 
     function onPointerUp(e) {
@@ -1773,9 +1810,11 @@ function buildDialogueMarkerInnerHTML(line) {
     const group = document.querySelector('.segmented-control[data-target="infoPositionV"]');
     if (!group) return;
     const syncWith = (val) => {
-        const area = document.getElementById("infoPositionYArea");
+        const areaY = document.getElementById("infoPositionYArea");
+        const areaX = document.getElementById("infoPositionXArea");
         const hint = document.getElementById("infoPositionYHint");
-        if (area) area.style.display = val === "drag" ? "" : "none";
+        if (areaY) areaY.style.display = val === "drag" ? "" : "none";
+        if (areaX) areaX.style.display = val === "drag" ? "" : "none";
         if (hint) hint.style.display = val === "drag" ? "" : "none";
     };
     // ⚠️ 이 리스너가 세그먼트 버튼 공통 처리(숨은 input 값 갱신)보다 먼저 등록돼서 먼저 실행되기

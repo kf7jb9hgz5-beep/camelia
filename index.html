@@ -151,15 +151,6 @@
                 <div class="panel-section-title">작품 · 제작자 표시 위치</div>
                 <div class="field-hint">본문 맨 아래 "A¹/B²"에 입력한 작품명·제작자 표시가 어디에 나올지 정해요.</div>
                 <div class="control-minimal-row">
-                    <label>가로 위치</label>
-                    <input type="hidden" id="infoPositionH" value="right" />
-                    <div class="segmented-control segmented-control-minimal" data-target="infoPositionH">
-                        <button type="button" data-value="left">좌</button>
-                        <button type="button" data-value="center">중앙</button>
-                        <button type="button" data-value="right" class="active">우</button>
-                    </div>
-                </div>
-                <div class="control-minimal-row">
                     <label>세로 위치</label>
                     <input type="hidden" id="infoPositionV" value="drag" />
                     <div class="segmented-control segmented-control-minimal" data-target="infoPositionV">
@@ -169,11 +160,16 @@
                     </div>
                 </div>
                 <div class="control-minimal-row" id="infoPositionYArea">
-                    <label for="infoPositionYSlider">세로 위치 (드래그)</label>
+                    <label for="infoPositionYSlider">세로 위치</label>
                     <input type="range" id="infoPositionYSlider" min="0" max="100" value="90" oninput="syncRangeToNumber('infoPositionYSlider','infoPositionY')" />
                     <input type="hidden" id="infoPositionY" value="90" />
                 </div>
-                <div class="field-hint" id="infoPositionYHint">위 슬라이더로 옮기거나, 미리보기 화면에서 작품명·제작자 글자를 직접 눌러 드래그해서 위아래로 옮길 수 있어요.</div>
+                <div class="control-minimal-row" id="infoPositionXArea">
+                    <label for="infoPositionXSlider">가로 위치</label>
+                    <input type="range" id="infoPositionXSlider" min="0" max="100" value="100" oninput="syncRangeToNumber('infoPositionXSlider','infoPositionX')" />
+                    <input type="hidden" id="infoPositionX" value="100" />
+                </div>
+                <div class="field-hint" id="infoPositionYHint">슬라이더로 옮기거나, 미리보기 화면에서 작품명·제작자 글자를 직접 눌러 드래그해서 옮길 수 있어요. 본문이 있는 폭 안에서만 움직여요(양 끝까지 딱 붙지 않아요).</div>
 
                 <div class="panel-section-title">제목 서식</div>
                 <div class="control-minimal-row">
