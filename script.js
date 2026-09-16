@@ -286,6 +286,13 @@ function updateCanvas() {
             });
         }
 
+        // 각주 목록을 맨 아래에 붙인다.
+        if (footnotes.length > 0) {
+            const footnoteSection = document.createElement("div");
+            footnoteSection.innerHTML = buildFootnoteListHTML();
+            textWrapper.appendChild(footnoteSection.firstElementChild);
+        }
+
         textWrapper.style.setProperty("--quote-line-color", els.quoteLineColor.value);
         if (els.editor) els.editor.style.setProperty("--quote-line-color", els.quoteLineColor.value);
         textWrapper.style.setProperty("--box-quote-color", els.boxQuoteColor?.value || "#000000");
@@ -814,19 +821,73 @@ function restoreCanvasAfterCapture(container) {
 }
 
 // ==== 배경 블러를 저장본에도 실제로 반영하기 ====
-// html2canvas는 CSS의 filter:blur()를 아예 지원하지 않아서(무시하고 그냥 그림), 미리보기 화면에서는
+// ⚠️ 이전에는 ctx.filter = "blur()"(캔버스 자체 흐림 필터)를 썼는데, 이게 아이폰 사파리 등 일부
+// 브라우저에서 안정적으로 적용되지 않아 저장한 이미지에 블러가 아예 안 먹는 경우가 있었다.
+// 그래서 브라우저 필터에 의존하지 않고, 픽셀을 직접 계산해서 흐리게 만드는 박스 블러를 구현했다 —
+// 이 방식은 캔버스 API의 기본 기능(getImageData/putImageData)만 쓰기 때문에 어떤 브라우저에서도
+// 똑같이 동작한다.
+function boxBlurPass(pixels, w, h, radius, horizontal) {
+    if (radius < 1) return;
+    const out = new Uint8ClampedArray(pixels.length);
+    const windowSize = radius * 2 + 1;
+    const lineCount = horizontal ? h : w;
+    const lineLength = horizontal ? w : h;
+    for (let line = 0; line < lineCount; line++) {
+        const getIdx = (pos) => {
+            const clamped = Math.min(lineLength - 1, Math.max(0, pos));
+            return horizontal ? (line * w + clamped) * 4 : (clamped * w + line) * 4;
+        };
+        let rSum = 0, gSum = 0, bSum = 0, aSum = 0;
+        for (let i = -radius; i <= radius; i++) {
+            const idx = getIdx(i);
+            rSum += pixels[idx]; gSum += pixels[idx + 1]; bSum += pixels[idx + 2]; aSum += pixels[idx + 3];
+        }
+        for (let pos = 0; pos < lineLength; pos++) {
+            const idx = getIdx(pos);
+            out[idx] = rSum / windowSize;
+            out[idx + 1] = gSum / windowSize;
+            out[idx + 2] = bSum / windowSize;
+            out[idx + 3] = aSum / windowSize;
+            const removeIdx = getIdx(pos - radius);
+            const addIdx = getIdx(pos + radius + 1);
+            rSum += pixels[addIdx] - pixels[removeIdx];
+            gSum += pixels[addIdx + 1] - pixels[removeIdx + 1];
+            bSum += pixels[addIdx + 2] - pixels[removeIdx + 2];
+            aSum += pixels[addIdx + 3] - pixels[removeIdx + 3];
+        }
+    }
+    pixels.set(out);
+}
+
+function boxBlurCanvasContext(ctx, width, height, radius) {
+    if (radius < 1) return;
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const px = imageData.data;
+    // 3번 반복하면 박스 블러가 가우시안 블러와 거의 비슷하게 부드러워진다.
+    for (let pass = 0; pass < 3; pass++) {
+        boxBlurPass(px, width, height, radius, true);
+        boxBlurPass(px, width, height, radius, false);
+    }
+    ctx.putImageData(imageData, 0, 0);
+}
+
+// 저장할 때 캔버스가 CSS의 filter:blur()를 지원하지 않아서(무시하고 그냥 그림), 미리보기 화면에서는
 // 블러가 보여도 저장한 이미지에는 블러가 안 걸린 원본 사진이 그대로 나왔었다.
 // 그래서 저장 직전에 배경 사진을 캔버스에 실제로 흐리게(픽셀 자체를) "구워서" 이미지로 바꿔치기하고,
-// CSS filter는 꺼둔다 — 이러면 html2canvas가 "그냥 흐린 사진"을 찍는 것뿐이라 문제없이 반영된다.
+// CSS filter는 꺼둔다 — 이러면 저장 라이브러리가 "그냥 흐린 사진"을 찍는 것뿐이라 문제없이 반영된다.
 function bakeBackgroundBlurForCapture() {
     return new Promise((resolve) => {
         const bgLayer = document.getElementById("bgImageLayer");
         const blurEl = document.getElementById("bgImageBlur");
         if (!bgLayer || !blurEl) { resolve(); return; }
         const blurPx = parseFloat(blurEl.value) || 0;
-        const bgImageCss = bgLayer.style.backgroundImage;
-        const match = bgImageCss && bgImageCss.match(/url\((?:"|')?(.*?)(?:"|')?\)/);
-        if (!blurPx || !match) { resolve(); return; }
+        // ⚠️ 배경이 인라인 style이 아니라 프리셋 등 다른 방식(class 등)으로 적용됐을 수도 있어서,
+        // 인라인 style만 보지 않고 getComputedStyle로 "최종적으로 실제 적용된" backgroundImage 값을
+        // 읽는다 — 이러면 어떤 방식으로 배경이 걸렸든 항상 정확히 잡아낸다.
+        const bgImageCss = bgLayer.style.backgroundImage || getComputedStyle(bgLayer).backgroundImage;
+        const match = bgImageCss && bgImageCss.match(/url\((?:"|')?([^"')]+)(?:"|')?\)/);
+        if (!blurPx) { console.warn("[블러 굽기] 블러 값이 0이라 건너뜀"); resolve(); return; }
+        if (!match) { console.warn("[블러 굽기] 배경 이미지를 못 찾음. backgroundImage =", bgImageCss); resolve(); return; }
 
         const img = new Image();
         img.crossOrigin = "anonymous";
@@ -850,16 +911,17 @@ function bakeBackgroundBlurForCapture() {
 
                 const pad = Math.ceil(blurPx * 3); // 블러 때 가장자리가 비쳐 보이지 않도록 여유 공간을 둔다
 
-                // ⚠️ 저장(html2canvas)은 scale:2로 두 배 해상도로 찍는데, 여기서 구운 배경 이미지가
-                // 화면 표시 크기(1배) 그대로면 저장할 때 두 배로 늘어나면서 화질이 뚝 떨어졌었다.
+                // ⚠️ 저장은 scale:2로 두 배 해상도로 찍는데, 여기서 구운 배경 이미지가 화면 표시
+                // 크기(1배) 그대로면 저장할 때 두 배로 늘어나면서 화질이 뚝 떨어졌었다.
                 // 그래서 실제 그리는 캔버스 자체를 EXPORT_SCALE배 더 크게 만들고(블러 반경도 같이 배율
                 // 적용), CSS로 보여주는 크기(backgroundSize)만 원래 크기로 맞춰서 고해상도를 유지한다.
+                // 단, 픽셀 단위 블러는 계산량이 크므로 캔버스 자체 해상도는 EXPORT_SCALE 그대로 쓰되
+                // 블러 반경은 너무 커지지 않게 적당히 맞춘다.
                 const EXPORT_SCALE = 2;
                 const off = document.createElement("canvas");
                 off.width = (containerW + pad * 2) * EXPORT_SCALE;
                 off.height = (containerH + pad * 2) * EXPORT_SCALE;
                 const ctx = off.getContext("2d");
-                ctx.filter = `blur(${blurPx * EXPORT_SCALE}px)`;
                 ctx.drawImage(
                     img,
                     (offsetX + pad) * EXPORT_SCALE,
@@ -867,6 +929,7 @@ function bakeBackgroundBlurForCapture() {
                     displayedW * EXPORT_SCALE,
                     displayedH * EXPORT_SCALE
                 );
+                boxBlurCanvasContext(ctx, off.width, off.height, Math.round(blurPx * EXPORT_SCALE));
 
                 bgLayer.setAttribute("data-orig-bg-image", bgImageCss);
                 bgLayer.setAttribute("data-orig-bg-filter", bgLayer.style.filter || "");
@@ -1091,6 +1154,39 @@ onClick("btnBoxQuote", () => {
     pushHistory(true);
 });
 
+onClick("btnInsertFootnote", () => {
+    const selection = window.getSelection();
+    if (!selection.rangeCount || !els.editor || !els.editor.contains(selection.getRangeAt(0).commonAncestorContainer)) {
+        showToast("본문 안에서 각주를 넣을 위치를 먼저 눌러주세요.");
+        return;
+    }
+    const range = selection.getRangeAt(0);
+
+    const note = { id: uid(), text: "" };
+    footnotes.push(note);
+
+    const marker = document.createElement("sup");
+    marker.className = "footnote-marker";
+    marker.dataset.footnoteId = note.id;
+    marker.contentEditable = "false";
+    marker.style.cssText = "font-size:0.7em;color:#2563eb;font-weight:700;margin:0 1px;user-select:none;";
+    marker.textContent = "•"; // 실제 번호는 renumberFootnoteMarkers()가 바로 매겨준다
+    range.deleteContents();
+    range.insertNode(marker);
+
+    // 마커 뒤로 커서를 옮겨서 계속 이어 타이핑할 수 있게 한다.
+    const newRange = document.createRange();
+    newRange.setStartAfter(marker);
+    newRange.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(newRange);
+
+    renumberFootnoteMarkers();
+    renderFootnoteList();
+    updateCanvas();
+    if (typeof pushHistory === "function") pushHistory(true);
+});
+
 onClick("btnInsertDivider", () => {
     let selection = window.getSelection();
     if (!selection.rangeCount) return;
@@ -1113,6 +1209,48 @@ onClick("btnInsertDivider", () => {
 
     updateCanvas();
     pushHistory(true);
+});
+
+// 직접 작성한 HTML 코드를 본문에 블록으로 삽입한다. 다른 특수 블록들(대사·구분선 등)과 똑같이
+// contenteditable=false로 넣어서 실수로 안이 깨지는 걸 막고, normalizeParagraphs에서
+// .html-embed-block도 그대로 보존하도록 등록해뒀다(캔버스에도 입력한 그대로 나옴).
+onClick("btnInsertHtmlBlock", () => {
+    const html = window.prompt("본문에 넣을 HTML 코드를 붙여넣어 주세요:");
+    if (!html || !html.trim()) return;
+    if (!els.editor) return;
+
+    const selection = window.getSelection();
+    let range;
+    if (selection && selection.rangeCount && els.editor.contains(selection.anchorNode)) {
+        range = selection.getRangeAt(0);
+    } else {
+        range = document.createRange();
+        range.selectNodeContents(els.editor);
+        range.collapse(false);
+    }
+
+    const block = document.createElement("div");
+    block.className = "html-embed-block";
+    block.contentEditable = "false";
+    block.innerHTML = html;
+
+    range.deleteContents();
+    range.insertNode(block);
+
+    const newLine = document.createElement("div");
+    newLine.appendChild(document.createElement("br"));
+    block.after(newLine);
+
+    const newRange = document.createRange();
+    newRange.setStart(newLine, 0);
+    newRange.collapse(true);
+    if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+    }
+
+    updateCanvas();
+    if (typeof pushHistory === "function") pushHistory(true);
 });
 
 function insertInlineBlock(html) {
@@ -1496,6 +1634,88 @@ function applyReplacementRules(text) {
         result = result.split(rule.find).join(rule.replace ?? "");
     });
     return result;
+}
+
+// ==== 각주 (JS 배열 + localStorage — 새로고침해도 안 지워짐) ====
+let footnotes = [];
+
+function saveFootnotesToStorage() {
+    try {
+        localStorage.setItem("quoteStudioFootnotes", JSON.stringify(footnotes));
+    } catch (e) {
+        console.warn("각주 저장 실패:", e);
+    }
+}
+
+function loadFootnotesFromStorage() {
+    try {
+        const raw = localStorage.getItem("quoteStudioFootnotes");
+        footnotes = raw ? JSON.parse(raw) : [];
+    } catch (e) {
+        footnotes = [];
+    }
+}
+
+// 번호를 "배열 순서"가 아니라 "본문 안에 실제로 놓인 순서"대로 다시 매긴다.
+// (각주를 순서와 다르게 넣거나 하나를 지워도 항상 1,2,3...으로 맞게 유지되도록)
+function renumberFootnoteMarkers() {
+    if (!els.editor) return;
+    const markers = Array.from(els.editor.querySelectorAll(".footnote-marker"));
+    markers.forEach((m, i) => { m.textContent = String(i + 1); });
+    const orderedIds = markers.map((m) => m.dataset.footnoteId);
+    footnotes.sort((a, b) => orderedIds.indexOf(a.id) - orderedIds.indexOf(b.id));
+    saveFootnotesToStorage();
+}
+
+function deleteFootnote(id) {
+    footnotes = footnotes.filter((n) => n.id !== id);
+    const marker = els.editor ? els.editor.querySelector(`.footnote-marker[data-footnote-id="${id}"]`) : null;
+    if (marker) marker.remove();
+    renumberFootnoteMarkers();
+    renderFootnoteList();
+    updateCanvas();
+}
+
+function renderFootnoteList() {
+    const container = document.getElementById("footnoteList");
+    if (!container) return;
+    container.innerHTML = "";
+    footnotes.forEach((note, i) => {
+        const cell = document.createElement("div");
+        cell.className = "replacement-rule-cell";
+
+        const numLabel = document.createElement("span");
+        numLabel.textContent = String(i + 1);
+        numLabel.style.cssText = "font-weight:700;flex:0 0 auto;min-width:18px;";
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = note.text || "";
+        input.placeholder = "각주 내용을 입력하세요";
+        input.addEventListener("input", () => {
+            note.text = input.value;
+            saveFootnotesToStorage();
+            updateCanvas();
+        });
+
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "replacement-rule-delete";
+        delBtn.textContent = "×";
+        delBtn.addEventListener("click", () => deleteFootnote(note.id));
+
+        cell.appendChild(numLabel);
+        cell.appendChild(input);
+        cell.appendChild(delBtn);
+        container.appendChild(cell);
+    });
+}
+
+// 각주 목록을 캔버스 맨 아래에 작은 글씨로 붙여서 보여준다.
+function buildFootnoteListHTML() {
+    if (footnotes.length === 0) return "";
+    const rows = footnotes.map((note, i) => `<div style="margin-top:2px;">${i + 1}) ${escapeHtml(note.text || "")}</div>`).join("");
+    return `<div style="margin-top:20px;padding-top:10px;border-top:1px solid rgba(120,120,120,0.35);font-size:12px;line-height:1.6;opacity:0.75;text-align:left;">${rows}</div>`;
 }
 
 function addDialogueLine(charId) {
@@ -2091,6 +2311,8 @@ loadDialogueLinesFromStorage();
 renderDialogueLineList();
 loadReplacementRulesFromStorage();
 renderReplacementRuleList();
+loadFootnotesFromStorage();
+renderFootnoteList();
 
 onClick("btnClearAll", () => {
     if (!els.editor) return;
@@ -2731,6 +2953,15 @@ function normalizeParagraphs(container) {
                 paragraphAligns.push(null);
                 paragraphIndents.push(false);
                 flushParagraph();
+            } else if (node.classList.contains("html-embed-block")) {
+                // "HTML 삽입"으로 넣은 사용자 정의 HTML 블록. 안의 구조를 손대지 않고 통째로 보존한다.
+                flushParagraph();
+                const htmlClone = node.cloneNode(true);
+                htmlClone.removeAttribute("contenteditable");
+                paragraphs.push(htmlClone);
+                paragraphAligns.push(null);
+                paragraphIndents.push(false);
+                flushParagraph();
             } else if (tagName === "DIV" || tagName === "P" || /^H[1-6]$/.test(tagName)) {
                 flushParagraph();
                 const prevAlign = currentAlign;
@@ -2742,7 +2973,7 @@ function normalizeParagraphs(container) {
                 currentAlign = prevAlign;
                 currentIndent = prevIndent;
             } else {
-                if (node.querySelector("div, p, br, .dialogue-line, .box-quote, .template-block, .dlg-editor-marker")) Array.from(node.childNodes).forEach(parseNodes);
+                if (node.querySelector("div, p, br, .dialogue-line, .box-quote, .template-block, .dlg-editor-marker, .html-embed-block")) Array.from(node.childNodes).forEach(parseNodes);
                 else currentParagraphNodes.push(node.cloneNode(true));
             }
         }
@@ -2763,7 +2994,7 @@ function normalizeParagraphs(container) {
     paragraphs.forEach((pNodes, idx) => {
         const align = paragraphAligns[idx];
         const indented = paragraphIndents[idx];
-        if (pNodes instanceof HTMLElement && (pNodes.classList.contains("dialogue-line") || pNodes.classList.contains("box-quote") || pNodes.classList.contains("hr-divider") || pNodes.classList.contains("template-block") || pNodes.classList.contains("editor-image-block") || pNodes.classList.contains("dlg-editor-marker"))) {
+        if (pNodes instanceof HTMLElement && (pNodes.classList.contains("dialogue-line") || pNodes.classList.contains("box-quote") || pNodes.classList.contains("hr-divider") || pNodes.classList.contains("template-block") || pNodes.classList.contains("editor-image-block") || pNodes.classList.contains("dlg-editor-marker") || pNodes.classList.contains("html-embed-block"))) {
             if (align && !pNodes.classList.contains("editor-image-block") && !pNodes.classList.contains("hr-divider")) pNodes.style.textAlign = align;
             container.appendChild(pNodes);
         } else {

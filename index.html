@@ -55,6 +55,8 @@
                         <button id="btnQuoteLine" class="btn-dialogue-line" title="대사 강조선 바">강조선</button>
                         <button id="btnBoxQuote" class="btn-box-quote" title="박스로 감싸 인용 강조">박스인용</button>
                         <button id="btnInsertDivider" title="구분용 가로선 삽입">가로선</button>
+                        <button id="btnInsertFootnote" title="각주 삽입 (본문에 작게 번호가 붙고, 캔버스 맨 아래에 내용이 나와요)">각주</button>
+                        <button id="btnInsertHtmlBlock" title="직접 작성한 HTML 코드를 본문에 블록으로 삽입">HTML</button>
                         <select id="selAlign" class="toolbar-select" title="선택한 문단만 정렬 변경 (전체 정렬과 별개)">
                             <option value="" disabled selected>정렬</option>
                             <option value="left">왼쪽</option>
@@ -668,6 +670,10 @@
                         <span>괄호색</span>
                     </div>
                 </div>
+
+                <div class="panel-section-title">각주</div>
+                <div class="field-hint">본문에서 각주를 넣을 위치를 누른 다음, 편집창 위 툴바의 "각주" 버튼을 누르면 작은 번호가 삽입돼요. 여기서 그 번호의 설명을 적으면 본문 맨 아래에 각주 목록으로 나와요.</div>
+                <div id="footnoteList" class="replacement-rule-list"></div>
 
                 <div class="panel-section-title">자동 치환</div>
                 <div class="field-hint">여기 등록한 글자는 본문에 그대로 쳐도, 저장되는 결과물에는 자동으로 바뀐 글자로 나와요. 체크를 끄면 잠깐 꺼둘 수 있고, 한 번 등록하면 지우기 전까진 계속 남아있어요.</div>
