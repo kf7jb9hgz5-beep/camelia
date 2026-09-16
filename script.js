@@ -288,6 +288,7 @@ function updateCanvas() {
 
         // 각주 목록을 맨 아래에 붙인다.
         if (footnotes.length > 0) {
+            refreshFootnoteMarkerColors();
             const footnoteSection = document.createElement("div");
             footnoteSection.innerHTML = buildFootnoteListHTML();
             textWrapper.appendChild(footnoteSection.firstElementChild);
@@ -502,13 +503,15 @@ function updateCanvas() {
             const justifyMap = { left: "flex-start", center: "center", right: "flex-end" };
             const bucket = xPercent < 33 ? "left" : xPercent > 67 ? "right" : "center";
             infoContainer.style.justifyContent = justifyMap[bucket];
-            const bodyFontSize = parseFloat(els.fontSize.value) || 16;
-            const bodyLineHeight = parseFloat(els.lineHeight.value) || 1.6;
+            const bodyLineHeightPx = parseFloat(els.lineHeight.value) || 26;
+            // 기본값: 본문과 두 줄만큼 띄운다. lineHeight 설정값 자체가 이미 한 줄의 실제 픽셀
+            // 높이라서(배율이 아님), 그냥 2배 하면 된다.
+            const twoLineGap = bodyLineHeightPx * 2;
             if (infoPosV === "top") {
                 infoContainer.style.marginTop = "0";
-                infoContainer.style.marginBottom = `${bodyFontSize * bodyLineHeight}px`;
+                infoContainer.style.marginBottom = `${twoLineGap}px`;
             } else {
-                infoContainer.style.marginTop = `${bodyFontSize * bodyLineHeight}px`;
+                infoContainer.style.marginTop = `${twoLineGap}px`;
                 infoContainer.style.marginBottom = "0";
             }
         }
@@ -1169,7 +1172,8 @@ onClick("btnInsertFootnote", () => {
     marker.className = "footnote-marker";
     marker.dataset.footnoteId = note.id;
     marker.contentEditable = "false";
-    marker.style.cssText = "font-size:0.7em;color:#2563eb;font-weight:700;margin:0 1px;user-select:none;";
+    const footnoteColor = document.getElementById("footnoteColor")?.value || "#2563eb";
+    marker.style.cssText = `font-size:0.7em;color:${footnoteColor};font-weight:700;margin:0 1px;user-select:none;`;
     marker.textContent = "•"; // 실제 번호는 renumberFootnoteMarkers()가 바로 매겨준다
     range.deleteContents();
     range.insertNode(marker);
@@ -1714,8 +1718,24 @@ function renderFootnoteList() {
 // 각주 목록을 캔버스 맨 아래에 작은 글씨로 붙여서 보여준다.
 function buildFootnoteListHTML() {
     if (footnotes.length === 0) return "";
-    const rows = footnotes.map((note, i) => `<div style="margin-top:2px;">${i + 1}) ${escapeHtml(note.text || "")}</div>`).join("");
-    return `<div style="margin-top:20px;padding-top:10px;border-top:1px solid rgba(120,120,120,0.35);font-size:12px;line-height:1.6;opacity:0.75;text-align:left;">${rows}</div>`;
+    const color = document.getElementById("footnoteColor")?.value || "#2563eb";
+    const showDivider = document.getElementById("footnoteDividerShow")?.checked !== false;
+    const dividerColor = document.getElementById("footnoteDividerColor")?.value || "#787878";
+    const dividerWidthRaw = parseFloat(document.getElementById("footnoteDividerWidth")?.value);
+    const dividerWidth = isNaN(dividerWidthRaw) ? 1 : Math.max(1, dividerWidthRaw);
+    const borderStyle = showDivider ? `border-top:${dividerWidth}px solid ${dividerColor};` : "";
+    const rows = footnotes.map((note, i) => `<div style="margin-top:2px;"><span style="color:${color};font-weight:700;">${i + 1})</span> ${escapeHtml(note.text || "")}</div>`).join("");
+    return `<div style="margin-top:20px;padding-top:10px;${borderStyle}font-size:12px;line-height:1.6;opacity:0.75;text-align:left;">${rows}</div>`;
+}
+
+// 각주 번호(본문 안의 위첨자 마커) 색은 설정을 바꿀 때마다 즉시 반영되도록, updateCanvas가 실행될
+// 때마다 편집창 속 마커들의 색을 항상 최신 설정으로 다시 칠한다(대사 블록 새로고침과 같은 방식).
+function refreshFootnoteMarkerColors() {
+    if (!els.editor) return;
+    const color = document.getElementById("footnoteColor")?.value || "#2563eb";
+    els.editor.querySelectorAll(".footnote-marker").forEach((marker) => {
+        marker.style.color = color;
+    });
 }
 
 function addDialogueLine(charId) {
@@ -2041,6 +2061,21 @@ function buildDialogueMarkerInnerHTML(line) {
     // 때문에, 숨은 input 값을 다시 읽지 않고 클릭한 버튼 자신의 data-value를 바로 사용한다.
     group.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => syncWith(b.getAttribute("data-value"))));
     syncWith(document.getElementById("infoPositionV")?.value || "drag");
+})();
+
+// "각주 위 구분선 표시" 체크 여부에 따라 구분선 색·굵기 설정을 보이거나 숨긴다.
+(function setupFootnoteDividerToggle() {
+    const checkbox = document.getElementById("footnoteDividerShow");
+    if (!checkbox) return;
+    const sync = () => {
+        const on = checkbox.checked;
+        const colorArea = document.getElementById("footnoteDividerColorArea");
+        const widthArea = document.getElementById("footnoteDividerWidthArea");
+        if (colorArea) colorArea.style.display = on ? "" : "none";
+        if (widthArea) widthArea.style.display = on ? "" : "none";
+    };
+    checkbox.addEventListener("change", sync);
+    sync();
 })();
 
 // "대사 추가"를 누르면, 그 대사가 본문(편집창)에도 바로 보이도록 편집창 맨 끝에 실제 대사 블록을 넣는다.
@@ -2648,7 +2683,9 @@ document.addEventListener("DOMContentLoaded", () => {
         els.dlgNameSuffix, els.dlgQuoteStyle, els.dlgShowTranslation, els.dlgShowAvatar, els.dlgShowName,
         els.dlgAvatarSize, els.dlgUseCharColor, els.dlgLineGap, els.dlgContinuationGap,
         els.dlgNameGap,
-        document.getElementById("dlgParagraphIndent"), document.getElementById("dlgNameColumnWidth")
+        document.getElementById("dlgParagraphIndent"), document.getElementById("dlgNameColumnWidth"),
+        document.getElementById("footnoteColor"), document.getElementById("footnoteDividerShow"),
+        document.getElementById("footnoteDividerColor"), document.getElementById("footnoteDividerWidth")
     ];
     autoTriggers.forEach((el) => {
         if (el) { el.addEventListener("input", scheduleUpdateCanvas); el.addEventListener("change", scheduleUpdateCanvas); }

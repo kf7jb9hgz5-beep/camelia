@@ -151,14 +151,14 @@
                 </div>
 
                 <div class="panel-section-title">작품 · 제작자 표시 위치</div>
-                <div class="field-hint">본문 맨 아래 "A¹/B²"에 입력한 작품명·제작자 표시가 어디에 나올지 정해요.</div>
+                <div class="field-hint">기본은 본문 바로 아래, 두 줄 정도 띄운 자리예요. 다른 위치를 원할 때만 아래에서 바꾸면 돼요.</div>
                 <div class="control-minimal-row">
                     <label>세로 위치</label>
-                    <input type="hidden" id="infoPositionV" value="drag" />
+                    <input type="hidden" id="infoPositionV" value="bottom" />
                     <div class="segmented-control segmented-control-minimal" data-target="infoPositionV">
                         <button type="button" data-value="top">본문 위</button>
-                        <button type="button" data-value="bottom">본문 아래</button>
-                        <button type="button" data-value="drag" class="active">직접 지정</button>
+                        <button type="button" data-value="bottom" class="active">본문 아래(기본)</button>
+                        <button type="button" data-value="drag">직접 지정</button>
                     </div>
                 </div>
                 <div class="control-minimal-row" id="infoPositionYArea">
@@ -673,6 +673,27 @@
 
                 <div class="panel-section-title">각주</div>
                 <div class="field-hint">본문에서 각주를 넣을 위치를 누른 다음, 편집창 위 툴바의 "각주" 버튼을 누르면 작은 번호가 삽입돼요. 여기서 그 번호의 설명을 적으면 본문 맨 아래에 각주 목록으로 나와요.</div>
+                <div class="control-minimal-row">
+                    <label for="footnoteColor">각주 번호 색</label>
+                    <input type="color" id="footnoteColor" value="#2563eb" />
+                </div>
+                <div class="control-minimal-row">
+                    <div class="checkbox-minimal-group">
+                        <label><input type="checkbox" id="footnoteDividerShow" checked /> 각주 위 구분선 표시</label>
+                    </div>
+                </div>
+                <div class="control-minimal-row" id="footnoteDividerColorArea">
+                    <label for="footnoteDividerColor">구분선 색</label>
+                    <input type="color" id="footnoteDividerColor" value="#787878" />
+                </div>
+                <div class="control-minimal-row" id="footnoteDividerWidthArea">
+                    <label for="footnoteDividerWidth">구분선 굵기 (px)</label>
+                    <div class="stepper-minimal">
+                        <button type="button" onclick="stepInput('footnoteDividerWidth', -1)">-</button>
+                        <input type="number" id="footnoteDividerWidth" value="1" min="1" />
+                        <button type="button" onclick="stepInput('footnoteDividerWidth', 1)">+</button>
+                    </div>
+                </div>
                 <div id="footnoteList" class="replacement-rule-list"></div>
 
                 <div class="panel-section-title">자동 치환</div>
