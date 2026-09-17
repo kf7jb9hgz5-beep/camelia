@@ -151,13 +151,14 @@
                 </div>
 
                 <div class="panel-section-title">작품 · 제작자 표시 위치</div>
-                <div class="field-hint">기본은 본문 바로 아래, 두 줄 정도 띄운 자리예요. 다른 위치를 원할 때만 아래에서 바꾸면 돼요.</div>
+                <div class="field-hint">기본은 본문과 겹치지 않게, 본문 아래로 두 줄 띄운 오른쪽 자리예요. "직접 지정"을 고르면 슬라이더나 미리보기 드래그로 어디든 자유롭게 옮길 수 있어요.</div>
                 <div class="control-minimal-row">
-                    <label>세로 위치</label>
-                    <input type="hidden" id="infoPositionV" value="bottom" />
+                    <label>위치</label>
+                    <input type="hidden" id="infoPositionV" value="bottom-right" />
                     <div class="segmented-control segmented-control-minimal" data-target="infoPositionV">
-                        <button type="button" data-value="top">본문 위</button>
-                        <button type="button" data-value="bottom" class="active">본문 아래(기본)</button>
+                        <button type="button" data-value="bottom-right" class="active">우측 아래</button>
+                        <button type="button" data-value="bottom-left">좌측 아래</button>
+                        <button type="button" data-value="bottom-center">중앙 아래</button>
                         <button type="button" data-value="drag">직접 지정</button>
                     </div>
                 </div>
@@ -226,6 +227,10 @@
                         <label><input type="checkbox" id="headingTitleBold" checked /> 볼드</label>
                     </div>
                 </div>
+                <div class="control-minimal-row">
+                    <label for="headingTitleColor">글자색</label>
+                    <input type="color" id="headingTitleColor" value="#000000" />
+                </div>
 
                 <div class="panel-section-title">부제목 서식</div>
                 <div class="control-minimal-row">
@@ -279,6 +284,10 @@
                     <div class="checkbox-minimal-group">
                         <label><input type="checkbox" id="headingSubtitleBold" /> 볼드</label>
                     </div>
+                </div>
+                <div class="control-minimal-row">
+                    <label for="headingSubtitleColor">글자색</label>
+                    <input type="color" id="headingSubtitleColor" value="#000000" />
                 </div>
             </div>
             <div class="tab-panel" id="panel-font">
@@ -577,10 +586,7 @@
                     </div>
                     <div class="control-minimal-row">
                         <label>오버레이색</label>
-                        <select id="bgOverlayColor">
-                            <option value="0,0,0">블랙</option>
-                            <option value="255,255,255">화이트</option>
-                        </select>
+                        <input type="color" id="bgOverlayColor" value="#000000" />
                     </div>
                     <div class="control-minimal-row">
                         <label>투명도</label>
@@ -632,6 +638,22 @@
                         <button onclick="stepInput('boxQuoteWidth', 1)">+</button>
                     </div>
                 </div>
+                <div class="control-minimal-row">
+                    <label for="dividerWidth">가로선 굵기 (px)</label>
+                    <div class="stepper-minimal">
+                        <button onclick="stepInput('dividerWidth', -0.5)">-</button>
+                        <input type="number" id="dividerWidth" value="1" min="0.5" max="10" step="0.5" />
+                        <button onclick="stepInput('dividerWidth', 0.5)">+</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row">
+                    <label>가로선 모양</label>
+                    <input type="hidden" id="dividerStyle" value="solid" />
+                    <div class="segmented-control segmented-control-minimal" data-target="dividerStyle">
+                        <button type="button" data-value="solid" class="active">실선</button>
+                        <button type="button" data-value="dotted">점선</button>
+                    </div>
+                </div>
 
                 <div class="panel-section-title">텍스트 사라짐 효과</div>
                 <div class="control-minimal-row">
@@ -656,8 +678,8 @@
                 <div class="panel-section-title">스마트 하이라이트</div>
                 <div class="control-minimal-row">
                     <div class="checkbox-minimal-group">
-                        <label><input type="checkbox" id="enableQuoteColor" checked /> 따옴표 감지</label>
-                        <label><input type="checkbox" id="enableParenColor" checked /> 괄호 감지</label>
+                        <label><input type="checkbox" id="enableQuoteColor" /> 따옴표 감지</label>
+                        <label><input type="checkbox" id="enableParenColor" /> 괄호 감지</label>
                     </div>
                 </div>
                 <div class="picker-minimal-group">
@@ -689,9 +711,9 @@
                 <div class="control-minimal-row" id="footnoteDividerWidthArea">
                     <label for="footnoteDividerWidth">구분선 굵기 (px)</label>
                     <div class="stepper-minimal">
-                        <button type="button" onclick="stepInput('footnoteDividerWidth', -1)">-</button>
-                        <input type="number" id="footnoteDividerWidth" value="1" min="1" />
-                        <button type="button" onclick="stepInput('footnoteDividerWidth', 1)">+</button>
+                        <button type="button" onclick="stepInput('footnoteDividerWidth', -0.5)">-</button>
+                        <input type="number" id="footnoteDividerWidth" value="1" min="0.5" max="10" step="0.5" />
+                        <button type="button" onclick="stepInput('footnoteDividerWidth', 0.5)">+</button>
                     </div>
                 </div>
                 <div id="footnoteList" class="replacement-rule-list"></div>

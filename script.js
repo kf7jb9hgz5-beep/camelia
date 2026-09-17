@@ -303,6 +303,14 @@ function updateCanvas() {
         if (els.editor) els.editor.style.setProperty("--box-quote-width", `${isNaN(boxQuoteW) ? 2 : boxQuoteW}px`);
         textWrapper.style.setProperty("--divider-color", els.dividerColor?.value || "#94a3b8");
         if (els.editor) els.editor.style.setProperty("--divider-color", els.dividerColor?.value || "#94a3b8");
+        const dividerWidthVal = document.getElementById("dividerWidth")?.value || "1";
+        const dividerStyleVal = document.getElementById("dividerStyle")?.value || "solid";
+        textWrapper.style.setProperty("--divider-width", `${dividerWidthVal}px`);
+        textWrapper.style.setProperty("--divider-style", dividerStyleVal);
+        if (els.editor) {
+            els.editor.style.setProperty("--divider-width", `${dividerWidthVal}px`);
+            els.editor.style.setProperty("--divider-style", dividerStyleVal);
+        }
 
         const dlgNameSuffixVal = `"${document.getElementById("dlgNameSuffix")?.value ?? ":"}"`;
         textWrapper.style.setProperty("--dlg-name-suffix", dlgNameSuffixVal);
@@ -492,28 +500,16 @@ function updateCanvas() {
             infoContainer.style.padding = "0";
             infoContainer.style.zIndex = "";
             infoContainer.style.cursor = "";
-            // 세로 위치: 본문 위/아래 — textContainer 안에서 textWrapper보다 앞/뒤에 두는 것으로 결정한다.
-            if (infoPosV === "top") {
-                if (infoContainer.nextSibling !== textWrapper) textContainer.insertBefore(infoContainer, textWrapper);
-            } else {
-                if (infoContainer.parentNode !== textContainer || infoContainer.previousSibling !== textWrapper) textContainer.appendChild(infoContainer);
-            }
-            // 가로 위치: 슬라이더 값을 3구간으로 나눠 좌/중앙/우 정렬로 근사한다(흐름 안에 있는 줄이라
-            // 드래그 모드처럼 완전히 자유롭게 두기 어려움).
-            const justifyMap = { left: "flex-start", center: "center", right: "flex-end" };
-            const bucket = xPercent < 33 ? "left" : xPercent > 67 ? "right" : "center";
-            infoContainer.style.justifyContent = justifyMap[bucket];
+            // 우측/좌측/중앙 아래 세 가지 다 "본문 아래"라, 항상 본문 뒤(textWrapper 다음)에 둔다.
+            if (infoContainer.parentNode !== textContainer || infoContainer.previousSibling !== textWrapper) textContainer.appendChild(infoContainer);
+            const justifyMap = { "bottom-left": "flex-start", "bottom-center": "center", "bottom-right": "flex-end" };
+            infoContainer.style.justifyContent = justifyMap[infoPosV] || "flex-end";
             const bodyLineHeightPx = parseFloat(els.lineHeight.value) || 26;
             // 기본값: 본문과 두 줄만큼 띄운다. lineHeight 설정값 자체가 이미 한 줄의 실제 픽셀
             // 높이라서(배율이 아님), 그냥 2배 하면 된다.
             const twoLineGap = bodyLineHeightPx * 2;
-            if (infoPosV === "top") {
-                infoContainer.style.marginTop = "0";
-                infoContainer.style.marginBottom = `${twoLineGap}px`;
-            } else {
-                infoContainer.style.marginTop = `${twoLineGap}px`;
-                infoContainer.style.marginBottom = "0";
-            }
+            infoContainer.style.marginTop = `${twoLineGap}px`;
+            infoContainer.style.marginBottom = "0";
         }
 
         const baseColor = els.globalTextColor.value;
@@ -601,7 +597,7 @@ function renderCanvasHeading() {
         titleEl.style.textAlign = els.headingTitleAlign ? els.headingTitleAlign.value : "left";
         titleEl.style.fontSize = `${parseFloat(els.headingTitleSize?.value) || 24}px`;
         titleEl.style.fontWeight = els.headingTitleBold && els.headingTitleBold.checked ? "700" : "400";
-        titleEl.style.color = els.globalTextColor.value;
+        titleEl.style.color = document.getElementById("headingTitleColor")?.value || els.globalTextColor.value;
         headingContainer.appendChild(titleEl);
     }
 
@@ -613,7 +609,7 @@ function renderCanvasHeading() {
         subtitleEl.style.textAlign = els.headingSubtitleAlign ? els.headingSubtitleAlign.value : "left";
         subtitleEl.style.fontSize = `${parseFloat(els.headingSubtitleSize?.value) || 15}px`;
         subtitleEl.style.fontWeight = els.headingSubtitleBold && els.headingSubtitleBold.checked ? "700" : "400";
-        subtitleEl.style.color = els.subTextColor ? els.subTextColor.value : els.globalTextColor.value;
+        subtitleEl.style.color = document.getElementById("headingSubtitleColor")?.value || (els.subTextColor ? els.subTextColor.value : els.globalTextColor.value);
         subtitleEl.style.marginTop = titleText ? "6px" : "0";
         headingContainer.appendChild(subtitleEl);
     }
@@ -1722,7 +1718,7 @@ function buildFootnoteListHTML() {
     const showDivider = document.getElementById("footnoteDividerShow")?.checked !== false;
     const dividerColor = document.getElementById("footnoteDividerColor")?.value || "#787878";
     const dividerWidthRaw = parseFloat(document.getElementById("footnoteDividerWidth")?.value);
-    const dividerWidth = isNaN(dividerWidthRaw) ? 1 : Math.max(1, dividerWidthRaw);
+    const dividerWidth = isNaN(dividerWidthRaw) ? 1 : Math.max(0.5, dividerWidthRaw);
     const borderStyle = showDivider ? `border-top:${dividerWidth}px solid ${dividerColor};` : "";
     const rows = footnotes.map((note, i) => `<div style="margin-top:2px;"><span style="color:${color};font-weight:700;">${i + 1})</span> ${escapeHtml(note.text || "")}</div>`).join("");
     return `<div style="margin-top:20px;padding-top:10px;${borderStyle}font-size:12px;line-height:1.6;opacity:0.75;text-align:left;">${rows}</div>`;
@@ -1745,16 +1741,12 @@ function addDialogueLine(charId) {
     renderDialogueLineList();
     insertDialogueMarkerIntoEditor(line);
     updateCanvas();
-    // 새로 추가된 칸이 어디 있는지 바로 보이도록 스크롤하고, 커서를 그 안에 놓는다.
+    // 새로 추가된 칸이 어디 있는지 바로 보이도록 스크롤한다. 커서는 insertDialogueMarkerIntoEditor에서
+    // 이미 편집창의 새 빈 줄로 옮겨놨으니(지문 바로 입력 가능), 여기서 다시 사이드바로 뺏지 않는다.
     const container = document.getElementById("dialogueLineList");
     if (container) {
-        const lastTextarea = container.querySelector(".dialogue-line-cell:last-child .dlc-text");
-        if (lastTextarea) {
-            lastTextarea.scrollIntoView({ block: "center", behavior: "smooth" });
-            lastTextarea.focus();
-        } else {
-            container.scrollIntoView({ block: "end", behavior: "smooth" });
-        }
+        const lastCell = container.querySelector(".dialogue-line-cell:last-child");
+        if (lastCell) lastCell.scrollIntoView({ block: "center", behavior: "smooth" });
     }
 }
 
@@ -1769,7 +1761,7 @@ function buildDialogueBlockHTML(line) {
     const mode = document.getElementById("dialogueMode")?.value || "log";
     const paragraphLayoutOn = mode === "block" && document.getElementById("dlgParagraphLayout")?.checked;
     const showAvatar = mode !== "block" && document.getElementById("dlgShowAvatar")?.checked;
-    const showName = document.getElementById("dlgShowName")?.checked !== false;
+    const showName = document.getElementById("dlgShowName")?.checked !== false && line.showName !== false;
     const showTranslation = document.getElementById("dlgShowTranslation")?.checked;
     const useCharColor = document.getElementById("dlgUseCharColor")?.checked;
     const nameSuffix = document.getElementById("dlgNameSuffix")?.value ?? ":";
@@ -2091,6 +2083,34 @@ function insertDialogueMarkerIntoEditor(line) {
     marker.style.cssText = "";
     marker.innerHTML = buildDialogueMarkerInnerHTML(line);
     els.editor.appendChild(marker);
+    // 마커는 contenteditable=false라서 탭으로 바로 뒤에 커서를 놓기 어렵다. 그래서 빈 줄을 하나 더
+    // 붙여서 바로 이어서 지문(나레이션)을 입력할 수 있게 하고, 커서도 거기로 옮겨준다.
+    const trailing = document.createElement("div");
+    trailing.appendChild(document.createElement("br"));
+    els.editor.appendChild(trailing);
+    const range = document.createRange();
+    range.setStart(trailing, 0);
+    range.collapse(true);
+    const selection = window.getSelection();
+    if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+    els.editor.focus();
+    trailing.scrollIntoView({ block: "center", behavior: "smooth" });
+    // 모바일 사파리는 가끔 이 시점에 focus를 줘도 키보드가 안 뜨는 경우가 있어서,
+    // 다음 프레임에 한 번 더 확실히 포커스·커서 위치를 재적용한다.
+    requestAnimationFrame(() => {
+        els.editor.focus();
+        const selection2 = window.getSelection();
+        if (selection2) {
+            const range2 = document.createRange();
+            range2.setStart(trailing, 0);
+            range2.collapse(true);
+            selection2.removeAllRanges();
+            selection2.addRange(range2);
+        }
+    });
     if (typeof pushHistory === "function") pushHistory(true);
 }
 
@@ -2208,6 +2228,21 @@ function renderDialogueLineList() {
             updateCanvas();
         });
         cell.appendChild(textArea);
+
+        const nameToggleRow = document.createElement("label");
+        nameToggleRow.style.cssText = "display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);margin-top:6px;user-select:none;";
+        const nameToggleCheckbox = document.createElement("input");
+        nameToggleCheckbox.type = "checkbox";
+        nameToggleCheckbox.checked = line.showName !== false;
+        nameToggleCheckbox.addEventListener("change", () => {
+            line.showName = nameToggleCheckbox.checked;
+            saveDialogueLinesToStorage();
+            updateDialogueMarkerInEditor(line);
+            updateCanvas();
+        });
+        nameToggleRow.appendChild(nameToggleCheckbox);
+        nameToggleRow.appendChild(document.createTextNode("이 대사에 이름 표시"));
+        cell.appendChild(nameToggleRow);
 
         if (mode === "log" && document.getElementById("dlgShowTranslation")?.checked !== false) {
             const transArea = document.createElement("textarea");
@@ -2673,13 +2708,13 @@ document.addEventListener("DOMContentLoaded", () => {
         els.bgType, els.bgColor1, els.gradColor1, els.gradColor2, els.gradColor3, els.gradientDir,
         els.globalTextColor, els.subTextColor, els.hlColorA, els.hlColorB, els.hlColorC,
         els.quoteLineColor, els.enableQuoteColor, els.quoteColor, els.enableParenColor, els.parenColor,
-        els.boxQuoteColor, els.boxQuoteWidth, els.dividerColor, els.fadeCount, els.indentSize,
+        els.boxQuoteColor, els.boxQuoteWidth, els.dividerColor, document.getElementById("dividerWidth"), document.getElementById("dividerStyle"), els.fadeCount, els.indentSize,
         els.fontSelect, els.fontWeightSelect, els.wordBreak, els.fontSize, els.letterSpacing, els.lineHeight,
         els.paraSpacing, els.fontScaleX, els.infoFontSize,
         els.columnSplitIndex, els.columnGap, els.textVerticalAlign, els.textHorizontalAnchor, els.textBlockWidth,
         els.headingTitleInput, els.headingSubtitleInput,
-        els.headingTitleFont, els.headingTitleSize, els.headingTitleBold,
-        els.headingSubtitleFont, els.headingSubtitleSize, els.headingSubtitleBold,
+        els.headingTitleFont, els.headingTitleSize, els.headingTitleBold, document.getElementById("headingTitleColor"),
+        els.headingSubtitleFont, els.headingSubtitleSize, els.headingSubtitleBold, document.getElementById("headingSubtitleColor"),
         els.dlgNameSuffix, els.dlgQuoteStyle, els.dlgShowTranslation, els.dlgShowAvatar, els.dlgShowName,
         els.dlgAvatarSize, els.dlgUseCharColor, els.dlgLineGap, els.dlgContinuationGap,
         els.dlgNameGap,
@@ -2907,9 +2942,10 @@ function updateBgImageStyles() {
     bgLayer.style.backgroundSize = `${document.getElementById("bgImageSize").value}%`;
     bgLayer.style.backgroundPosition = `${document.getElementById("bgImageX").value}% ${document.getElementById("bgImageY").value}%`;
     bgLayer.style.filter = `blur(${document.getElementById("bgImageBlur").value}px)`;
-    const color = document.getElementById("bgOverlayColor").value;
+    const colorHex = document.getElementById("bgOverlayColor").value;
+    const colorRgb = hexToRgb(colorHex).replace("rgb(", "").replace(")", "");
     const opacity = document.getElementById("bgOverlayOpacity").value;
-    overlayLayer.style.backgroundColor = `rgba(${color}, ${opacity})`;
+    overlayLayer.style.backgroundColor = `rgba(${colorRgb}, ${opacity})`;
 }
 
 ["bgImageSize", "bgImageX", "bgImageY", "bgImageBlur", "bgOverlayColor", "bgOverlayOpacity"].forEach((id) => {
