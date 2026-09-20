@@ -10,21 +10,24 @@
 }
 
 :root {
-    --bg-main: #f3f3f1;
+    --bg-main: #faf7f6;
     --bg-card: #ffffff;
-    --text-main: #111111;
-    --text-muted: #8b8b8b;
-    --border-color: #eaeaea;
-    --accent-color: #111111;
-    --accent-hover: #000000;
+    --bg-sunken: #f3ecec;
+    --text-main: #241a1c;
+    --text-muted: #8a7577;
+    --border-color: #ead9db;
+    --accent-color: #b23a5c;
+    --accent-hover: #96304d;
+    --accent-tint: #fbe8ee;
+    --accent-tint-strong: #f6d3dd;
     --danger-color: #d64545;
 
     --radius-pill: 9999px;
     --radius-md: 18px;
-    --radius-sm: 10px;
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 20px 44px rgba(0, 0, 0, 0.14);
+    --radius-sm: 12px;
+    --shadow-sm: 0 2px 10px rgba(60, 20, 30, 0.06);
+    --shadow-md: 0 10px 30px rgba(60, 20, 30, 0.08);
+    --shadow-lg: 0 20px 44px rgba(60, 20, 30, 0.16);
 
     --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -997,22 +1000,30 @@ body.mobile-theme {
 }
 
 .panel-section-title {
-    font-size: 13.5px;
+    font-size: 14px;
     font-weight: 700;
     color: var(--text-main);
-    margin-bottom: 14px;
-    padding-bottom: 8px;
-    text-align: center;
-    border-bottom: 1px solid var(--border-color);
-    margin-top: 14px;
-    padding-top: 6px;
-    border-top: 1px solid var(--border-color);
+    margin: 22px 0 12px;
+    padding: 0 0 0 11px;
+    text-align: left;
+    border: none;
+    position: relative;
+    letter-spacing: -0.1px;
+}
+
+.panel-section-title::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 1px;
+    bottom: 1px;
+    width: 4px;
+    border-radius: 3px;
+    background: var(--accent-color);
 }
 
 .tab-panel > .panel-section-title:first-child {
-    margin-top: 0;
-    padding-top: 0;
-    border-top: none;
+    margin-top: 4px;
 }
 
 .control-minimal-row {
@@ -1020,39 +1031,39 @@ body.mobile-theme {
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    min-height: 44px;
-    padding: 8px 0;
+    min-height: 48px;
+    padding: 10px 12px;
     gap: 10px;
-    border-bottom: 1px solid rgba(241, 245, 249, 0.6);
-}
-.control-minimal-row:last-child {
-    border-bottom: none;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    margin-bottom: 8px;
 }
 
 .field-hint {
     width: 100%;
-    font-size: 11.5px;
-    line-height: 1.5;
+    font-size: 12px;
+    line-height: 1.55;
     color: var(--text-muted);
-    padding: 2px 0 10px;
-    margin-top: -4px;
+    padding: 0 2px 12px;
+    margin-top: -2px;
 }
 
 .control-minimal-row label {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-muted);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-main);
     flex-shrink: 0;
 }
 
 .control-minimal-row select,
 .control-minimal-row input[type="text"]:not(#presetNameInput) {
-    height: 38px;
+    height: 40px;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
-    padding: 0 10px;
+    padding: 0 12px;
     font-size: 14px;
-    background-color: var(--bg-main);
+    background-color: var(--bg-sunken);
     color: var(--text-main);
     outline: none;
     flex: 1 1 auto;
@@ -1060,14 +1071,16 @@ body.mobile-theme {
     transition: var(--transition-base);
 }
 
-.control-minimal-row select:focus {
+.control-minimal-row select:focus,
+.control-minimal-row input[type="text"]:focus {
     border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px var(--accent-tint);
 }
 
 .stepper-minimal {
     display: flex;
     align-items: center;
-    background-color: var(--bg-main);
+    background-color: var(--bg-sunken);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
     overflow: hidden;
@@ -1077,9 +1090,9 @@ body.mobile-theme {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 4px;
-    border-radius: 2px;
-    background: var(--border-color);
+    height: 5px;
+    border-radius: 3px;
+    background: var(--bg-sunken);
     margin: 6px 0 16px;
     outline: none;
 }
@@ -1087,40 +1100,40 @@ body.mobile-theme {
 .range-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     background: var(--accent-color);
     cursor: pointer;
-    border: 2px solid #ffffff;
-    box-shadow: 0 0 0 1px var(--border-color);
+    border: 3px solid #ffffff;
+    box-shadow: 0 1px 4px rgba(60, 20, 30, 0.3);
 }
 
 .stepper-minimal button {
     background: none;
     border: none;
-    width: 38px;
-    height: 38px;
-    font-size: 16px;
+    width: 42px;
+    height: 42px;
+    font-size: 17px;
+    font-weight: 600;
     cursor: pointer;
-    color: var(--text-muted);
+    color: var(--accent-color);
     transition: var(--transition-base);
 }
 
 .stepper-minimal button:active {
-    background-color: var(--border-color);
-    color: var(--text-main);
+    background-color: var(--accent-tint);
 }
 
 .stepper-minimal input {
-    width: 50px !important;
-    height: 38px;
+    width: 54px !important;
+    height: 42px;
     border: none !important;
     background: none !important;
     text-align: center;
     padding: 0 !important;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 14.5px;
+    font-weight: 700;
     color: var(--text-main);
 }
 
@@ -1129,24 +1142,26 @@ body.mobile-theme {
     width: 100%;
     flex: 1 1 100%;
     height: 5px;
-    background: var(--border-color);
+    background: var(--bg-sunken);
     border-radius: var(--radius-pill);
     outline: none;
 }
 
 .control-minimal-row input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     background: var(--accent-color);
     cursor: pointer;
+    border: 3px solid #ffffff;
+    box-shadow: 0 1px 4px rgba(60, 20, 30, 0.3);
 }
 
 .picker-minimal-group {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 8px;
     width: 100%;
 }
 
@@ -1154,18 +1169,18 @@ body.mobile-theme {
     display: flex;
     align-items: center;
     gap: 8px;
-    background-color: var(--bg-main);
+    background-color: var(--bg-card);
     border: 1px solid var(--border-color);
-    padding: 9px 12px;
+    padding: 10px 12px;
     border-radius: var(--radius-sm);
 }
 
 .picker-cell input[type="color"] {
     -webkit-appearance: none;
     border: none;
-    width: 28px;
-    height: 24px;
-    border-radius: 4px;
+    width: 30px;
+    height: 26px;
+    border-radius: 6px;
     cursor: pointer;
     background: none;
     padding: 0;
@@ -1173,43 +1188,43 @@ body.mobile-theme {
 }
 
 .picker-cell input[type="color"]::-webkit-color-swatch {
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 6px;
 }
 
 .picker-cell span {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-muted);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-main);
 }
 
 .checkbox-minimal-group {
     display: flex;
     gap: 18px;
     width: 100%;
-    padding: 4px 0;
+    padding: 2px 0;
     flex-wrap: wrap;
 }
 
 .checkbox-minimal-group label {
     display: flex;
     align-items: center;
-    gap: 7px;
-    font-size: 13.5px;
-    font-weight: 500;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
     color: var(--text-main);
 }
 
 .checkbox-minimal-group input[type="checkbox"] {
     accent-color: var(--accent-color);
-    width: 18px;
-    height: 18px;
+    width: 19px;
+    height: 19px;
 }
 
 .segmented-control {
     display: flex;
-    background-color: var(--bg-main);
+    background-color: var(--bg-sunken);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
     padding: 3px;
@@ -1221,20 +1236,21 @@ body.mobile-theme {
     flex: 1;
     background: none;
     border: none;
-    padding: 8px 6px;
+    padding: 9px 6px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--text-muted);
-    border-radius: 7px;
+    border-radius: 8px;
     cursor: pointer;
     transition: var(--transition-base);
+    white-space: nowrap;
 }
 
 .segmented-control button.active {
-    background-color: #ffffff;
-    color: var(--text-main);
+    background-color: var(--accent-color);
+    color: #ffffff;
     box-shadow: var(--shadow-sm);
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .preset-save-box-minimal {
@@ -1245,16 +1261,18 @@ body.mobile-theme {
 
 #presetNameInput {
     flex: 1;
-    height: 40px;
+    height: 42px;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
     padding: 0 12px;
     font-size: 14px;
     outline: none;
+    background-color: var(--bg-card);
 }
 
 #presetNameInput:focus {
     border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px var(--accent-tint);
 }
 
 .btn-minimal-save {
@@ -1262,10 +1280,15 @@ body.mobile-theme {
     color: #ffffff;
     border: none;
     padding: 0 18px;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 13.5px;
+    font-weight: 700;
     border-radius: var(--radius-sm);
     cursor: pointer;
+    transition: var(--transition-base);
+}
+
+.btn-minimal-save:active {
+    background-color: var(--accent-hover);
 }
 
 .preset-list-scroll {
@@ -1495,10 +1518,11 @@ input[type="file"]::file-selector-button {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px 10px;
+    padding: 10px 12px;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
-    background-color: var(--bg-main);
+    background-color: var(--bg-card);
+    margin-bottom: 8px;
 }
 
 .char-chip-avatar {
@@ -1642,8 +1666,9 @@ input[type="file"]::file-selector-button {
 .dialogue-line-cell {
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
-    background-color: var(--bg-main);
-    padding: 10px 12px;
+    background-color: var(--bg-card);
+    padding: 12px 14px;
+    box-shadow: var(--shadow-sm);
 }
 
 .replacement-rule-list {
@@ -1658,7 +1683,7 @@ input[type="file"]::file-selector-button {
     gap: 8px;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
-    background-color: var(--bg-main);
+    background-color: var(--bg-card);
     padding: 10px 12px;
 }
 
@@ -1930,7 +1955,7 @@ input[type="file"]::file-selector-button {
 }
 
 .dock-btn.active {
-    background: none !important;
+    background: var(--accent-tint) !important;
     color: var(--accent-color) !important;
 }
 
