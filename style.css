@@ -10,24 +10,24 @@
 }
 
 :root {
-    --bg-main: #faf7f6;
+    --bg-main: #f5f5f4;
     --bg-card: #ffffff;
-    --bg-sunken: #f3ecec;
-    --text-main: #241a1c;
-    --text-muted: #8a7577;
-    --border-color: #ead9db;
-    --accent-color: #b23a5c;
-    --accent-hover: #96304d;
-    --accent-tint: #fbe8ee;
-    --accent-tint-strong: #f6d3dd;
+    --bg-sunken: #ececea;
+    --text-main: #101010;
+    --text-muted: #8a8a86;
+    --border-color: #e2e0dc;
+    --accent-color: #111111;
+    --accent-hover: #000000;
+    --accent-tint: #ececea;
+    --accent-tint-strong: #dedcd7;
     --danger-color: #d64545;
 
     --radius-pill: 9999px;
     --radius-md: 18px;
     --radius-sm: 12px;
-    --shadow-sm: 0 2px 10px rgba(60, 20, 30, 0.06);
-    --shadow-md: 0 10px 30px rgba(60, 20, 30, 0.08);
-    --shadow-lg: 0 20px 44px rgba(60, 20, 30, 0.16);
+    --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 20px 44px rgba(0, 0, 0, 0.16);
 
     --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -1217,18 +1217,49 @@ body.mobile-theme {
 }
 
 .checkbox-minimal-group input[type="checkbox"] {
-    accent-color: var(--accent-color);
-    width: 19px;
-    height: 19px;
+    appearance: none;
+    -webkit-appearance: none;
+    width: 44px;
+    height: 27px;
+    border-radius: 999px;
+    background: var(--bg-sunken);
+    border: 1px solid var(--border-color);
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.checkbox-minimal-group input[type="checkbox"]::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 21px;
+    height: 21px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.checkbox-minimal-group input[type="checkbox"]:checked {
+    background: var(--text-main);
+    border-color: var(--text-main);
+}
+
+.checkbox-minimal-group input[type="checkbox"]:checked::before {
+    transform: translateX(17px);
 }
 
 .segmented-control {
     display: flex;
-    background-color: var(--bg-sunken);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    padding: 3px;
-    gap: 2px;
+    background: none;
+    border: none;
+    border-bottom: 1.5px solid var(--border-color);
+    border-radius: 0;
+    padding: 0;
+    gap: 4px;
     flex: 1 1 auto;
 }
 
@@ -1236,21 +1267,24 @@ body.mobile-theme {
     flex: 1;
     background: none;
     border: none;
-    padding: 9px 6px;
+    padding: 10px 6px 12px;
     font-size: 13px;
     font-weight: 600;
     color: var(--text-muted);
-    border-radius: 8px;
+    border-radius: 0;
+    border-bottom: 2.5px solid transparent;
+    margin-bottom: -1.5px;
     cursor: pointer;
     transition: var(--transition-base);
     white-space: nowrap;
 }
 
 .segmented-control button.active {
-    background-color: var(--accent-color);
-    color: #ffffff;
-    box-shadow: var(--shadow-sm);
+    background: none;
+    color: var(--text-main);
+    box-shadow: none;
     font-weight: 700;
+    border-bottom-color: var(--text-main);
 }
 
 .preset-save-box-minimal {
@@ -1688,9 +1722,39 @@ input[type="file"]::file-selector-button {
 }
 
 .replacement-rule-cell input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
     flex: 0 0 auto;
-    width: 18px;
-    height: 18px;
+    width: 38px;
+    height: 23px;
+    border-radius: 999px;
+    background: var(--bg-sunken);
+    border: 1px solid var(--border-color);
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.replacement-rule-cell input[type="checkbox"]::before {
+    content: "";
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 19px;
+    height: 19px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.replacement-rule-cell input[type="checkbox"]:checked {
+    background: var(--text-main);
+    border-color: var(--text-main);
+}
+
+.replacement-rule-cell input[type="checkbox"]:checked::before {
+    transform: translateX(15px);
 }
 
 .replacement-rule-cell input[type="text"] {
@@ -1914,7 +1978,8 @@ input[type="file"]::file-selector-button {
     padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
     background-color: var(--bg-card);
     border-top: 1px solid var(--border-color);
-    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+    border-radius: 22px 22px 0 0;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1932,8 +1997,8 @@ input[type="file"]::file-selector-button {
     flex: 1;
     background: none;
     border: none;
-    height: 58px;
-    border-radius: 16px;
+    height: 56px;
+    border-radius: 18px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1943,7 +2008,7 @@ input[type="file"]::file-selector-button {
     font-size: 10.5px;
     font-weight: 600;
     cursor: pointer;
-    transition: transform 0.12s ease, color 0.15s ease;
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease, color 0.15s ease;
 }
 
 .dock-icon {
@@ -1955,8 +2020,9 @@ input[type="file"]::file-selector-button {
 }
 
 .dock-btn.active {
-    background: var(--accent-tint) !important;
-    color: var(--accent-color) !important;
+    background: var(--text-main) !important;
+    color: #ffffff !important;
+    transform: translateY(-3px);
 }
 
 .dock-export-group {
