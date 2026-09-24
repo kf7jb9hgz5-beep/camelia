@@ -274,6 +274,17 @@ function updateCanvas() {
         textWrapper.innerHTML = rawHTML;
         normalizeParagraphs(textWrapper);
 
+        // "가득 채우기" 사진: 본문 폭(패딩 안쪽) 기준이 아니라 캔버스 좌우 끝까지 닿아야 하므로,
+        // 현재 좌/우 여백값만큼 음수 마진을 줘서 캔버스에 그릴 때만 진짜로 "꽉 채워"지게 만든다.
+        // (편집창 안에서는 그냥 편집창 폭 100%로만 보이고, 이 계산은 여기 캔버스 사본에만 적용됨)
+        const fillPadL = parseFloat(els.paddingLeft?.value) || 0;
+        const fillPadR = parseFloat(els.paddingRight?.value) || 0;
+        textWrapper.querySelectorAll('.editor-image-block[data-align="fill"]').forEach((block) => {
+            block.style.width = `calc(100% + ${fillPadL + fillPadR}px)`;
+            block.style.marginLeft = `-${fillPadL}px`;
+            block.style.marginRight = `-${fillPadR}px`;
+        });
+
         // 자동 치환 규칙 적용: 본문(편집창)은 그대로 두고, 캔버스에 표시될 텍스트만 바꿔치기한다.
         if (replacementRules.some((r) => r.enabled !== false && r.find)) {
             const walker = document.createTreeWalker(textWrapper, NodeFilter.SHOW_TEXT);
@@ -478,7 +489,8 @@ function updateCanvas() {
             const padL = parseFloat(els.paddingLeft?.value) || 0;
             const padR = parseFloat(els.paddingRight?.value) || 0;
             const yPercentRaw = parseFloat(document.getElementById("infoPositionY")?.value);
-            const yPercent = isNaN(yPercentRaw) ? 90 : Math.min(100, Math.max(0, yPercentRaw));
+            // 세로 위치를 100을 넘겨 더 아래까지 내릴 수 있게 상한을 160으로 넓혔다.
+            const yPercent = isNaN(yPercentRaw) ? 90 : Math.min(160, Math.max(0, yPercentRaw));
             infoContainer.style.position = "absolute";
             infoContainer.style.left = `calc(${padL}px + (100% - ${padL + padR}px) * ${xPercent / 100})`;
             infoContainer.style.right = "auto";
@@ -1967,6 +1979,13 @@ function buildDialogueMarkerInnerHTML(line) {
 // ==== 작품명·제작자(A¹/B²) 표시, 미리보기에서 직접 드래그로 세로 위치 옮기기 ====
 // 세로 위치가 "직접 지정"일 때만 작동한다. 미리보기가 화면 크기에 맞춰 축소되어 있을 수 있어서
 // (applyPreviewScale), 픽셀이 아니라 캔버스 기준 백분율로 계산해야 어느 화면에서도 정확하다.
+// ⚠️ 버그 수정: 작품·제작자 배지를 드래그해서 옮겨도, 마우스를 떼는 순간 그 클릭이
+// #captureAreaScaleWrapper 의 "탭하면 크게 보기" 클릭 핸들러로도 그대로 전달돼서
+// 매번 전체화면 확대 오버레이가 튀어나왔다 — 그래서 "위치 이동이 안 된다"고 느껴졌던 것.
+// 배지에서 시작된 클릭(드래그든 단순 탭이든)은 이 플래그로 표시해뒀다가, 확대 오버레이를 여는
+// 클릭 핸들러 쪽에서 한 번 소비하고 무시하도록 한다.
+window.__infoBadgeInteracting = false;
+
 (function setupInfoDragPositioning() {
     let dragging = false;
     let pointerId = null;
@@ -1983,7 +2002,8 @@ function buildDialogueMarkerInnerHTML(line) {
         const yPct = ((clientY - rect.top - padT) / usableH) * 100;
         return {
             x: Math.min(100, Math.max(0, xPct)),
-            y: Math.min(100, Math.max(0, yPct))
+            // 세로는 화면 맨 아래까지 손가락/마우스를 끌고 가면 100을 넘어 더 내려갈 수 있게 한다.
+            y: Math.min(160, Math.max(0, yPct))
         };
     }
 
@@ -2021,6 +2041,8 @@ function buildDialogueMarkerInnerHTML(line) {
         const infoContainer = document.getElementById("canvasInfo");
         if (infoContainer) infoContainer.style.cursor = "grab";
         updateCanvas();
+        // 확대 오버레이 클릭 핸들러가 이 클릭을 한 번 소비할 시간을 준 다음 플래그를 내린다.
+        setTimeout(() => { window.__infoBadgeInteracting = false; }, 0);
     }
 
     document.addEventListener("pointerdown", (e) => {
@@ -2030,6 +2052,7 @@ function buildDialogueMarkerInnerHTML(line) {
         e.preventDefault();
         dragging = true;
         pointerId = e.pointerId;
+        window.__infoBadgeInteracting = true;
         infoContainer.style.cursor = "grabbing";
         document.addEventListener("pointermove", onPointerMove);
         document.addEventListener("pointerup", onPointerUp);
@@ -2556,6 +2579,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const captureAreaScaleWrapper = document.getElementById("captureAreaScaleWrapper");
     if (previewZoomOverlay && previewZoomInner && captureAreaScaleWrapper) {
         captureAreaScaleWrapper.addEventListener("click", () => {
+            // 작품·제작자 배지를 탭/드래그해서 옮기던 클릭이면 확대창을 열지 않는다.
+            if (window.__infoBadgeInteracting) {
+                window.__infoBadgeInteracting = false;
+                return;
+            }
             if (!els.captureArea) return;
             previewZoomInner.innerHTML = "";
             const clone = els.captureArea.cloneNode(true);
@@ -3094,6 +3122,7 @@ function normalizeParagraphs(container) {
 let currentImageBlock = null;
 
 function applyImageAlign(block, align) {
+    const prevAlign = block.dataset.align;
     block.dataset.align = align;
     if (align === "left") {
         // 사진을 좌측에 띄우고 글자가 사진 오른쪽으로 자유롭게 흐르게 함
@@ -3109,6 +3138,26 @@ function applyImageAlign(block, align) {
         block.style.marginRight = "0";
         block.style.marginTop = "2px";
         block.style.marginBottom = "8px";
+    } else if (align === "fill") {
+        // 가득 채우기: 사진이 좌우 여백까지 무시하고 캔버스 끝에서 끝까지 꽉 채움.
+        // 실제 "끝까지 붙이는" 계산(여백만큼 음수 마진)은 캔버스에 그릴 때(updateCanvas)
+        // 마다 현재 여백값 기준으로 다시 계산한다 — 편집창 안에서는 그냥 편집창 폭 100%로만 보여줌.
+        if (prevAlign !== "fill") {
+            // fill로 넘어가기 전 폭을 기억해뒀다가, 나중에 다른 정렬로 돌아가면 복원한다.
+            block.dataset.widthBeforeFill = block.style.width || "240px";
+        }
+        block.style.float = "none";
+        block.style.marginLeft = "0";
+        block.style.marginRight = "0";
+        block.style.marginTop = "10px";
+        block.style.marginBottom = "10px";
+        block.style.width = "100%";
+        if (!block.dataset.fillDirection) block.dataset.fillDirection = "center";
+        const img = block.querySelector("img");
+        if (img) {
+            img.style.objectFit = "cover";
+            img.style.objectPosition = FILL_DIRECTION_TO_OBJECT_POSITION[block.dataset.fillDirection] || "center center";
+        }
     } else {
         // 가운데: 사진이 자기 줄을 독립적으로 차지 (기존 방식)
         block.style.float = "none";
@@ -3117,6 +3166,31 @@ function applyImageAlign(block, align) {
         block.style.marginTop = "10px";
         block.style.marginBottom = "10px";
     }
+
+    if (align !== "fill" && prevAlign === "fill") {
+        // fill에서 돌아올 땐 폭/높이를 원래 비율 기준으로 되살린다.
+        const restoredWidth = parseInt(block.dataset.widthBeforeFill, 10) || 240;
+        const ratio = parseFloat(block.dataset.naturalRatio) || 1;
+        block.style.width = `${restoredWidth}px`;
+        block.style.height = `${Math.max(20, Math.round(restoredWidth / ratio))}px`;
+        const img = block.querySelector("img");
+        if (img) img.style.objectPosition = "center center";
+    }
+}
+
+const FILL_DIRECTION_TO_OBJECT_POSITION = {
+    top: "center top",
+    bottom: "center bottom",
+    left: "left center",
+    right: "right center",
+    center: "center center"
+};
+
+function applyImageFillDirection(block, dir) {
+    if (!block) return;
+    block.dataset.fillDirection = dir;
+    const img = block.querySelector("img");
+    if (img) img.style.objectPosition = FILL_DIRECTION_TO_OBJECT_POSITION[dir] || "center center";
 }
 
 function selectImageBlock(block) {
@@ -3134,14 +3208,29 @@ function selectImageBlock(block) {
 
     const sizeInput = document.getElementById("imgBlockSize");
     const radiusInput = document.getElementById("imgBlockRadius");
-
-    if (sizeInput) sizeInput.value = parseInt(block.style.width, 10) || block.offsetWidth || 240;
-    if (radiusInput) radiusInput.value = parseInt(block.style.borderRadius, 10) || 0;
+    const sizeLabel = document.querySelector('label[for="imgBlockSize"]');
 
     const align = block.dataset.align || "center";
+    const isFill = align === "fill";
+
+    if (sizeInput) sizeInput.value = isFill ? (parseInt(block.style.height, 10) || block.offsetHeight || 220) : (parseInt(block.style.width, 10) || block.offsetWidth || 240);
+    if (sizeLabel) sizeLabel.textContent = isFill ? "높이 (px)" : "크기 (px)";
+    if (radiusInput) radiusInput.value = parseInt(block.style.borderRadius, 10) || 0;
+
     document.querySelectorAll("#imgBlockAlignGroup button").forEach((b) => {
         b.classList.toggle("active", b.getAttribute("data-value") === align);
     });
+
+    const fillDirArea = document.getElementById("imgBlockFillDirArea");
+    const fillDirHint = document.getElementById("imgBlockFillDirHint");
+    if (fillDirArea) fillDirArea.style.display = isFill ? "" : "none";
+    if (fillDirHint) fillDirHint.style.display = isFill ? "" : "none";
+    if (isFill) {
+        const dir = block.dataset.fillDirection || "center";
+        document.querySelectorAll("#imgBlockFillDirGroup button").forEach((b) => {
+            b.classList.toggle("active", b.getAttribute("data-value") === dir);
+        });
+    }
 }
 
 function deselectImageBlock() {
@@ -3159,11 +3248,19 @@ function applyPanelToBlock() {
     if (!currentImageBlock) return;
 
     const sizeInput = document.getElementById("imgBlockSize");
-    const ratio = parseFloat(currentImageBlock.dataset.naturalRatio) || 1;
-    const w = Math.max(20, parseInt(sizeInput.value, 10) || 20);
-    const h = Math.max(20, Math.round(w / ratio));
-    currentImageBlock.style.width = `${w}px`;
-    currentImageBlock.style.height = `${h}px`;
+    const isFill = currentImageBlock.dataset.align === "fill";
+
+    if (isFill) {
+        // 가득 채우기 모드에서는 폭이 항상 100%(양 끝까지)라, 크기 입력값은 높이만 조절한다.
+        const h = Math.max(20, parseInt(sizeInput.value, 10) || 20);
+        currentImageBlock.style.height = `${h}px`;
+    } else {
+        const ratio = parseFloat(currentImageBlock.dataset.naturalRatio) || 1;
+        const w = Math.max(20, parseInt(sizeInput.value, 10) || 20);
+        const h = Math.max(20, Math.round(w / ratio));
+        currentImageBlock.style.width = `${w}px`;
+        currentImageBlock.style.height = `${h}px`;
+    }
 
     const radiusInput = document.getElementById("imgBlockRadius");
     if (radiusInput) {
@@ -3181,7 +3278,7 @@ function attachImageBlockInteractions(block) {
 
     // ---- 모서리 드래그 = 박스 크기 조절 (항상 비율 고정) ----
     let resizing = false;
-    let startX, startW, ratio;
+    let startX, startY, startW, ratio;
 
     handle.addEventListener("pointerdown", (e) => {
         e.preventDefault();
@@ -3189,7 +3286,9 @@ function attachImageBlockInteractions(block) {
         resizing = true;
         try { handle.setPointerCapture(e.pointerId); } catch (err) {}
         startX = e.clientX;
+        startY = e.clientY;
         startW = parseInt(block.style.width, 10) || block.offsetWidth;
+        block.dataset.__resizeStartH = String(parseInt(block.style.height, 10) || block.offsetHeight);
         ratio = parseFloat(block.dataset.naturalRatio) || 1;
         selectImageBlock(block);
     });
@@ -3197,6 +3296,16 @@ function attachImageBlockInteractions(block) {
     handle.addEventListener("pointermove", (e) => {
         if (!resizing) return;
         e.preventDefault();
+        if (block.dataset.align === "fill") {
+            // 가득 채우기: 폭은 항상 100%로 고정, 세로로 끈 만큼만 높이를 바꾼다(비율 무시).
+            const dy = e.clientY - startY;
+            const startH = parseInt(block.dataset.__resizeStartH || "0", 10) || block.offsetHeight;
+            const newH = Math.max(20, Math.round(startH + dy));
+            block.style.height = `${newH}px`;
+            const sizeInput = document.getElementById("imgBlockSize");
+            if (sizeInput) sizeInput.value = newH;
+            return;
+        }
         const dx = e.clientX - startX;
         const newW = Math.max(20, Math.round(startW + dx));
         const newH = Math.max(20, Math.round(newW / ratio));
@@ -3787,6 +3896,17 @@ document.addEventListener("DOMContentLoaded", () => {
             document.querySelectorAll("#imgBlockAlignGroup button").forEach((b) => b.classList.remove("active"));
             btn.classList.add("active");
             applyImageAlign(currentImageBlock, btn.getAttribute("data-value"));
+            selectImageBlock(currentImageBlock); // 크기 입력 라벨/방향 패널 등 표시 상태 다시 동기화
+            updateCanvas();
+        });
+    });
+
+    document.querySelectorAll("#imgBlockFillDirGroup button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            if (!currentImageBlock) return;
+            document.querySelectorAll("#imgBlockFillDirGroup button").forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            applyImageFillDirection(currentImageBlock, btn.getAttribute("data-value"));
             updateCanvas();
         });
     });

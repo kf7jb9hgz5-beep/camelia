@@ -604,7 +604,9 @@ body.mobile-theme {
     justify-content: flex-end;
     gap: 0;
     width: 100%;
-    transition: all 0.2s ease;
+    /* ⚠️ 예전엔 transition: all 이라 드래그로 옮길 때 left/top/transform까지 0.2s로
+       느리게 따라와서 "안 움직인다"처럼 느껴졌다. 위치는 즉시 반응하게 애니메이션에서 뺀다. */
+    transition: opacity 0.2s ease;
     margin-top: 0 !important;
     padding-top: 0 !important;
     line-height: 1.2 !important;
@@ -819,6 +821,12 @@ body.mobile-theme {
        인라인 style로 직접 지정한다. 여기 기본값은 그 전까지의 fallback. */
     margin-top: 10px;
     margin-bottom: 10px;
+}
+
+/* 가득 채우기 모드: 캔버스에 그릴 때 좌우 여백을 무시하고 폭이 100%를 넘어서게(음수 마진)
+   되므로, 여기서만 max-width 제한을 풀어준다. */
+.editor-image-block[data-align="fill"] {
+    max-width: none;
 }
 
 .editor-image-block img {

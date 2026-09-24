@@ -164,7 +164,7 @@
                 </div>
                 <div class="control-minimal-row" id="infoPositionYArea">
                     <label for="infoPositionYSlider">세로 위치</label>
-                    <input type="range" id="infoPositionYSlider" min="0" max="100" value="90" oninput="syncRangeToNumber('infoPositionYSlider','infoPositionY')" />
+                    <input type="range" id="infoPositionYSlider" min="0" max="160" value="90" oninput="syncRangeToNumber('infoPositionYSlider','infoPositionY')" />
                     <input type="hidden" id="infoPositionY" value="90" />
                 </div>
                 <div class="control-minimal-row" id="infoPositionXArea">
@@ -753,9 +753,21 @@
                             <button type="button" data-value="left">좌</button>
                             <button type="button" data-value="center" class="active">중</button>
                             <button type="button" data-value="right">우</button>
+                            <button type="button" data-value="fill">가득 채우기</button>
                         </div>
                     </div>
-                    <div class="field-hint">좌/우를 선택하면 글자가 사진 옆으로 자연스럽게 흐르고, 중앙을 선택하면 사진이 혼자 한 줄을 차지해요.</div>
+                    <div class="field-hint" id="imgBlockAlignHint">좌/우를 선택하면 글자가 사진 옆으로 자연스럽게 흐르고, 중앙을 선택하면 사진이 혼자 한 줄을 차지해요. "가득 채우기"를 선택하면 사진이 캔버스 양 끝까지 꽉 차게 늘어나요(좌우 여백 무시).</div>
+                    <div class="control-minimal-row" id="imgBlockFillDirArea" style="display: none">
+                        <label>채우는 방향</label>
+                        <div class="segmented-control segmented-control-minimal" id="imgBlockFillDirGroup">
+                            <button type="button" data-value="top">위</button>
+                            <button type="button" data-value="center" class="active">가운데</button>
+                            <button type="button" data-value="bottom">아래</button>
+                            <button type="button" data-value="left">왼쪽</button>
+                            <button type="button" data-value="right">오른쪽</button>
+                        </div>
+                    </div>
+                    <div class="field-hint" id="imgBlockFillDirHint" style="display: none">사진 비율이 채우는 영역과 다를 때, 어느 쪽을 기준으로 잘라 보여줄지 고르는 거예요. 모서리를 위아래로 끌면 채우는 높이도 조절할 수 있어요.</div>
                     <div class="control-minimal-row">
                         <label for="imgBlockRadius">모서리 둥글기 (px)</label>
                         <div class="stepper-minimal">
