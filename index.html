@@ -730,7 +730,7 @@
                         <span>선택한 사진 설정</span>
                         <button type="button" id="btnRemoveImageBlock" class="text-danger">삭제</button>
                     </div>
-                    <div class="control-minimal-row">
+                    <div class="control-minimal-row" id="imgBlockSizeArea">
                         <label for="imgBlockSize">크기 (px)</label>
                         <div class="stepper-minimal">
                             <button type="button" data-img-step="size" data-step="-10">-</button>
@@ -738,7 +738,7 @@
                             <button type="button" data-img-step="size" data-step="10">+</button>
                         </div>
                     </div>
-                    <div class="field-hint">사진 비율은 자른 모양 그대로 고정돼요. 숫자로 전체 크기만 키우거나 줄일 수 있어요.</div>
+                    <div class="field-hint" id="imgBlockSizeHint">사진 비율은 자른 모양 그대로 고정돼요. 숫자로 전체 크기만 키우거나 줄일 수 있어요.</div>
                     <div class="panel-section-title" style="margin-top: 10px; padding-top: 0; border-top: none">사진 자르기</div>
                     <div class="field-hint">사진 전체를 보면서 모서리를 끌어 자를 영역을 조절하고, 안쪽을 끌어 위치를 옮기세요.</div>
                     <div class="control-minimal-row">
@@ -757,6 +757,19 @@
                         </div>
                     </div>
                     <div class="field-hint" id="imgBlockAlignHint">좌/우를 선택하면 글자가 사진 옆으로 자연스럽게 흐르고, 중앙을 선택하면 사진이 혼자 한 줄을 차지해요. "가득 채우기"를 선택하면 사진이 캔버스 양 끝까지 꽉 차게 늘어나요(좌우 여백 무시).</div>
+                    <div class="control-minimal-row" id="imgBlockFillRatioArea" style="display: none">
+                        <label for="imgBlockFillRatio">채우는 비율</label>
+                        <select id="imgBlockFillRatio">
+                            <option value="1:1">1 : 1 (정사각)</option>
+                            <option value="4:5">4 : 5</option>
+                            <option value="3:4">3 : 4</option>
+                            <option value="4:3">4 : 3</option>
+                            <option value="16:9" selected>16 : 9</option>
+                            <option value="9:16">9 : 16</option>
+                            <option value="21:9">21 : 9 (넓게)</option>
+                        </select>
+                    </div>
+                    <div class="field-hint" id="imgBlockFillRatioHint" style="display: none">정해둔 비율대로 사진 영역이 캔버스 양 끝까지 꽉 차요(자유롭게 늘였다 줄였다 하는 게 아니라 비율이 고정돼요).</div>
                     <div class="control-minimal-row" id="imgBlockFillDirArea" style="display: none">
                         <label>가로 위치</label>
                         <input type="range" id="imgBlockFillPosX" min="0" max="100" value="50" />

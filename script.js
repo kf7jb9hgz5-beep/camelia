@@ -507,7 +507,12 @@ function updateCanvas() {
         } else {
             infoContainer.style.position = "static";
             infoContainer.style.transform = "none";
-            infoContainer.style.width = "auto";
+            // ⚠️ 버그였던 부분: CSS 클래스(.info-area)는 width:100%인데 여기서 inline으로
+            // width:"auto"를 줘버려서, 박스가 글자 크기만큼만 좁아지고 남는 공간이 없어졌다.
+            // 남는 공간이 없으니 justify-content(flex-start/center/flex-end)가 아무 효과가
+            // 없어서 "좌측 아래/가운데 아래/우측 아래" 버튼을 눌러도 위치가 그대로였던 것.
+            // 폭을 다시 100%로 줘서 justify-content가 실제로 좌/중/우로 밀어주게 만든다.
+            infoContainer.style.width = "100%";
             infoContainer.style.maxWidth = "none";
             infoContainer.style.padding = "0";
             infoContainer.style.zIndex = "";
@@ -3143,19 +3148,14 @@ function applyImageAlign(block, align) {
         // 실제 "끝까지 붙이는" 계산(여백만큼 음수 마진)은 캔버스에 그릴 때(updateCanvas)
         // 마다 현재 여백값 기준으로 다시 계산한다 — 편집창 안에서는 그냥 편집창 폭 100%로만 보여줌.
         //
-        // ⚠️ 편집창과 실제 캔버스는 폭(px)이 서로 다르다(편집창은 화면 폭, 캔버스는 그보다
-        // 좁은/넓은 내부 렌더링 폭). 예전처럼 높이를 고정 px로 주면 "폭:높이 비율"이
-        // 편집창과 캔버스에서 서로 달라져서 object-fit:cover가 서로 다른 부분을 잘라내
-        // 미리보기와 실제 저장 결과가 달라 보이는 버그가 있었다. 그래서 고정 높이(px) 대신
-        // aspect-ratio(가로세로 비율)로 관리한다 — 비율은 폭에 상관없이 항상 동일하므로
-        // 편집창에서 보이는 크롭 그대로 실제 캔버스에도 나온다.
+        // Chat2Img 참고사항: 드래그로 아무렇게나 늘이는 게 아니라, 정해둔 비율(1:1, 16:9 등)
+        // 중 하나를 고르면 그 비율대로 꽉 채운다. 비율은 폭에 상관없이 항상 동일하게 유지되므로
+        // (aspect-ratio) 편집창에서 보이는 크롭 그대로 실제 캔버스에도 나온다 — 편집창·캔버스의
+        // 실제 픽셀 폭이 서로 달라도 문제없다.
         if (prevAlign !== "fill") {
-            // fill로 넘어가기 전 폭을 기억해뒀다가, 나중에 다른 정렬로 돌아가면 복원한다.
             block.dataset.widthBeforeFill = block.style.width || "240px";
-            const curW = block.offsetWidth || 240;
-            const curH = block.offsetHeight || Math.round(curW * 0.6);
-            block.dataset.fillAspect = (curW / curH).toFixed(4);
         }
+        if (!block.dataset.fillRatio) block.dataset.fillRatio = "16:9";
         block.style.float = "none";
         block.style.marginLeft = "0";
         block.style.marginRight = "0";
@@ -3163,7 +3163,8 @@ function applyImageAlign(block, align) {
         block.style.marginBottom = "10px";
         block.style.width = "100%";
         block.style.height = "auto";
-        block.style.aspectRatio = block.dataset.fillAspect || "1.6";
+        const [rw, rh] = block.dataset.fillRatio.split(":").map(Number);
+        block.style.aspectRatio = `${rw || 16} / ${rh || 9}`;
         if (block.dataset.fillPosX === undefined) block.dataset.fillPosX = "50";
         if (block.dataset.fillPosY === undefined) block.dataset.fillPosY = "50";
         const img = block.querySelector("img");
@@ -3190,6 +3191,10 @@ function applyImageAlign(block, align) {
         const img = block.querySelector("img");
         if (img) img.style.objectPosition = "center center";
     }
+
+    // 가득 채우기는 드래그 리사이즈 대신 정해진 비율만 쓰므로, 모서리 핸들은 숨긴다.
+    const resizeHandle = block.querySelector(".image-resize-handle");
+    if (resizeHandle) resizeHandle.style.display = align === "fill" ? "none" : "";
 }
 
 function applyImageFillPosition(block, x, y) {
@@ -3198,6 +3203,13 @@ function applyImageFillPosition(block, x, y) {
     block.dataset.fillPosY = String(y);
     const img = block.querySelector("img");
     if (img) img.style.objectPosition = `${x}% ${y}%`;
+}
+
+function applyImageFillRatio(block, ratioStr) {
+    if (!block) return;
+    block.dataset.fillRatio = ratioStr;
+    const [rw, rh] = ratioStr.split(":").map(Number);
+    block.style.aspectRatio = `${rw || 16} / ${rh || 9}`;
 }
 
 function selectImageBlock(block) {
@@ -3215,26 +3227,34 @@ function selectImageBlock(block) {
 
     const sizeInput = document.getElementById("imgBlockSize");
     const radiusInput = document.getElementById("imgBlockRadius");
-    const sizeLabel = document.querySelector('label[for="imgBlockSize"]');
+    const sizeArea = document.getElementById("imgBlockSizeArea");
+    const sizeHint = document.getElementById("imgBlockSizeHint");
 
     const align = block.dataset.align || "center";
     const isFill = align === "fill";
 
-    if (sizeInput) sizeInput.value = isFill ? (parseInt(block.style.height, 10) || block.offsetHeight || 220) : (parseInt(block.style.width, 10) || block.offsetWidth || 240);
-    if (sizeLabel) sizeLabel.textContent = isFill ? "높이 (px)" : "크기 (px)";
+    if (sizeArea) sizeArea.style.display = isFill ? "none" : "";
+    if (sizeHint) sizeHint.style.display = isFill ? "none" : "";
+    if (sizeInput && !isFill) sizeInput.value = parseInt(block.style.width, 10) || block.offsetWidth || 240;
     if (radiusInput) radiusInput.value = parseInt(block.style.borderRadius, 10) || 0;
 
     document.querySelectorAll("#imgBlockAlignGroup button").forEach((b) => {
         b.classList.toggle("active", b.getAttribute("data-value") === align);
     });
 
+    const fillRatioArea = document.getElementById("imgBlockFillRatioArea");
+    const fillRatioHint = document.getElementById("imgBlockFillRatioHint");
     const fillDirArea = document.getElementById("imgBlockFillDirArea");
     const fillDirYArea = document.getElementById("imgBlockFillDirYArea");
     const fillDirHint = document.getElementById("imgBlockFillDirHint");
+    if (fillRatioArea) fillRatioArea.style.display = isFill ? "" : "none";
+    if (fillRatioHint) fillRatioHint.style.display = isFill ? "" : "none";
     if (fillDirArea) fillDirArea.style.display = isFill ? "" : "none";
     if (fillDirYArea) fillDirYArea.style.display = isFill ? "" : "none";
     if (fillDirHint) fillDirHint.style.display = isFill ? "" : "none";
     if (isFill) {
+        const ratioSelect = document.getElementById("imgBlockFillRatio");
+        if (ratioSelect) ratioSelect.value = block.dataset.fillRatio || "16:9";
         const posXInput = document.getElementById("imgBlockFillPosX");
         const posYInput = document.getElementById("imgBlockFillPosY");
         if (posXInput) posXInput.value = block.dataset.fillPosX || "50";
@@ -3255,20 +3275,10 @@ function deselectImageBlock() {
 
 function applyPanelToBlock() {
     if (!currentImageBlock) return;
-
-    const sizeInput = document.getElementById("imgBlockSize");
     const isFill = currentImageBlock.dataset.align === "fill";
 
-    if (isFill) {
-        // 가득 채우기 모드: 사용자가 입력한 숫자는 "지금 편집창 폭 기준 높이"로 해석해서
-        // 가로세로 비율(aspect-ratio)로 저장한다 — 그래야 캔버스(다른 폭)에서도 같은 비율로
-        // 잘려서 편집창에서 본 것과 동일하게 보인다.
-        const editorWidth = currentImageBlock.offsetWidth || 300;
-        const h = Math.max(20, parseInt(sizeInput.value, 10) || 20);
-        currentImageBlock.dataset.fillAspect = (editorWidth / h).toFixed(4);
-        currentImageBlock.style.aspectRatio = currentImageBlock.dataset.fillAspect;
-        currentImageBlock.style.height = "auto";
-    } else {
+    if (!isFill) {
+        const sizeInput = document.getElementById("imgBlockSize");
         const ratio = parseFloat(currentImageBlock.dataset.naturalRatio) || 1;
         const w = Math.max(20, parseInt(sizeInput.value, 10) || 20);
         const h = Math.max(20, Math.round(w / ratio));
@@ -3295,6 +3305,7 @@ function attachImageBlockInteractions(block) {
     let startX, startY, startW, ratio;
 
     handle.addEventListener("pointerdown", (e) => {
+        if (block.dataset.align === "fill") return; // 가득 채우기는 드래그로 늘이지 않고, 정해진 비율만 사용
         e.preventDefault();
         e.stopPropagation();
         resizing = true;
@@ -3310,20 +3321,6 @@ function attachImageBlockInteractions(block) {
     handle.addEventListener("pointermove", (e) => {
         if (!resizing) return;
         e.preventDefault();
-        if (block.dataset.align === "fill") {
-            // 가득 채우기: 폭은 항상 100%로 고정, 세로로 끈 만큼 "지금 편집창 폭 기준"
-            // 비율(aspect-ratio)을 다시 계산한다 — 절대 높이(px)를 직접 주지 않는 이유는
-            // applyImageAlign의 설명 참고 (편집창·캔버스 폭이 달라 크롭이 어긋나는 문제 방지).
-            const dy = e.clientY - startY;
-            const startH = parseInt(block.dataset.__resizeStartH || "0", 10) || block.offsetHeight;
-            const newH = Math.max(20, Math.round(startH + dy));
-            const editorWidth = block.offsetWidth || startW || 300;
-            block.dataset.fillAspect = (editorWidth / newH).toFixed(4);
-            block.style.aspectRatio = block.dataset.fillAspect;
-            const sizeInput = document.getElementById("imgBlockSize");
-            if (sizeInput) sizeInput.value = newH;
-            return;
-        }
         const dx = e.clientX - startX;
         const newW = Math.max(20, Math.round(startW + dx));
         const newH = Math.max(20, Math.round(newW / ratio));
@@ -3918,6 +3915,15 @@ document.addEventListener("DOMContentLoaded", () => {
             updateCanvas();
         });
     });
+
+    const fillRatioSelect = document.getElementById("imgBlockFillRatio");
+    if (fillRatioSelect) {
+        fillRatioSelect.addEventListener("change", () => {
+            if (!currentImageBlock) return;
+            applyImageFillRatio(currentImageBlock, fillRatioSelect.value);
+            updateCanvas();
+        });
+    }
 
     ["imgBlockFillPosX", "imgBlockFillPosY"].forEach((id) => {
         const el = document.getElementById(id);
