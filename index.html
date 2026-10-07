@@ -18,6 +18,7 @@
                     <div class="bg-overlay-layer" id="bgOverlayLayer"></div>
                     <div id="canvasContentContainer">
                         <div class="heading-area" id="canvasHeading"></div>
+                        <div id="sideImageBox" style="display:none"></div>
                         <div id="canvasTextContainer">
                             <div id="canvasTextWrapper"></div>
                         </div>
@@ -724,6 +725,46 @@
                 <button type="button" class="btn-minimal-save" style="width:100%;margin-top:8px;" onclick="addReplacementRule()">+ 치환 규칙 추가</button>
             </div>
             <div class="tab-panel" id="panel-image">
+                <div class="panel-section-title">본문 옆 사진 (한쪽 칸 채우기)</div>
+                <div class="control-minimal-row">
+                    <label>사진</label>
+                    <input type="file" id="sideImageInput" accept="image/*" />
+                </div>
+                <div id="sideImageControls" style="display: none">
+                    <div class="control-minimal-row">
+                        <label>방향</label>
+                        <input type="hidden" id="sideImageDir" value="right" />
+                        <div class="segmented-control segmented-control-minimal" data-target="sideImageDir">
+                            <button type="button" data-value="left">← 왼쪽</button>
+                            <button type="button" data-value="right" class="active">→ 오른쪽</button>
+                            <button type="button" data-value="top">↑ 위</button>
+                            <button type="button" data-value="bottom">↓ 아래</button>
+                        </div>
+                    </div>
+                    <div class="control-minimal-row">
+                        <label>이미지 영역 (너비/높이)</label>
+                        <input type="range" id="sideImageSize" min="40" max="300" value="120" />
+                    </div>
+                    <div class="control-minimal-row">
+                        <label>확대</label>
+                        <input type="range" id="sideImageZoom" min="100" max="250" value="100" />
+                    </div>
+                    <div class="control-minimal-row">
+                        <label>모서리 둥글기</label>
+                        <input type="range" id="sideImageRadius" min="0" max="40" value="8" />
+                    </div>
+                    <div class="control-minimal-row">
+                        <label>본문 사이 간격</label>
+                        <input type="range" id="sideImageGap" min="0" max="60" value="14" />
+                    </div>
+                    <div class="control-minimal-row">
+                        <label>테두리</label>
+                        <input type="range" id="sideImageBorder" min="0" max="6" value="0" />
+                    </div>
+                    <div class="field-hint">미리보기 화면에서 사진을 드래그하면 보이는 위치를 옮길 수 있어요. 방향이 왼쪽/오른쪽이면 "너비", 위/아래면 "높이"를 조절해요.</div>
+                    <button type="button" id="btnRemoveSideImage" class="text-danger">옆 사진 삭제</button>
+                </div>
+                <div class="panel-section-title">본문 안 사진</div>
                 <div id="imageBlockEmptyHint" class="field-hint">본문 안에 넣은 사진을 탭해서 선택하면 여기서 조절할 수 있어요. 아직 선택된 사진이 없어요.</div>
                 <div id="imageBlockPanel" class="image-block-panel" style="display: none">
                     <div class="image-block-panel-header">
@@ -753,32 +794,9 @@
                             <button type="button" data-value="left">좌</button>
                             <button type="button" data-value="center" class="active">중</button>
                             <button type="button" data-value="right">우</button>
-                            <button type="button" data-value="fill">가득 채우기</button>
                         </div>
                     </div>
-                    <div class="field-hint" id="imgBlockAlignHint">좌/우를 선택하면 글자가 사진 옆으로 자연스럽게 흐르고, 중앙을 선택하면 사진이 혼자 한 줄을 차지해요. "가득 채우기"를 선택하면 사진이 캔버스 양 끝까지 꽉 차게 늘어나요(좌우 여백 무시).</div>
-                    <div class="control-minimal-row" id="imgBlockFillRatioArea" style="display: none">
-                        <label for="imgBlockFillRatio">채우는 비율</label>
-                        <select id="imgBlockFillRatio">
-                            <option value="1:1">1 : 1 (정사각)</option>
-                            <option value="4:5">4 : 5</option>
-                            <option value="3:4">3 : 4</option>
-                            <option value="4:3">4 : 3</option>
-                            <option value="16:9" selected>16 : 9</option>
-                            <option value="9:16">9 : 16</option>
-                            <option value="21:9">21 : 9 (넓게)</option>
-                        </select>
-                    </div>
-                    <div class="field-hint" id="imgBlockFillRatioHint" style="display: none">정해둔 비율대로 사진 영역이 캔버스 양 끝까지 꽉 차요(자유롭게 늘였다 줄였다 하는 게 아니라 비율이 고정돼요).</div>
-                    <div class="control-minimal-row" id="imgBlockFillDirArea" style="display: none">
-                        <label>가로 위치</label>
-                        <input type="range" id="imgBlockFillPosX" min="0" max="100" value="50" />
-                    </div>
-                    <div class="control-minimal-row" id="imgBlockFillDirYArea" style="display: none">
-                        <label>세로 위치</label>
-                        <input type="range" id="imgBlockFillPosY" min="0" max="100" value="50" />
-                    </div>
-                    <div class="field-hint" id="imgBlockFillDirHint" style="display: none">사진 비율이 채우는 영역과 다를 때, 배경 커스텀처럼 슬라이더로 어느 부분을 보여줄지 옮길 수 있어요.</div>
+                    <div class="field-hint" id="imgBlockAlignHint">좌/우를 선택하면 글자가 사진 옆으로 자연스럽게 흐르고, 중앙을 선택하면 사진이 혼자 한 줄을 차지해요.</div>
                     <div class="control-minimal-row">
                         <label for="imgBlockRadius">모서리 둥글기 (px)</label>
                         <div class="stepper-minimal">

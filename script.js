@@ -192,6 +192,11 @@ function updateDockDots() {
 }
 
 function updateCanvas() {
+    updateCanvasCore();
+    if (typeof applySideImage === "function") applySideImage();
+}
+
+function updateCanvasCore() {
     if (!els.captureArea) return;
 
     syncEditorTypography();
@@ -3948,3 +3953,120 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
+
+
+// ===== 본문 옆 사진 (Chat2Img 스타일: 한쪽 칸을 채우는 사진) =====
+const sideImg = { src: "", nw: 0, nh: 0, posX: 50, posY: 50 };
+
+function applySideImage() {
+    const box = document.getElementById("sideImageBox");
+    const wrapper = document.getElementById("canvasTextWrapper");
+    const content = document.getElementById("canvasContentContainer");
+    if (!box || !wrapper || !content) return;
+    const controls = document.getElementById("sideImageControls");
+    if (controls) controls.style.display = sideImg.src ? "" : "none";
+
+    // 초기화
+    wrapper.style.boxSizing = "border-box";
+    wrapper.style.paddingLeft = wrapper.style.paddingRight = wrapper.style.paddingTop = wrapper.style.paddingBottom = "";
+    if (!sideImg.src) { box.style.display = "none"; return; }
+
+    const v = (id, d) => { const n = parseFloat(document.getElementById(id)?.value); return isNaN(n) ? d : n; };
+    const dir = document.getElementById("sideImageDir")?.value || "right";
+    const size = v("sideImageSize", 120), zoom = v("sideImageZoom", 100) / 100;
+    const radius = v("sideImageRadius", 8), gap = v("sideImageGap", 14), border = v("sideImageBorder", 0);
+
+    const info = document.getElementById("canvasInfo");
+    const infoInFlow = info && info.style.position !== "absolute" && info.parentNode !== els.captureArea;
+    const footer = infoInFlow ? info.offsetHeight + (parseFloat(info.style.marginTop) || 0) : 0;
+
+    box.style.display = "block";
+    box.style.position = "absolute";
+    box.style.overflow = "hidden";
+    box.style.boxSizing = "border-box";
+    box.style.borderRadius = radius + "px";
+    box.style.border = border ? `${border}px solid rgba(0,0,0,0.25)` : "none";
+    box.style.touchAction = "none";
+    box.style.cursor = "grab";
+    box.style.zIndex = "2";
+    box.style.top = box.style.bottom = box.style.left = box.style.right = "auto";
+    box.style.width = box.style.height = "auto";
+    if (dir === "left" || dir === "right") {
+        box.style.top = "0"; box.style.height = `calc(100% - ${footer}px)`; box.style.width = size + "px";
+        box.style[dir] = "0";
+        wrapper.style[dir === "left" ? "paddingLeft" : "paddingRight"] = (size + gap) + "px";
+    } else {
+        box.style.left = "0"; box.style.width = "100%"; box.style.height = size + "px";
+        if (dir === "top") { box.style.top = "0"; } else { box.style.bottom = footer + "px"; }
+        wrapper.style[dir === "top" ? "paddingTop" : "paddingBottom"] = (size + gap) + "px";
+    }
+
+    // 사진을 칸에 꽉 채우고(cover) 확대/위치 적용
+    const bw = box.clientWidth, bh = box.clientHeight;
+    if (bw && bh && sideImg.nw && sideImg.nh) {
+        const scale = Math.max(bw / sideImg.nw, bh / sideImg.nh) * zoom;
+        box.style.backgroundImage = `url("${sideImg.src}")`;
+        box.style.backgroundRepeat = "no-repeat";
+        box.style.backgroundSize = `${sideImg.nw * scale}px ${sideImg.nh * scale}px`;
+        box.style.backgroundPosition = `${sideImg.posX}% ${sideImg.posY}%`;
+        box._scaled = { w: sideImg.nw * scale, h: sideImg.nh * scale, bw, bh };
+    }
+}
+
+(function setupSideImage() {
+    const input = document.getElementById("sideImageInput");
+    const box = document.getElementById("sideImageBox");
+    if (!input || !box) return;
+    input.addEventListener("change", (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        const r = new FileReader();
+        r.onload = (ev) => {
+            const im = new Image();
+            im.onload = () => {
+                Object.assign(sideImg, { src: ev.target.result, nw: im.naturalWidth, nh: im.naturalHeight, posX: 50, posY: 50 });
+                updateCanvas();
+            };
+            im.src = ev.target.result;
+        };
+        r.readAsDataURL(f);
+    });
+    ["sideImageSize", "sideImageZoom", "sideImageRadius", "sideImageGap", "sideImageBorder"].forEach((id) => {
+        document.getElementById(id)?.addEventListener("input", updateCanvas);
+    });
+    document.querySelectorAll('.segmented-control[data-target="sideImageDir"] button').forEach((b) => {
+        b.addEventListener("click", () => {
+            document.getElementById("sideImageDir").value = b.dataset.value;
+            document.querySelectorAll('.segmented-control[data-target="sideImageDir"] button').forEach((x) => x.classList.toggle("active", x === b));
+            updateCanvas();
+        });
+    });
+    document.getElementById("btnRemoveSideImage")?.addEventListener("click", () => {
+        sideImg.src = ""; input.value = ""; box.style.backgroundImage = "";
+        updateCanvas();
+    });
+
+    // 미리보기에서 드래그로 사진 위치 이동
+    let drag = null;
+    box.addEventListener("pointerdown", (e) => {
+        if (!sideImg.src) return;
+        e.preventDefault();
+        window.__infoBadgeInteracting = true; // 확대창이 같이 열리지 않게
+        drag = { x: e.clientX, y: e.clientY, px: sideImg.posX, py: sideImg.posY };
+        try { box.setPointerCapture(e.pointerId); } catch (err) {}
+        box.style.cursor = "grabbing";
+    });
+    box.addEventListener("pointermove", (e) => {
+        if (!drag || !box._scaled) return;
+        const s = box._scaled;
+        const rect = box.getBoundingClientRect();
+        const k = rect.width ? s.bw / rect.width : 1; // 화면 배율 보정
+        const rx = s.w - s.bw, ry = s.h - s.bh;
+        if (rx > 0) sideImg.posX = Math.min(100, Math.max(0, drag.px - ((e.clientX - drag.x) * k / rx) * 100));
+        if (ry > 0) sideImg.posY = Math.min(100, Math.max(0, drag.py - ((e.clientY - drag.y) * k / ry) * 100));
+        box.style.backgroundPosition = `${sideImg.posX}% ${sideImg.posY}%`;
+    });
+    const end = () => { if (!drag) return; drag = null; box.style.cursor = "grab"; setTimeout(() => { window.__infoBadgeInteracting = false; }, 0); };
+    box.addEventListener("pointerup", end);
+    box.addEventListener("pointercancel", end);
+})();
