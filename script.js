@@ -3959,49 +3959,70 @@ document.addEventListener("DOMContentLoaded", () => {
 const sideImg = { src: "", nw: 0, nh: 0, posX: 50, posY: 50 };
 
 function applySideImage() {
+    const row = document.getElementById("sideImageRow");
     const box = document.getElementById("sideImageBox");
+    const textContainer = document.getElementById("canvasTextContainer");
     const wrapper = document.getElementById("canvasTextWrapper");
-    const content = document.getElementById("canvasContentContainer");
-    if (!box || !wrapper || !content) return;
+    if (!row || !box || !textContainer || !wrapper) return;
     const controls = document.getElementById("sideImageControls");
     if (controls) controls.style.display = sideImg.src ? "" : "none";
 
-    // 초기화
-    wrapper.style.boxSizing = "border-box";
+    // 혹시 예전 방식(여백 트릭)이 남아있으면 초기화
     wrapper.style.paddingLeft = wrapper.style.paddingRight = wrapper.style.paddingTop = wrapper.style.paddingBottom = "";
-    if (!sideImg.src) { box.style.display = "none"; return; }
+
+    if (!sideImg.src) {
+        // 꺼져 있을 땐 flex 관련 inline 스타일을 전부 지워서 기존 레이아웃(CSS 기본값)으로 되돌린다.
+        box.style.display = "none";
+        row.style.display = "";
+        row.style.flexDirection = "";
+        row.style.gap = "";
+        row.style.alignItems = "";
+        box.style.order = "";
+        textContainer.style.order = "";
+        textContainer.style.width = "";
+        textContainer.style.minWidth = "";
+        return;
+    }
 
     const v = (id, d) => { const n = parseFloat(document.getElementById(id)?.value); return isNaN(n) ? d : n; };
     const dir = document.getElementById("sideImageDir")?.value || "right";
     const size = v("sideImageSize", 120), zoom = v("sideImageZoom", 100) / 100;
     const radius = v("sideImageRadius", 8), gap = v("sideImageGap", 14), border = v("sideImageBorder", 0);
+    const isRowDir = dir === "left" || dir === "right";
 
-    const info = document.getElementById("canvasInfo");
-    const infoInFlow = info && info.style.position !== "absolute" && info.parentNode !== els.captureArea;
-    const footer = infoInFlow ? info.offsetHeight + (parseFloat(info.style.marginTop) || 0) : 0;
+    // ⚠️ 예전 버전의 버그: box를 position:absolute로 두고 height:calc(100% - ...)/bottom 으로
+    // 띄웠는데, 캔버스 비율이 기본값인 "자동 조절"일 때는 captureArea의 높이가 애초에 auto라서
+    // 그 100%가 계산이 안 되고(부모 체인에 "정해진 높이"가 하나도 없음) 박스가 찌그러지거나
+    // 0 높이로 사라졌다 — 그래서 위/아래는 깨지고 좌/우는 아예 안 보였던 것.
+    // absolute+퍼센트 대신, box를 canvasTextContainer와 나란한 '보통 flex 자식'으로 둔다.
+    // flex는 부모의 확정된 높이 없이도 형제 요소 크기에 맞춰 늘어나므로 이 문제 자체가 없어진다.
+    row.style.display = "flex";
+    row.style.flexDirection = isRowDir ? "row" : "column";
+    row.style.gap = `${gap}px`;
+    row.style.alignItems = "stretch";
 
     box.style.display = "block";
-    box.style.position = "absolute";
+    box.style.position = "static";
     box.style.overflow = "hidden";
     box.style.boxSizing = "border-box";
-    box.style.borderRadius = radius + "px";
+    box.style.borderRadius = `${radius}px`;
     box.style.border = border ? `${border}px solid rgba(0,0,0,0.25)` : "none";
     box.style.touchAction = "none";
     box.style.cursor = "grab";
-    box.style.zIndex = "2";
-    box.style.top = box.style.bottom = box.style.left = box.style.right = "auto";
-    box.style.width = box.style.height = "auto";
-    if (dir === "left" || dir === "right") {
-        box.style.top = "0"; box.style.height = `calc(100% - ${footer}px)`; box.style.width = size + "px";
-        box.style[dir] = "0";
-        wrapper.style[dir === "left" ? "paddingLeft" : "paddingRight"] = (size + gap) + "px";
-    } else {
-        box.style.left = "0"; box.style.width = "100%"; box.style.height = size + "px";
-        if (dir === "top") { box.style.top = "0"; } else { box.style.bottom = footer + "px"; }
-        wrapper.style[dir === "top" ? "paddingTop" : "paddingBottom"] = (size + gap) + "px";
-    }
+    box.style.flexShrink = "0";
+    box.style.flexGrow = "0";
+    box.style.flexBasis = `${size}px`;
+    box.style.width = isRowDir ? `${size}px` : "";
+    box.style.height = isRowDir ? "" : `${size}px`;
+    box.style.order = (dir === "left" || dir === "top") ? "1" : "2";
 
-    // 사진을 칸에 꽉 채우고(cover) 확대/위치 적용
+    textContainer.style.order = (dir === "left" || dir === "top") ? "2" : "1";
+    textContainer.style.flex = "1 1 auto";
+    textContainer.style.width = isRowDir ? "" : "100%";
+    textContainer.style.minWidth = "0"; // flex 자식이 내용 때문에 줄어들지 못해 줄바꿈이 깨지는 것 방지
+
+    // 사진을 칸에 꽉 채우고(cover) 확대/위치 적용 — flex가 이미 레이아웃을 확정했으니
+    // clientWidth/Height로 실제 박스 크기를 바로 읽을 수 있다.
     const bw = box.clientWidth, bh = box.clientHeight;
     if (bw && bh && sideImg.nw && sideImg.nh) {
         const scale = Math.max(bw / sideImg.nw, bh / sideImg.nh) * zoom;
