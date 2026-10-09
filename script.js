@@ -4057,8 +4057,20 @@ function applySideImage() {
     });
     document.querySelectorAll('.segmented-control[data-target="sideImageDir"] button').forEach((b) => {
         b.addEventListener("click", () => {
-            document.getElementById("sideImageDir").value = b.dataset.value;
+            const prevDir = document.getElementById("sideImageDir").value;
+            const newDir = b.dataset.value;
+            document.getElementById("sideImageDir").value = newDir;
             document.querySelectorAll('.segmented-control[data-target="sideImageDir"] button').forEach((x) => x.classList.toggle("active", x === b));
+            // 세로(위/아래) ↔ 가로(좌/우)처럼 박스 모양 자체가 완전히 바뀌는 방향 전환이면,
+            // 이전 방향에서 드래그해 둔 위치가 새 모양에서는 엉뚱한 곳을 잘라내 보여줄 수 있다.
+            // (세로 박스에서 맞춰둔 위치를 가로 박스에 그대로 쓰면 축이 안 맞아 이상하게 잘림)
+            // 그래서 가로축↔세로축이 바뀌는 전환에서는 가운데(50/50)로 되돌린다.
+            const prevIsRow = prevDir === "left" || prevDir === "right";
+            const newIsRow = newDir === "left" || newDir === "right";
+            if (prevIsRow !== newIsRow) {
+                sideImg.posX = 50;
+                sideImg.posY = 50;
+            }
             updateCanvas();
         });
     });
