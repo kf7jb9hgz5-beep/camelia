@@ -194,6 +194,7 @@ function updateDockDots() {
 function updateCanvas() {
     updateCanvasCore();
     if (typeof applySideImage === "function") applySideImage();
+    if (typeof renderFrameDecoration === "function") renderFrameDecoration();
 }
 
 function updateCanvasCore() {
@@ -819,6 +820,12 @@ function syncLiveHighlights(overrideColors = null) {
 }
 
 function prepareCanvasForCapture(container) {
+    // 스티커는 (에디터 안 사진과 달리) 복제본이 아니라 캔버스 DOM에 그대로 상주하기 때문에,
+    // 크기조절/삭제 손잡이와 선택 테두리를 내보내기 직전에만 잠깐 숨겼다가 끝나고 되돌린다.
+    container.querySelectorAll(".sticker-item.selected").forEach((el) => el.classList.add("__was-selected"));
+    container.querySelectorAll(".sticker-item").forEach((el) => el.classList.remove("selected"));
+    container.querySelectorAll(".no-export").forEach((el) => { el.style.display = "none"; });
+
     const currentFont = els.fontSelect ? els.fontSelect.value : "inherit";
     container.querySelectorAll("span").forEach((span) => {
         const bg = span.style.backgroundColor;
@@ -838,6 +845,12 @@ function restoreCanvasAfterCapture(container) {
         span.innerHTML = originalHTML;
         span.style.backgroundColor = restoredBg;
         span.removeAttribute("data-original-html");
+    });
+
+    container.querySelectorAll(".no-export").forEach((el) => { el.style.display = ""; });
+    container.querySelectorAll(".sticker-item.__was-selected").forEach((el) => {
+        el.classList.add("selected");
+        el.classList.remove("__was-selected");
     });
 }
 
@@ -4102,4 +4115,317 @@ function applySideImage() {
     const end = () => { if (!drag) return; drag = null; box.style.cursor = "grab"; setTimeout(() => { window.__infoBadgeInteracting = false; }, 0); };
     box.addEventListener("pointerup", end);
     box.addEventListener("pointercancel", end);
+})();
+
+// ==========================================================================
+// 색상 설정 기억하기: 마지막에 골랐던 색을 새로고침해도 유지
+// (글자색/보조색/형광펜/강조선/박스인용/가로선/배경색 등 color input 전부 대상,
+//  캐릭터 카드처럼 "이 데이터 하나"에 귀속된 색은 제외)
+// ==========================================================================
+(function setupColorMemory() {
+    const STORAGE_KEY = "quoteStudioColorPrefs";
+    // 특정 캐릭터/항목 하나에 속한 색은 "마지막으로 쓴 공통 색"으로 취급하면 안 되므로 제외
+    const EXCLUDE_IDS = new Set(["charEditorColor"]);
+
+    function loadPrefs() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            return raw ? JSON.parse(raw) : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function savePrefs(prefs) {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+        } catch (e) {}
+    }
+
+    function init() {
+        const prefs = loadPrefs();
+        const inputs = Array.from(document.querySelectorAll('input[type="color"]')).filter(
+            (el) => el.id && !EXCLUDE_IDS.has(el.id)
+        );
+
+        // 저장된 값이 있으면 페이지에 적용 (HTML의 기본값 대신)
+        let changed = false;
+        inputs.forEach((el) => {
+            if (prefs[el.id] && prefs[el.id] !== el.value) {
+                el.value = prefs[el.id];
+                changed = true;
+            }
+        });
+        // 캔버스가 저장된 색을 반영해서 다시 그리도록 한 번만 갱신
+        if (changed && typeof updateCanvas === "function") updateCanvas();
+
+        // 이후 색을 바꿀 때마다 저장
+        inputs.forEach((el) => {
+            el.addEventListener("input", () => {
+                const p = loadPrefs();
+                p[el.id] = el.value;
+                savePrefs(p);
+            });
+        });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
+})();
+
+// ==========================================================================
+// 테두리 장식 (Chat2Img 스타일): 기본 테두리 / 네 모서리 기호 장식 / 없음
+// ==========================================================================
+function renderFrameDecoration() {
+    const layer = document.getElementById("frameDecorLayer");
+    const capture = document.getElementById("captureArea");
+    if (!layer || !capture) return;
+    const style = document.getElementById("frameStyle")?.value || "none";
+    layer.innerHTML = "";
+    if (style === "none") return;
+
+    const ink = document.getElementById("globalTextColor")?.value || "#000000";
+    const w = capture.clientWidth, h = capture.clientHeight;
+    if (!w || !h) return;
+
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", "100%");
+    svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    svg.style.position = "absolute";
+    svg.style.inset = "0";
+    svg.style.display = "block";
+
+    // 캔버스 크기에 비례해서 여백을 잡아야 작은 미리보기/큰 내보내기 어디서든 비율이 같다.
+    const offset = Math.max(14, Math.round(Math.min(w, h) * 0.045));
+
+    if (style === "line") {
+        const rect = document.createElementNS(svgNS, "rect");
+        rect.setAttribute("x", offset);
+        rect.setAttribute("y", offset);
+        rect.setAttribute("width", Math.max(0, w - offset * 2));
+        rect.setAttribute("height", Math.max(0, h - offset * 2));
+        rect.setAttribute("fill", "none");
+        rect.setAttribute("stroke", ink);
+        rect.setAttribute("stroke-width", "1");
+        rect.setAttribute("opacity", "0.16");
+        svg.appendChild(rect);
+    } else if (style === "corner") {
+        const symbol = (document.getElementById("frameSymbol")?.value || "✦").trim() || "✦";
+        const gap = Math.max(8, Math.round(offset * 0.42));
+        const symSize = Math.max(12, Math.round(offset * 0.5));
+
+        const addLine = (x1, y1, x2, y2) => {
+            const l = document.createElementNS(svgNS, "line");
+            l.setAttribute("x1", x1);
+            l.setAttribute("y1", y1);
+            l.setAttribute("x2", x2);
+            l.setAttribute("y2", y2);
+            l.setAttribute("stroke", ink);
+            l.setAttribute("stroke-width", "1");
+            l.setAttribute("opacity", "0.16");
+            svg.appendChild(l);
+        };
+        // 네 모서리의 L자 괄호 (카메라 뷰파인더 모양) — 모서리 지점 자체는 비워두고 기호를 올림
+        addLine(offset + gap, offset, w - offset - gap, offset);
+        addLine(offset + gap, h - offset, w - offset - gap, h - offset);
+        addLine(offset, offset + gap, offset, h - offset - gap);
+        addLine(w - offset, offset + gap, w - offset, h - offset - gap);
+
+        const addSymbol = (x, y) => {
+            const t = document.createElementNS(svgNS, "text");
+            t.setAttribute("x", x);
+            t.setAttribute("y", y);
+            t.setAttribute("text-anchor", "middle");
+            t.setAttribute("dominant-baseline", "central");
+            t.setAttribute("font-size", symSize);
+            t.setAttribute("fill", ink);
+            t.setAttribute("opacity", "0.55");
+            t.textContent = symbol;
+            svg.appendChild(t);
+        };
+        addSymbol(offset, offset);
+        addSymbol(w - offset, offset);
+        addSymbol(offset, h - offset);
+        addSymbol(w - offset, h - offset);
+    }
+
+    layer.appendChild(svg);
+}
+
+(function setupFrameDecoration() {
+    const symbolArea = document.getElementById("frameSymbolArea");
+    const hint = document.getElementById("frameHint");
+
+    function syncVisibility() {
+        const style = document.getElementById("frameStyle")?.value || "none";
+        const show = style === "corner";
+        if (symbolArea) symbolArea.style.display = show ? "" : "none";
+        if (hint) hint.style.display = show ? "" : "none";
+    }
+
+    document.querySelectorAll('.segmented-control[data-target="frameStyle"] button').forEach((btn) => {
+        btn.addEventListener("click", () => {
+            // 제너릭 segmented-control 핸들러가 hidden input 값/active class/updateCanvas()를
+            // 이미 처리해주지만, 심볼 입력창 표시 여부는 여기서 별도로 맞춰준다.
+            setTimeout(syncVisibility, 0);
+        });
+    });
+
+    document.getElementById("frameSymbol")?.addEventListener("input", () => {
+        if (typeof updateCanvas === "function") updateCanvas();
+    });
+
+    syncVisibility();
+})();
+
+// ==========================================================================
+// 캔버스 스티커: 갖고 있는 사진(투명 PNG 포함)을 캔버스 위에 자유롭게 붙이기
+// <img> 태그를 그대로 쓰기 때문에 PNG의 투명 배경은 브라우저가 알아서 그대로 살려준다
+// (따로 처리할 필요 없음 — background-color를 깔지만 않으면 됨).
+// ==========================================================================
+(function setupStickers() {
+    const input = document.getElementById("stickerInput");
+    const layer = document.getElementById("stickerLayer");
+    const capture = document.getElementById("captureArea");
+    if (!input || !layer || !capture) return;
+
+    let currentSticker = null;
+    let stickerSeq = 0;
+
+    function selectSticker(item) {
+        if (currentSticker && currentSticker !== item) currentSticker.classList.remove("selected");
+        currentSticker = item;
+        if (item) item.classList.add("selected");
+        const area = document.getElementById("stickerLayerArea");
+        if (area) area.style.display = item ? "" : "none";
+    }
+
+    // 캔버스 빈 곳을 누르면 선택 해제
+    capture.addEventListener("pointerdown", (e) => {
+        if (!e.target.closest(".sticker-item")) selectSticker(null);
+    });
+
+    function createSticker(dataUrl, naturalW, naturalH) {
+        stickerSeq += 1;
+        const item = document.createElement("div");
+        item.className = "sticker-item no-export-outline";
+        item.dataset.stickerId = String(stickerSeq);
+
+        // 처음 올릴 때 캔버스 폭의 30% 정도 크기로, 비율은 사진 그대로 유지
+        const capW = capture.clientWidth || 360;
+        const startW = Math.max(40, Math.round(capW * 0.3));
+        const ratio = naturalW && naturalH ? naturalW / naturalH : 1;
+        const startH = Math.max(40, Math.round(startW / ratio));
+
+        item.style.width = `${startW}px`;
+        item.style.height = `${startH}px`;
+        item.style.left = `${Math.round((capture.clientWidth - startW) / 2)}px`;
+        item.style.top = `${Math.round((capture.clientHeight - startH) / 2)}px`;
+
+        const img = document.createElement("img");
+        img.src = dataUrl;
+        img.draggable = false;
+        item.appendChild(img);
+
+        const delHandle = document.createElement("div");
+        delHandle.className = "sticker-delete-handle no-export";
+        delHandle.textContent = "✕";
+        item.appendChild(delHandle);
+
+        const resizeHandle = document.createElement("div");
+        resizeHandle.className = "sticker-resize-handle no-export";
+        item.appendChild(resizeHandle);
+
+        layer.appendChild(item);
+        attachStickerInteractions(item, resizeHandle, delHandle, ratio);
+        selectSticker(item);
+        return item;
+    }
+
+    function attachStickerInteractions(item, resizeHandle, delHandle, ratio) {
+        // ---- 본체를 누르면 선택 + 드래그로 이동 ----
+        let dragging = false;
+        let startX, startY, startLeft, startTop;
+
+        item.addEventListener("pointerdown", (e) => {
+            if (e.target === resizeHandle || e.target === delHandle) return;
+            e.preventDefault();
+            e.stopPropagation();
+            selectSticker(item);
+            dragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            startLeft = parseFloat(item.style.left) || 0;
+            startTop = parseFloat(item.style.top) || 0;
+            try { item.setPointerCapture(e.pointerId); } catch (err) {}
+        });
+        item.addEventListener("pointermove", (e) => {
+            if (!dragging) return;
+            e.preventDefault();
+            item.style.left = `${startLeft + (e.clientX - startX)}px`;
+            item.style.top = `${startTop + (e.clientY - startY)}px`;
+        });
+        const stopDrag = () => { dragging = false; };
+        item.addEventListener("pointerup", stopDrag);
+        item.addEventListener("pointercancel", stopDrag);
+
+        // ---- 모서리 핸들 = 크기 조절 (비율 고정) ----
+        let resizing = false;
+        let rStartX, rStartW;
+        resizeHandle.addEventListener("pointerdown", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            selectSticker(item);
+            resizing = true;
+            rStartX = e.clientX;
+            rStartW = parseFloat(item.style.width) || item.offsetWidth;
+            try { resizeHandle.setPointerCapture(e.pointerId); } catch (err) {}
+        });
+        resizeHandle.addEventListener("pointermove", (e) => {
+            if (!resizing) return;
+            e.preventDefault();
+            const newW = Math.max(24, Math.round(rStartW + (e.clientX - rStartX)));
+            item.style.width = `${newW}px`;
+            item.style.height = `${Math.max(24, Math.round(newW / ratio))}px`;
+        });
+        const stopResize = () => { resizing = false; };
+        resizeHandle.addEventListener("pointerup", stopResize);
+        resizeHandle.addEventListener("pointercancel", stopResize);
+
+        // ---- 삭제 ----
+        delHandle.addEventListener("pointerdown", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            item.remove();
+            if (currentSticker === item) selectSticker(null);
+        });
+    }
+
+    input.addEventListener("change", (e) => {
+        const files = Array.from(e.target.files || []);
+        files.forEach((file) => {
+            if (!file.type.startsWith("image/")) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const dataUrl = ev.target.result;
+                const probe = new Image();
+                probe.onload = () => createSticker(dataUrl, probe.naturalWidth, probe.naturalHeight);
+                probe.src = dataUrl;
+            };
+            reader.readAsDataURL(file);
+        });
+        input.value = ""; // 같은 파일을 다시 선택해도 change가 또 뜨도록
+    });
+
+    document.getElementById("btnStickerFront")?.addEventListener("click", () => {
+        if (currentSticker) layer.appendChild(currentSticker); // 마지막 자식 = 맨 앞
+    });
+    document.getElementById("btnStickerBack")?.addEventListener("click", () => {
+        if (currentSticker) layer.insertBefore(currentSticker, layer.firstChild); // 첫 자식 = 맨 뒤
+    });
 })();

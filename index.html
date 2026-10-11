@@ -4,11 +4,14 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
         <title>𓏲𝄢 </title>
+        <!-- 파비콘/홈화면 아이콘: 하트 이모지를 그대로 쓰는 SVG (별도 이미지 파일 없이 동작) -->
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💗</text></svg>" />
+        <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%23ffe6f1%22/><text x=%2250%22 y=%2266%22 font-size=%2260%22 text-anchor=%22middle%22>💗</text></svg>" />
         <link
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=47" />
+        <link rel="stylesheet" href="style.css?v=48" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -26,6 +29,8 @@
                         </div>
                         <div class="info-area" id="canvasInfo"></div>
                     </div>
+                    <div id="frameDecorLayer"></div>
+                    <div id="stickerLayer"></div>
                 </div>
             </div>
         </header>
@@ -600,6 +605,22 @@
                         <input type="range" id="bgOverlayOpacity" min="0" max="1" step="0.05" value="0" />
                     </div>
                 </div>
+
+                <div class="panel-section-title">테두리 장식</div>
+                <div class="control-minimal-row">
+                    <label>스타일</label>
+                    <input type="hidden" id="frameStyle" value="none" />
+                    <div class="segmented-control" data-target="frameStyle">
+                        <button type="button" data-value="none" class="active">없음</button>
+                        <button type="button" data-value="line">기본 테두리</button>
+                        <button type="button" data-value="corner">사방 장식</button>
+                    </div>
+                </div>
+                <div class="control-minimal-row" id="frameSymbolArea" style="display: none">
+                    <label>모서리 기호</label>
+                    <input type="text" id="frameSymbol" value="✦" maxlength="4" style="width: 64px; text-align: center" />
+                </div>
+                <div class="field-hint" id="frameHint" style="display: none">원하는 기호나 이모지를 입력하면 네 모서리에 올라가요 (예: ✦, ♡, 🌸).</div>
             </div>
             <div class="tab-panel" id="panel-text">
                 <div class="panel-section-title">색상 변경</div>
@@ -731,6 +752,20 @@
                 <button type="button" class="btn-minimal-save" style="width:100%;margin-top:8px;" onclick="addReplacementRule()">+ 치환 규칙 추가</button>
             </div>
             <div class="tab-panel" id="panel-image">
+                <div class="panel-section-title">캔버스 스티커</div>
+                <div class="control-minimal-row">
+                    <label>사진 추가</label>
+                    <input type="file" id="stickerInput" accept="image/*" multiple />
+                </div>
+                <div class="field-hint">갖고 계신 사진(투명 배경 PNG 포함)을 캔버스 위에 스티커처럼 붙일 수 있어요. 여러 장을 한 번에 고를 수 있고, 올라온 스티커는 직접 눌러서 드래그로 옮기고, 오른쪽 아래 분홍 동그라미를 끌어 크기를 바꾸고, 왼쪽 위 ✕로 지워요.</div>
+                <div class="control-minimal-row" id="stickerLayerArea" style="display: none">
+                    <label>스티커 순서</label>
+                    <div class="stepper-minimal">
+                        <button type="button" id="btnStickerBack" title="뒤로 보내기">맨 뒤로</button>
+                        <button type="button" id="btnStickerFront" title="앞으로 보내기">맨 앞으로</button>
+                    </div>
+                </div>
+
                 <div class="panel-section-title">본문 옆 사진 (한쪽 칸 채우기)</div>
                 <div class="control-minimal-row">
                     <label>사진</label>
@@ -1126,7 +1161,7 @@
 
         <div class="toast" id="toast"></div>
 
-        <script src="presets.js?v=43"></script>
-        <script src="script.js?v=43"></script>
+        <script src="presets.js?v=44"></script>
+        <script src="script.js?v=44"></script>
     </body>
 </html>
