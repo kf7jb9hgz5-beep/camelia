@@ -4312,6 +4312,113 @@ function renderFrameDecoration() {
     let currentSticker = null;
     let stickerSeq = 0;
 
+    // ---- 스티커 보관함: 한 번 등록한 사진은 브라우저(IndexedDB)에 저장해 두고 다음에도 꺼내 쓴다 ----
+    const STICKER_DB = "camelia-stickers";
+    const STICKER_STORE = "stickers";
+    const STICKER_MAX_SIDE = 1024; // 너무 큰 사진은 줄여서 저장 (용량 절약)
+    const libraryEl = document.getElementById("stickerLibrary");
+    let dbPromise = null;
+
+    function openStickerDB() {
+        if (dbPromise) return dbPromise;
+        dbPromise = new Promise((resolve, reject) => {
+            if (!window.indexedDB) return reject(new Error("IndexedDB 미지원"));
+            const req = indexedDB.open(STICKER_DB, 1);
+            req.onupgradeneeded = () => req.result.createObjectStore(STICKER_STORE, { keyPath: "id" });
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+        return dbPromise;
+    }
+    async function dbRun(mode, fn) {
+        const db = await openStickerDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STICKER_STORE, mode);
+            const req = fn(tx.objectStore(STICKER_STORE));
+            tx.oncomplete = () => resolve(req && req.result);
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(tx.error);
+        });
+    }
+    const dbAllStickers = () => dbRun("readonly", (s) => s.getAll()).then((list) => (list || []).sort((a, b) => a.created - b.created));
+    const dbPutSticker = (rec) => dbRun("readwrite", (s) => s.put(rec));
+    const dbDeleteSticker = (id) => dbRun("readwrite", (s) => s.delete(id));
+
+    function quickHash(str) {
+        let h = 5381;
+        for (let i = 0; i < str.length; i += 7) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+        return `s${(h >>> 0).toString(36)}_${str.length.toString(36)}`;
+    }
+
+    // 큰 사진만 줄이고(투명 PNG는 PNG 그대로), 작은 사진은 원본 그대로 보관
+    function prepareStickerImage(dataUrl, mime) {
+        return new Promise((resolve) => {
+            const probe = new Image();
+            probe.onload = () => {
+                const w = probe.naturalWidth, h = probe.naturalHeight;
+                const longest = Math.max(w, h);
+                if (longest <= STICKER_MAX_SIDE) return resolve({ dataUrl, w, h });
+                const k = STICKER_MAX_SIDE / longest;
+                const cw = Math.round(w * k), ch = Math.round(h * k);
+                const cv = document.createElement("canvas");
+                cv.width = cw; cv.height = ch;
+                cv.getContext("2d").drawImage(probe, 0, 0, cw, ch);
+                const keepAlpha = /png|webp|gif/.test(mime || "");
+                resolve({ dataUrl: keepAlpha ? cv.toDataURL("image/png") : cv.toDataURL("image/jpeg", 0.9), w: cw, h: ch });
+            };
+            probe.onerror = () => resolve(null);
+            probe.src = dataUrl;
+        });
+    }
+
+    async function renderStickerLibrary() {
+        if (!libraryEl) return;
+        let items = [];
+        try { items = await dbAllStickers(); } catch (err) { items = []; }
+        libraryEl.innerHTML = "";
+        if (!items.length) {
+            const empty = document.createElement("div");
+            empty.className = "sticker-library-empty";
+            empty.textContent = "아직 보관한 스티커가 없어요. 위에서 사진을 추가해 보세요!";
+            libraryEl.appendChild(empty);
+            return;
+        }
+        items.forEach((rec) => {
+            const cell = document.createElement("div");
+            cell.className = "sticker-lib-item";
+
+            const useBtn = document.createElement("button");
+            useBtn.type = "button";
+            useBtn.className = "sticker-lib-use";
+            useBtn.title = "캔버스에 붙이기";
+            const thumb = document.createElement("img");
+            thumb.src = rec.dataUrl;
+            thumb.alt = "";
+            thumb.draggable = false;
+            useBtn.appendChild(thumb);
+            useBtn.addEventListener("click", () => createSticker(rec.dataUrl, rec.w, rec.h));
+
+            const del = document.createElement("button");
+            del.type = "button";
+            del.className = "sticker-lib-del";
+            del.title = "보관함에서 지우기";
+            del.textContent = "✕";
+            del.addEventListener("click", async () => {
+                if (!window.confirm("이 스티커를 보관함에서 지울까요? 이미 캔버스에 붙인 건 그대로 남아요.")) return;
+                try { await dbDeleteSticker(rec.id); } catch (err) {}
+                renderStickerLibrary();
+            });
+
+            cell.appendChild(useBtn);
+            cell.appendChild(del);
+            libraryEl.appendChild(cell);
+        });
+    }
+
+    // 브라우저가 저장 공간을 마음대로 비우지 않도록 요청 (지원하는 브라우저에서만 동작)
+    try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (err) {}
+    renderStickerLibrary();
+
     function selectSticker(item) {
         if (currentSticker && currentSticker !== item) currentSticker.classList.remove("selected");
         currentSticker = item;
@@ -4426,11 +4533,17 @@ function renderFrameDecoration() {
         files.forEach((file) => {
             if (!file.type.startsWith("image/")) return;
             const reader = new FileReader();
-            reader.onload = (ev) => {
-                const dataUrl = ev.target.result;
-                const probe = new Image();
-                probe.onload = () => createSticker(dataUrl, probe.naturalWidth, probe.naturalHeight);
-                probe.src = dataUrl;
+            reader.onload = async (ev) => {
+                const prepared = await prepareStickerImage(ev.target.result, file.type);
+                if (!prepared) return;
+                createSticker(prepared.dataUrl, prepared.w, prepared.h);
+                // 보관함에 저장 (같은 사진이면 중복 저장하지 않음)
+                try {
+                    await dbPutSticker({ id: quickHash(prepared.dataUrl), dataUrl: prepared.dataUrl, w: prepared.w, h: prepared.h, created: Date.now() });
+                    renderStickerLibrary();
+                } catch (err) {
+                    if (typeof showToast === "function") showToast("보관함에 저장하지 못했어요. 이번엔 캔버스에만 붙었어요.");
+                }
             };
             reader.readAsDataURL(file);
         });
