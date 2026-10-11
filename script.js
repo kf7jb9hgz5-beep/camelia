@@ -597,6 +597,21 @@ function applyPreviewScale() {
     wrapper.style.height = `${Math.round(naturalH * scale)}px`;
 }
 
+// ⚠️ 핵심 버그 수정: 커스텀 폰트(woff2)로 바꾸면 브라우저가 그 폰트를 그제서야 네트워크로
+// 불러오는데, 폰트가 도착하기 "전" 대체 글꼴로 잰 높이로 위 wrapper의 width/height(px 고정값)를
+// 정해버리고 있었다. 그 직후 진짜 폰트가 도착해 글자 크기가 바뀌면 캔버스 내용은 더 커지는데
+// wrapper는 overflow:hidden인 예전(더 작은) 치수에 그대로 묶여 있어서 — "폰트 바꾸면 캔버스가
+// 잘린다"는 증상이 이거였다. 저장할 때만 document.fonts.ready를 기다려 다시 그리던 걸,
+// 미리보기에도 적용한다. (※ 처음엔 applyPreviewScale 안에서 .then()으로 스스로를 다시
+// 거는 방식으로 짰다가, 이미 resolve된 promise라 자기 자신을 무한히 재귀호출해서 탭이 완전히
+// 멈춰버리는 버그를 만들었었다 — 그래서 "매번 다시 거는" 방식이 아니라, 폰트 로딩 상태가
+// 바뀔 때만 브라우저가 스스로 알려주는 이벤트 하나를 처음 한 번만 구독하는 방식으로 고쳤다.)
+if (document.fonts && typeof document.fonts.addEventListener === "function") {
+    document.fonts.addEventListener("loadingdone", () => {
+        if (typeof applyPreviewScale === "function") applyPreviewScale();
+    });
+}
+
 function renderCanvasHeading() {
     const headingContainer = document.getElementById("canvasHeading");
     if (!headingContainer) return;

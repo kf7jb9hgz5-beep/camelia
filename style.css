@@ -1075,6 +1075,10 @@ body.mobile-theme {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    /* 아이폰 사파리에서 고정(fixed) 오버레이 안쪽 스크롤이 손가락으로 안 끌리는 경우가 있어
+       명시적으로 켜준다. 다른 스크롤 영역(예: 본문 에디터)엔 이미 들어가 있던 속성. */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     transform: translateY(100%);
     transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
 }
@@ -1209,23 +1213,59 @@ body.mobile-theme {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 5px;
-    border-radius: 3px;
-    background: var(--bg-sunken);
-    margin: 6px 0 16px;
+    height: 8px;
+    border-radius: var(--radius-pill);
+    background: var(--accent-tint);
+    margin: 8px 0 16px;
     outline: none;
+    box-shadow: inset 0 1px 3px rgba(230, 44, 122, 0.18);
 }
 
+/* 이 슬라이더(.range-slider, 위/아래/좌우 여백 등)는 .control-minimal-row 안의
+   슬라이더와는 다른 별개 클래스라 하트 손잡이를 여기도 따로 맞춰줘야 한다 */
 .range-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--accent-color);
+    width: 24px;
+    height: 24px;
+    margin-top: 0;
+    padding: 0;
+    border-radius: 0;
+    background-color: transparent !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23ffffff' stroke='%23e62c7a' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
     cursor: pointer;
-    border: 3px solid #ffffff;
-    box-shadow: 0 1px 4px rgba(60, 20, 30, 0.3);
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    filter: drop-shadow(0 2px 5px rgba(230, 44, 122, 0.45));
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.range-slider:active::-webkit-slider-thumb {
+    transform: scale(1.18);
+}
+
+.range-slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23ffffff' stroke='%23e62c7a' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    cursor: pointer;
+    filter: drop-shadow(0 2px 5px rgba(230, 44, 122, 0.45));
+}
+
+.range-slider::-moz-range-track {
+    height: 8px;
+    background: var(--accent-tint);
+    border-radius: var(--radius-pill);
 }
 
 .stepper-minimal button {
@@ -1272,15 +1312,24 @@ body.mobile-theme {
     background: var(--accent-tint-strong);
 }
 
+/* Chat2Img처럼 동그란 손잡이 대신 하트 모양 SVG를 손잡이로 사용 */
 .control-minimal-row input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     width: 26px;
     height: 26px;
-    border-radius: 50%;
-    background: var(--accent-color);
+    margin-top: 0;
+    padding: 0;
+    border-radius: 0;
+    background-color: transparent !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23ffffff' stroke='%23e62c7a' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
     cursor: pointer;
-    border: 4px solid #ffffff;
-    box-shadow: 0 2px 8px rgba(230, 44, 122, 0.45), 0 0 0 1px var(--accent-color);
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    filter: drop-shadow(0 2px 5px rgba(230, 44, 122, 0.45));
     transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -1291,11 +1340,15 @@ body.mobile-theme {
 .control-minimal-row input[type="range"]::-moz-range-thumb {
     width: 26px;
     height: 26px;
-    border-radius: 50%;
-    background: var(--accent-color);
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23ffffff' stroke='%23e62c7a' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
     cursor: pointer;
-    border: 4px solid #ffffff;
-    box-shadow: 0 2px 8px rgba(230, 44, 122, 0.45), 0 0 0 1px var(--accent-color);
+    filter: drop-shadow(0 2px 5px rgba(230, 44, 122, 0.45));
 }
 
 .control-minimal-row input[type="range"]::-moz-range-track {

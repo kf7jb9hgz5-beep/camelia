@@ -11,7 +11,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=48" />
+        <link rel="stylesheet" href="style.css?v=49" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -489,14 +489,6 @@
                     </select>
                 </div>
                 <div class="control-minimal-row">
-                    <label for="textHorizontalAnchor">텍스트 가로 위치</label>
-                    <select id="textHorizontalAnchor">
-                        <option value="flex-start">왼쪽</option>
-                        <option value="center" selected>중앙</option>
-                        <option value="flex-end">오른쪽</option>
-                    </select>
-                </div>
-                <div class="control-minimal-row">
                     <label for="textBlockWidth">텍스트 블록 너비 (%)</label>
                     <div class="stepper-minimal">
                         <button onclick="stepInput('textBlockWidth', -5)">-</button>
@@ -760,9 +752,9 @@
                 <div class="field-hint">갖고 계신 사진(투명 배경 PNG 포함)을 캔버스 위에 스티커처럼 붙일 수 있어요. 여러 장을 한 번에 고를 수 있고, 올라온 스티커는 직접 눌러서 드래그로 옮기고, 오른쪽 아래 분홍 동그라미를 끌어 크기를 바꾸고, 왼쪽 위 ✕로 지워요.</div>
                 <div class="control-minimal-row" id="stickerLayerArea" style="display: none">
                     <label>스티커 순서</label>
-                    <div class="stepper-minimal">
-                        <button type="button" id="btnStickerBack" title="뒤로 보내기">맨 뒤로</button>
-                        <button type="button" id="btnStickerFront" title="앞으로 보내기">맨 앞으로</button>
+                    <div class="stepper-minimal" style="width: auto">
+                        <button type="button" id="btnStickerBack" title="맨 뒤로 보내기" style="width: auto; padding: 0 14px; white-space: nowrap">맨 뒤로</button>
+                        <button type="button" id="btnStickerFront" title="맨 앞으로 보내기" style="width: auto; padding: 0 14px; white-space: nowrap">맨 앞으로</button>
                     </div>
                 </div>
 
@@ -1161,7 +1153,7 @@
 
         <div class="toast" id="toast"></div>
 
-        <script src="presets.js?v=44"></script>
-        <script src="script.js?v=44"></script>
+        <script src="presets.js?v=45"></script>
+        <script src="script.js?v=45"></script>
     </body>
 </html>
