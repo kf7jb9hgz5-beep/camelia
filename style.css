@@ -1061,17 +1061,21 @@ body.mobile-theme {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 0;
+    /* ⚠️ 진짜 원인: 예전엔 bottom:0 이라 시트 박스 자체가 화면 맨 아래까지 깔려 있었고,
+       그 위를 "둥둥 떠 있는" 하단 탭바(z-index가 더 높음)가 덮고 있었다. 패딩으로 글자가
+       안 가리게는 해놨지만, 박스 자체는 여전히 탭바 밑에 깔려 있어서 그 구간을 손가락으로
+       끌면 시트가 아니라 탭바가 터치를 먼저 가로채 "드래그가 안 먹는" 현상이 생겼다.
+       → 시트 박스 자체를 탭바보다 위쪽에서 끝나게 해서 둘이 아예 겹치지 않게 만든다. */
+    bottom: calc(var(--bottom-bar-height) + 14px + env(safe-area-inset-bottom, 0px));
     z-index: 40;
     width: 100%;
     background-color: var(--bg-card);
     /* 완만한 사각 모서리 대신, 확 둥글린 코너로 '카드가 아니라 말풍선이 떠오른' 느낌 */
-    border-radius: 32px 32px 0 0;
+    border-radius: 32px;
     box-shadow: 0 -16px 40px rgba(230, 44, 122, 0.22);
     border: 2px solid var(--accent-tint-strong);
-    border-bottom: none;
-    padding: 10px 18px calc(18px + var(--bottom-bar-height));
-    max-height: 64vh;
+    padding: 10px 18px 18px;
+    max-height: 56vh;
     display: flex;
     flex-direction: column;
     overflow-y: auto;
@@ -1079,7 +1083,7 @@ body.mobile-theme {
        명시적으로 켜준다. 다른 스크롤 영역(예: 본문 에디터)엔 이미 들어가 있던 속성. */
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
-    transform: translateY(100%);
+    transform: translateY(calc(100% + 20px));
     transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
@@ -2232,11 +2236,15 @@ input[type="file"]::file-selector-button {
 .dock-btn::before {
     content: "";
     position: absolute;
-    top: 2px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--accent-color);
+    top: -2px;
+    width: 46px;
+    height: 46px;
+    /* 동그란 풍선 대신 꽉 찬 하트 모양 아이콘으로 (슬라이더 손잡이와 같은 기법) */
+    background-color: transparent;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23e62c7a'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
     opacity: 0;
     transform: scale(0.5);
     transition: var(--transition-base);
