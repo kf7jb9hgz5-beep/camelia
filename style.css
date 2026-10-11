@@ -2664,3 +2664,94 @@ input[type="file"]::file-selector-button {
     justify-content: center;
     box-shadow: 0 3px 8px rgba(230, 44, 122, 0.2);
 }
+
+
+/* ==========================================================================
+    하트 체크박스 / 라디오 / 스위치
+    ========================================================================== */
+@keyframes heartPop {
+    0% { transform: scale(0.7); }
+    55% { transform: scale(1.28); }
+    100% { transform: scale(1); }
+}
+
+/* 일반 체크박스 (스위치로 쓰는 것들은 아래에서 따로 처리) */
+body.mobile-theme input[type="checkbox"]:not(.checkbox-minimal-group input):not(.replacement-rule-cell input),
+body.mobile-theme input[type="radio"] {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background-color: transparent;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23fff' stroke='%23ffa6cd' stroke-width='1.8' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    cursor: pointer;
+    vertical-align: middle;
+    transition: transform 0.35s cubic-bezier(0.34, 1.9, 0.5, 1);
+    -webkit-tap-highlight-color: transparent;
+}
+
+body.mobile-theme input[type="checkbox"]:not(.checkbox-minimal-group input):not(.replacement-rule-cell input):checked {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23e62c7a' stroke='%23e62c7a' stroke-width='1' stroke-linejoin='round'/%3E%3Cpath d='M7.8 10.4l2.8 2.8 5.6-5.4' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    animation: heartPop 0.4s ease-out;
+}
+
+body.mobile-theme input[type="radio"]:checked {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23e62c7a' stroke='%23e62c7a' stroke-width='1' stroke-linejoin='round'/%3E%3Ccircle cx='12' cy='10.8' r='2.6' fill='%23fff'/%3E%3C/svg%3E");
+    animation: heartPop 0.4s ease-out;
+}
+
+body.mobile-theme input[type="checkbox"]:not(.checkbox-minimal-group input):not(.replacement-rule-cell input):active,
+body.mobile-theme input[type="radio"]:active {
+    transform: scale(0.82);
+}
+
+body.mobile-theme input[type="checkbox"]:focus-visible,
+body.mobile-theme input[type="radio"]:focus-visible {
+    outline: 2px solid var(--accent-tint-strong);
+    outline-offset: 2px;
+    border-radius: 8px;
+}
+
+/* 스위치: 동그란 손잡이 대신 하트 손잡이 */
+.checkbox-minimal-group input[type="checkbox"]::before {
+    top: 1px;
+    left: 1px;
+    width: 23px;
+    height: 23px;
+    border-radius: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23fff' stroke='%23ffc3dd' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+    box-shadow: none;
+    filter: drop-shadow(0 1px 2px rgba(230, 44, 122, 0.3));
+}
+
+.replacement-rule-cell input[type="checkbox"]::before {
+    top: 0.5px;
+    left: 0.5px;
+    width: 20px;
+    height: 20px;
+    border-radius: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23fff' stroke='%23ffc3dd' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+    box-shadow: none;
+    filter: drop-shadow(0 1px 2px rgba(230, 44, 122, 0.3));
+}
+
+.checkbox-minimal-group input[type="checkbox"]:checked::before,
+.replacement-rule-cell input[type="checkbox"]:checked::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23fff' stroke='%23fff' stroke-width='1' stroke-linejoin='round'/%3E%3C/svg%3E");
+    filter: drop-shadow(0 1px 2px rgba(150, 10, 70, 0.35));
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.mobile-theme input[type="checkbox"]:checked,
+    body.mobile-theme input[type="radio"]:checked {
+        animation: none;
+    }
+}
