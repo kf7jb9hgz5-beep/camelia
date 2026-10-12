@@ -4246,6 +4246,68 @@ function applySideImage() {
 // 테두리 장식 (Chat2Img 스타일): 기본 테두리 / 네 모서리 기호 장식 / 없음
 // ==========================================================================
 // ==========================================================================
+// 설정 패널 꾸밈: 섹션 제목(.panel-section-title) 하나가 한 묶음.
+// 묶음의 "첫 번째 칸"에는 왼쪽 위, "마지막 칸"에는 오른쪽 아래 모서리에 하트를 붙인다.
+// 숨겨진 칸(display:none)은 건너뛰고 "보이는 칸" 기준으로 계산한다.
+// (옵션에 따라 칸이 나타나고 사라지기 때문에 CSS만으로는 첫/마지막을 정확히 못 잡음)
+// ==========================================================================
+(function setupSectionCornerHearts() {
+    const panels = document.querySelectorAll(".tab-panel");
+    if (!panels.length) return;
+
+    const isVisible = (el) => el.getClientRects().length > 0;
+    const setClass = (el, name, on) => {
+        if (el.classList.contains(name) !== on) el.classList.toggle(name, on);
+    };
+
+    let raf = 0;
+    const run = () => {
+        raf = 0;
+        panels.forEach((panel) => {
+            if (!isVisible(panel)) return; // 안 보이는 탭은 열릴 때 다시 계산됨
+
+            const groups = [[]];
+            panel.querySelectorAll(".panel-section-title, .control-minimal-row").forEach((el) => {
+                if (el.classList.contains("panel-section-title")) {
+                    groups.push([]);
+                } else if (isVisible(el)) {
+                    groups[groups.length - 1].push(el);
+                }
+            });
+
+            const firsts = new Set();
+            const lasts = new Set();
+            groups.forEach((rows) => {
+                if (!rows.length) return;
+                firsts.add(rows[0]);
+                lasts.add(rows[rows.length - 1]);
+            });
+
+            panel.querySelectorAll(".control-minimal-row").forEach((row) => {
+                setClass(row, "corner-heart-tl", firsts.has(row));
+                setClass(row, "corner-heart-br", lasts.has(row));
+            });
+        });
+    };
+    const schedule = () => {
+        if (!raf) raf = requestAnimationFrame(run);
+    };
+
+    // 탭 전환 / 옵션에 따라 칸이 보이고 숨겨질 때 다시 계산 (캔버스는 감시 대상이 아니라서 가볍다)
+    const host = panels[0].parentElement;
+    if (host && typeof MutationObserver === "function") {
+        new MutationObserver(schedule).observe(host, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: ["style", "class", "hidden"],
+        });
+    }
+    window.addEventListener("resize", schedule);
+    schedule();
+})();
+
+// ==========================================================================
 // 하프톤 장식: 점(도트)이 한쪽에서 점점 작아지며 사라지는 그라데이션 무늬
 // 글자 뒤(배경 위)에 깔리고, 색/크기/범위/투명도를 고를 수 있다.
 // ==========================================================================
