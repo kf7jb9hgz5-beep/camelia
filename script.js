@@ -194,7 +194,41 @@ function updateDockDots() {
 function updateCanvas() {
     updateCanvasCore();
     if (typeof applySideImage === "function") applySideImage();
+    // ⚠️ 글자 맞춤(fit)은 옆 사진이 레이아웃을 확정한 "다음에" 해야 한다.
+    // (예전엔 코어 안에서 먼저 맞추고 옆 사진을 나중에 붙여서 비율이 어긋났음)
+    if (els.ratioSelect && els.ratioSelect.value !== "free") {
+        fitTextToCanvas();
+        // 글자 크기가 바뀌면 옆 사진 칸 높이도 바뀌므로 한 번 더 맞춰준다.
+        if (typeof applySideImage === "function") applySideImage();
+    }
     if (typeof renderFrameDecoration === "function") renderFrameDecoration();
+    scheduleRefitAfterFonts();
+}
+
+// 폰트(woff2 등)는 바꾼 "직후"엔 아직 안 불러와져서 대체 글꼴로 높이를 재게 된다.
+// 폰트가 실제로 도착하면 같은 계산을 다시 해서 비율/글자 잘림을 바로잡는다.
+let __fontRefitToken = 0;
+function refitCanvasNow() {
+    if (!els.captureArea) return;
+    if (els.ratioSelect && els.ratioSelect.value !== "free") {
+        fitTextToCanvas();
+        if (typeof applySideImage === "function") applySideImage();
+    }
+    if (typeof renderFrameDecoration === "function") renderFrameDecoration();
+    if (typeof applyPreviewScale === "function") applyPreviewScale();
+}
+function scheduleRefitAfterFonts() {
+    if (!document.fonts || typeof document.fonts.load !== "function" || !els.fontSelect) return;
+    const token = ++__fontRefitToken;
+    const family = els.fontSelect.value;
+    const weight = els.fontWeightSelect?.value || "400";
+    const size = parseFloat(els.fontSize?.value) || 16;
+    try {
+        document.fonts.load(`${weight} ${size}px ${family}`, "가나다ABC abc123").then(() => {
+            if (token !== __fontRefitToken) return;
+            refitCanvasNow();
+        }).catch(() => {});
+    } catch (e) {}
 }
 
 function updateCanvasCore() {
@@ -561,10 +595,6 @@ function updateCanvasCore() {
         infoContainer.style.display = (titleVal || creatorVal) ? "flex" : "none";
     }
 
-    if (ratio !== "free") {
-        fitTextToCanvas();
-    }
-
     if (typeof syncLiveHighlights === "function") {
         try { syncLiveHighlights(); } catch (e) {}
     }
@@ -608,7 +638,8 @@ function applyPreviewScale() {
 // 바뀔 때만 브라우저가 스스로 알려주는 이벤트 하나를 처음 한 번만 구독하는 방식으로 고쳤다.)
 if (document.fonts && typeof document.fonts.addEventListener === "function") {
     document.fonts.addEventListener("loadingdone", () => {
-        if (typeof applyPreviewScale === "function") applyPreviewScale();
+        if (typeof refitCanvasNow === "function") refitCanvasNow();
+        else if (typeof applyPreviewScale === "function") applyPreviewScale();
     });
 }
 
@@ -653,8 +684,16 @@ function renderCanvasHeading() {
     }
 }
 
+// 고정 비율(1:1, 4:5 …)에서 글이 캔버스 밖으로 잘리지 않게 글자 크기를 자동으로 줄인다.
+// Chat2Img의 "오토 스케일링 루프"와 같은 방식: 대충 비율로 짐작하지 않고,
+// 영역 높이에 들어올 때까지 글자 크기를 줄여가며 "실제 높이를 재서" 확인한다.
+// (예전엔 한 번 짐작해서 줄이고 끝이라, 제목/하단 정보/대사 블록처럼 안 줄어드는 부분 때문에
+//  1:1처럼 낮은 비율에서 글이 잘렸다)
+const __fitOriginals = new WeakMap();
+
 function fitTextToCanvas() {
     const area = els.captureArea;
+    if (!area) return;
     const w = parseFloat(area.dataset.fixedRatioW);
     const h = parseFloat(area.dataset.fixedRatioH);
     if (!w || !h) return;
@@ -662,41 +701,87 @@ function fitTextToCanvas() {
     const textWrapper = document.getElementById("canvasTextWrapper");
     if (!textWrapper) return;
 
-    const baseFontSize = parseFloat(els.fontSize.value) || 16;
-    const baseLineHeight = parseFloat(els.lineHeight.value) || 28;
-    const lhRatio = baseLineHeight / baseFontSize;
+    const baseFs = parseFloat(els.fontSize.value) || 16;
+    const baseLh = parseFloat(els.lineHeight.value) || Math.round(baseFs * 1.6);
+    const baseLs = parseFloat(els.letterSpacing.value) || 0;
+    const avatarVal = parseFloat(document.getElementById("dlgAvatarSize")?.value);
+    const baseAvatar = isNaN(avatarVal) ? 32 : avatarVal;
 
-    const areaW = area.getBoundingClientRect().width || parseFloat(area.style.width) || 420;
+    const areaW = parseFloat(area.style.width) || area.getBoundingClientRect().width || 420;
     const targetH = (areaW * h) / w;
 
-    textWrapper.style.fontSize = `${baseFontSize}px`;
-    textWrapper.style.lineHeight = `${baseLineHeight}px`;
+    // 글 안에 인라인 px 크기로 박혀 있는 것들(대사 블록, 사진 등)도 같은 비율로 줄여야 하므로
+    // 처음 한 번 원래 값을 기억해 둔다. (캔버스 본문은 매번 새로 만들어져서 원본이 안 꼬임)
+    const readPx = (v) => (typeof v === "string" && /^-?\d*\.?\d+px$/.test(v.trim())) ? parseFloat(v) : null;
+    const items = [];
+    textWrapper.querySelectorAll("*").forEach((el) => {
+        let o = __fitOriginals.get(el);
+        if (!o) {
+            o = {
+                fs: readPx(el.style.fontSize),
+                lh: readPx(el.style.lineHeight),
+                ls: readPx(el.style.letterSpacing),
+                mh: readPx(el.style.minHeight),
+                w: null,
+                h: null,
+            };
+            if (el.classList.contains("editor-image-block") && el.dataset.align !== "fill") {
+                o.w = readPx(el.style.width);
+                o.h = readPx(el.style.height);
+            }
+            __fitOriginals.set(el, o);
+        }
+        if (o.fs != null || o.lh != null || o.ls != null || o.mh != null || o.w != null || o.h != null) {
+            items.push([el, o]);
+        }
+    });
+
+    const apply = (f) => {
+        textWrapper.style.fontSize = `${baseFs * f}px`;
+        textWrapper.style.lineHeight = `${baseLh * f}px`;
+        textWrapper.style.letterSpacing = `${baseLs * f}px`;
+        textWrapper.style.setProperty("--dlg-avatar-size", `${baseAvatar * f}px`);
+        items.forEach(([el, o]) => {
+            if (o.fs != null) el.style.fontSize = `${o.fs * f}px`;
+            if (o.lh != null) el.style.lineHeight = `${o.lh * f}px`;
+            if (o.ls != null) el.style.letterSpacing = `${o.ls * f}px`;
+            if (o.mh != null) el.style.minHeight = `${o.mh * f}px`;
+            if (o.w != null) el.style.width = `${o.w * f}px`;
+            if (o.h != null) el.style.height = `${o.h * f}px`;
+        });
+    };
+
+    // 높이를 "자동"으로 풀어서 내용이 원래 얼마나 필요한지 재본다.
+    const limit = targetH - 2; // html2canvas 저장 시 미세한 오차를 위한 여유
+    const fits = () => area.scrollHeight <= limit;
     area.style.height = "auto";
     area.style.overflow = "visible";
+    apply(1);
     void area.offsetHeight;
 
-    const naturalH = area.scrollHeight;
-
-    if (naturalH <= targetH + 2) {
-        area.style.height = `${Math.round(targetH)}px`;
-        area.style.overflow = "hidden";
-        return;
-    }
-
-    const scale = targetH / naturalH;
-    const newFontSize = Math.max(4, baseFontSize * scale * 0.97);
-    const newLineHeight = newFontSize * lhRatio;
-
-    textWrapper.style.fontSize = `${newFontSize}px`;
-    textWrapper.style.lineHeight = `${newLineHeight}px`;
-    void area.offsetHeight;
-
-    const checkH = area.scrollHeight;
-    if (checkH > targetH + 2) {
-        const scale2 = targetH / checkH;
-        const finalSize = Math.max(4, newFontSize * scale2 * 0.97);
-        textWrapper.style.fontSize = `${finalSize}px`;
-        textWrapper.style.lineHeight = `${finalSize * lhRatio}px`;
+    if (!fits()) {
+        const minF = Math.min(1, 4 / baseFs); // 글자는 최소 4px까지만 줄임
+        apply(minF);
+        void area.offsetHeight;
+        let f = minF;
+        if (fits()) {
+            let lo = minF, hi = 1;
+            for (let i = 0; i < 14; i++) {
+                const mid = (lo + hi) / 2;
+                apply(mid);
+                void area.offsetHeight;
+                if (fits()) lo = mid; else hi = mid;
+            }
+            f = lo;
+        }
+        apply(f);
+        void area.offsetHeight;
+        // 혹시 줄바꿈 때문에 경계에서 아슬아슬하게 넘치면 조금씩 더 줄인다.
+        for (let guard = 0; guard < 20 && !fits() && f > minF; guard++) {
+            f = Math.max(minF, f * 0.97);
+            apply(f);
+            void area.offsetHeight;
+        }
     }
 
     area.style.height = `${Math.round(targetH)}px`;
@@ -2611,42 +2696,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ==== 미리보기 탭하면 크게 보기 ====
-    const previewZoomOverlay = document.getElementById("previewZoomOverlay");
-    const previewZoomInner = document.getElementById("previewZoomInner");
-    const captureAreaScaleWrapper = document.getElementById("captureAreaScaleWrapper");
-    if (previewZoomOverlay && previewZoomInner && captureAreaScaleWrapper) {
-        captureAreaScaleWrapper.addEventListener("click", () => {
-            // 작품·제작자 배지를 탭/드래그해서 옮기던 클릭이면 확대창을 열지 않는다.
-            if (window.__infoBadgeInteracting) {
-                window.__infoBadgeInteracting = false;
-                return;
-            }
-            if (!els.captureArea) return;
-            previewZoomInner.innerHTML = "";
-            const clone = els.captureArea.cloneNode(true);
-            clone.removeAttribute("id");
-            clone.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
-            clone.style.transform = "none";
-            clone.style.margin = "0";
-            clone.style.flexShrink = "0";
-            clone.style.maxWidth = "none";
-            previewZoomInner.appendChild(clone);
-            previewZoomOverlay.classList.add("show");
-
-            requestAnimationFrame(() => {
-                const availW = previewZoomInner.clientWidth;
-                const availH = previewZoomInner.clientHeight;
-                const realW = clone.offsetWidth;
-                const realH = clone.offsetHeight;
-                const scale = realW > 0 && realH > 0 ? Math.min(availW / realW, availH / realH, 3) : 1;
-                clone.style.transformOrigin = "center center";
-                clone.style.transform = `scale(${scale})`;
-            });
-        });
-        previewZoomOverlay.addEventListener("click", () => previewZoomOverlay.classList.remove("show"));
-    }
-
     // ==== 본문 글자 수 표시 ====
     const editorMeta = document.getElementById("editorMeta");
     if (editorMeta && els.editor) {
@@ -4520,12 +4569,17 @@ function renderFrameDecoration() {
         resizeHandle.addEventListener("pointercancel", stopResize);
 
         // ---- 삭제 ----
-        delHandle.addEventListener("pointerdown", (e) => {
+        const removeThisSticker = (e) => {
             e.preventDefault();
             e.stopPropagation();
+            if (!item.isConnected) return;
             item.remove();
             if (currentSticker === item) selectSticker(null);
-        });
+        };
+        delHandle.addEventListener("pointerdown", removeThisSticker);
+        // 일부 기기에서 pointerdown이 먹히지 않는 경우를 대비해 click/touchend도 같이 처리
+        delHandle.addEventListener("click", removeThisSticker);
+        delHandle.addEventListener("touchend", removeThisSticker, { passive: false });
     }
 
     input.addEventListener("change", (e) => {
