@@ -104,7 +104,19 @@ function getPresetSnapshot() {
         headingSubtitleFont: els.headingSubtitleFont?.value,
         headingSubtitleAlign: els.headingSubtitleAlign?.value,
         headingSubtitleSize: els.headingSubtitleSize?.value,
-        headingSubtitleBold: els.headingSubtitleBold?.checked
+        headingSubtitleBold: els.headingSubtitleBold?.checked,
+        // 하프톤 장식 / 테두리 장식 (장미·음표 하트 등)
+        halftoneDir: document.getElementById("halftoneDir")?.value,
+        halftoneColor: document.getElementById("halftoneColor")?.value,
+        halftoneSize: document.getElementById("halftoneSize")?.value,
+        halftoneRange: document.getElementById("halftoneRange")?.value,
+        halftoneOpacity: document.getElementById("halftoneOpacity")?.value,
+        frameStyle: document.getElementById("frameStyle")?.value,
+        frameRoseColor: document.getElementById("frameRoseColor")?.value,
+        frameRosePos: document.getElementById("frameRosePos")?.value,
+        frameRoseSize: document.getElementById("frameRoseSize")?.value,
+        frameRoseOpacity: document.getElementById("frameRoseOpacity")?.value,
+        frameSymbol: document.getElementById("frameSymbol")?.value
     };
 }
 
@@ -243,6 +255,29 @@ function applyPresetSnapshot(data) {
     if (customArea) customArea.style.display = isFreeRatio ? "flex" : "none";
     if (customHint) customHint.style.display = isFreeRatio ? "block" : "none";
 
+    // 하프톤 / 테두리 장식 복원 (예전에 저장한 프리셋엔 없는 값이라, 있을 때만 적용)
+    const setValueById = (id, value) => {
+        if (value === undefined || value === null) return;
+        const el = document.getElementById(id);
+        if (el) el.value = value;
+    };
+    ["halftoneColor", "halftoneSize", "halftoneRange", "halftoneOpacity", "frameRoseSize", "frameRoseOpacity", "frameSymbol"]
+        .forEach((id) => setValueById(id, data[id]));
+    if (data.halftoneDir !== undefined) {
+        const dirEl = document.getElementById("halftoneDir");
+        if (dirEl) {
+            dirEl.value = data.halftoneDir;
+            // 방향에 따라 보이는 설정칸이 달라서 change 이벤트로 화면 상태도 같이 맞춤
+            dirEl.dispatchEvent(new Event("change"));
+        }
+    }
+    // 버튼식 선택(segmented)은 해당 버튼을 눌러주면 값/활성 표시/보이는 칸이 한 번에 맞춰진다
+    ["frameStyle", "frameRoseColor", "frameRosePos"].forEach((id) => {
+        if (data[id] === undefined) return;
+        const btn = document.querySelector(`.segmented-control[data-target="${id}"] button[data-value="${data[id]}"]`);
+        if (btn) btn.click();
+    });
+
     if (typeof syncLiveHighlights === "function") {
         syncLiveHighlights({
             hlColorA: els.hlColorA.value,
@@ -269,13 +304,82 @@ function getPresetsFromStorage() {
 function savePresetsToStorage(list) {
     try {
         localStorage.setItem("quoteStudioPresets", JSON.stringify(list));
+        return true;
     } catch (e) {
         console.warn("프리셋 저장 실패:", e);
+        return false;
     }
 }
 
+// ==== 프리셋 미리보기(썸네일) ====
+const PRESET_THUMB_W = 300;
+const PRESET_THUMB_H = 375; // 4:5 카드
+
+// 지금 캔버스를 작은 이미지로 찍어서 JPEG 데이터로 돌려줌. 실패하면 null (미리보기 없이 저장됨)
+async function capturePresetThumbnail() {
+    const area = els.captureArea;
+    if (!area || typeof html2canvas !== "function") return null;
+
+    const transparentBox = document.getElementById("exportTransparent");
+    const wasTransparent = transparentBox ? transparentBox.checked : false;
+    const originalHeight = area.style.height;
+    const originalOverflow = area.style.overflow;
+    const originalTransform = area.style.transform;
+    let shot = null;
+
+    try {
+        // 투명 저장 옵션이 켜져 있어도 미리보기엔 배경까지 보여줌
+        if (transparentBox) transparentBox.checked = false;
+        area.style.transform = "none";
+        if (els.ratioSelect.value === "free") area.style.height = area.scrollHeight + "px";
+        area.style.overflow = "visible";
+        if (typeof prepareCanvasForCapture === "function") prepareCanvasForCapture(area);
+        const w = area.offsetWidth || 420;
+        shot = await html2canvas(area, {
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: null,
+            scale: PRESET_THUMB_W / w,
+        });
+    } catch (e) {
+        console.warn("프리셋 미리보기 만들기 실패:", e);
+        shot = null;
+    } finally {
+        if (typeof restoreCanvasAfterCapture === "function") restoreCanvasAfterCapture(area);
+        area.style.height = originalHeight;
+        area.style.overflow = originalOverflow;
+        area.style.transform = originalTransform;
+        if (transparentBox) transparentBox.checked = wasTransparent;
+        if (typeof applyPreviewScale === "function") applyPreviewScale();
+    }
+    if (!shot) return null;
+
+    try {
+        // 4:5 카드 안에 맞춰 넣기: 너무 길면 위쪽만, 짧으면 가운데에 놓음
+        const out = document.createElement("canvas");
+        out.width = PRESET_THUMB_W;
+        out.height = PRESET_THUMB_H;
+        const ctx = out.getContext("2d");
+        ctx.fillStyle = "#f6eff3";
+        ctx.fillRect(0, 0, out.width, out.height);
+        const ratio = PRESET_THUMB_W / shot.width;
+        const drawH = Math.min(PRESET_THUMB_H, Math.round(shot.height * ratio));
+        const srcH = drawH / ratio;
+        const dy = Math.round((PRESET_THUMB_H - drawH) / 2);
+        ctx.drawImage(shot, 0, 0, shot.width, srcH, 0, dy, PRESET_THUMB_W, drawH);
+        return out.toDataURL("image/jpeg", 0.8);
+    } catch (e) {
+        // 외부 이미지가 섞여 있어 캔버스가 막힌 경우 등
+        console.warn("프리셋 미리보기 변환 실패:", e);
+        return null;
+    }
+}
+
+let __presetSaving = false;
+
 // "저장" 버튼(프리셋 패널)에서 호출
-function savePreset() {
+async function savePreset() {
+    if (__presetSaving) return;
     const nameInput = document.getElementById("presetNameInput");
     const name = (nameInput.value || "").trim();
     if (!name) {
@@ -283,11 +387,31 @@ function savePreset() {
         return;
     }
 
-    const list = getPresetsFromStorage();
-    list.push({ name, data: getPresetSnapshot() });
-    savePresetsToStorage(list);
-    nameInput.value = "";
-    renderPresets();
+    __presetSaving = true;
+    const saveBtn = document.querySelector(".preset-save-box-minimal .btn-minimal-save");
+    const saveBtnLabel = saveBtn ? saveBtn.textContent : "";
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "저장 중…"; }
+
+    try {
+        const data = getPresetSnapshot();
+        const thumb = await capturePresetThumbnail();
+        const list = getPresetsFromStorage();
+        list.push({ name, data, thumb });
+        if (!savePresetsToStorage(list)) {
+            // 저장 공간이 모자라면 미리보기 없이 다시 시도
+            list[list.length - 1].thumb = null;
+            if (!savePresetsToStorage(list)) {
+                list.pop();
+                alert("저장 공간이 부족해서 프리셋을 저장하지 못했어요. 안 쓰는 프리셋을 지워주세요.");
+                return;
+            }
+        }
+        nameInput.value = "";
+        renderPresets();
+    } finally {
+        __presetSaving = false;
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = saveBtnLabel || "저장"; }
+    }
 }
 
 function deletePreset(index) {
@@ -295,6 +419,35 @@ function deletePreset(index) {
     list.splice(index, 1);
     savePresetsToStorage(list);
     renderPresets();
+}
+
+// 미리보기가 없는 예전 프리셋용: 저장된 설정값만으로 그리는 간단한 견본 (배경 + "Aa")
+function buildPresetSwatch(data) {
+    const swatch = document.createElement("div");
+    swatch.className = "preset-thumb-swatch";
+    const d = data || {};
+    if (d.bgType === "gradient") {
+        const stops = d.gradMode === "3" ? [d.gradColor1, d.gradColor2, d.gradColor3] : [d.gradColor1, d.gradColor2];
+        swatch.style.background = `linear-gradient(${d.gradientDir || "to bottom"}, ${stops.filter(Boolean).join(", ")})`;
+    } else {
+        swatch.style.background = d.bgColor1 || "#ffffff";
+    }
+    const sample = document.createElement("span");
+    sample.textContent = "Aa 가나";
+    sample.style.color = d.globalTextColor || "#000000";
+    if (d.fontSelect) sample.style.fontFamily = d.fontSelect;
+    swatch.appendChild(sample);
+    return swatch;
+}
+
+// 불러오기를 눌렀는데 미리보기가 없던 프리셋은, 불러온 직후 화면을 찍어서 미리보기를 채워둠
+async function fillMissingPresetThumb(index, name) {
+    const thumb = await capturePresetThumbnail();
+    if (!thumb) return;
+    const list = getPresetsFromStorage();
+    if (!list[index] || list[index].name !== name) return;
+    list[index].thumb = thumb;
+    if (savePresetsToStorage(list)) renderPresets();
 }
 
 // 프리셋 목록을 화면에 그려줌 (script.js의 DOMContentLoaded에서 호출됨)
@@ -311,6 +464,7 @@ function renderPresets() {
         empty.style.fontSize = "12px";
         empty.style.color = "var(--text-muted)";
         empty.style.padding = "12px 0";
+        empty.style.gridColumn = "1 / -1";
         empty.textContent = "저장된 프리셋이 없어요.";
         container.appendChild(empty);
         return;
@@ -320,6 +474,21 @@ function renderPresets() {
         const item = document.createElement("div");
         item.className = "preset-item";
 
+        const thumbBox = document.createElement("div");
+        thumbBox.className = "preset-thumb";
+        if (preset.thumb) {
+            const img = document.createElement("img");
+            img.src = preset.thumb;
+            img.alt = "";
+            img.draggable = false;
+            thumbBox.appendChild(img);
+        } else {
+            thumbBox.appendChild(buildPresetSwatch(preset.data));
+        }
+
+        const foot = document.createElement("div");
+        foot.className = "preset-foot";
+
         const nameSpan = document.createElement("span");
         nameSpan.className = "preset-name";
         nameSpan.textContent = preset.name;
@@ -327,14 +496,23 @@ function renderPresets() {
         const delBtn = document.createElement("button");
         delBtn.className = "preset-delete-btn";
         delBtn.textContent = "✕";
+        delBtn.setAttribute("aria-label", "프리셋 삭제");
         delBtn.addEventListener("click", (e) => {
             e.stopPropagation();
             deletePreset(index);
         });
 
-        item.appendChild(nameSpan);
-        item.appendChild(delBtn);
-        item.addEventListener("click", () => applyPresetSnapshot(preset.data));
+        foot.appendChild(nameSpan);
+        foot.appendChild(delBtn);
+        item.appendChild(thumbBox);
+        item.appendChild(foot);
+        item.addEventListener("click", () => {
+            applyPresetSnapshot(preset.data);
+            if (!preset.thumb) {
+                // 글꼴/장식이 다 적용된 뒤에 찍도록 잠깐 기다림
+                setTimeout(() => fillMissingPresetThumb(index, preset.name), 700);
+            }
+        });
         container.appendChild(item);
     });
 }

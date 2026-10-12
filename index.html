@@ -11,7 +11,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=59" />
+        <link rel="stylesheet" href="style.css?v=60" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -438,6 +438,12 @@
                         <option value="9:16">9 : 16</option>
                         <option value="free" selected>자동 조절</option>
                     </select>
+                </div>
+                <div class="control-minimal-row">
+                    <label for="exportTransparent">저장 배경</label>
+                    <div class="checkbox-minimal-group">
+                        <label><input type="checkbox" id="exportTransparent" /> 투명 PNG로 저장 (배경 빼고 글자·장식만)</label>
+                    </div>
                 </div>
                 <div class="control-minimal-row" id="customWidthArea">
                     <label for="canvasWidth">지정 너비 (px)</label>
@@ -1213,7 +1219,7 @@
 
         <div class="toast" id="toast"></div>
 
-        <script src="presets.js?v=45"></script>
-        <script src="script.js?v=51"></script>
+        <script src="presets.js?v=46"></script>
+        <script src="script.js?v=53"></script>
     </body>
 </html>
