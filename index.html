@@ -11,7 +11,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=60" />
+        <link rel="stylesheet" href="style.css?v=61" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -42,7 +42,6 @@
 
         <div class="canvas-top-actions">
             <button type="button" class="icon-fab" id="btnOpenPresets" title="프리셋">☆</button>
-            <button class="btn-export secondary" id="btnExportMulti" title="가로선으로 나눠서 여러 장 한번에 저장">여러장</button>
             <button class="btn-export secondary" id="btnCopy">복사</button>
             <button class="btn-export primary" id="btnSave">저장</button>
         </div>
@@ -428,6 +427,9 @@
                 </div>
             </div>
             <div class="tab-panel" id="panel-bg">
+                <div class="panel-section-title">색 팔레트</div>
+                <div class="field-hint">누르면 배경·글자·보조색·강조선·구분선·하프톤 색이 한 번에 바뀌어요. (글 내용은 그대로예요)</div>
+                <div class="palette-grid" id="paletteGrid"></div>
                 <div class="panel-section-title">캔버스 설정</div>
                 <div class="control-minimal-row">
                     <label for="ratioSelect">캔버스 비율</label>
@@ -1220,6 +1222,6 @@
         <div class="toast" id="toast"></div>
 
         <script src="presets.js?v=46"></script>
-        <script src="script.js?v=53"></script>
+        <script src="script.js?v=54"></script>
     </body>
 </html>

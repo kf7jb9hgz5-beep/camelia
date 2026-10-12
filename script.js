@@ -203,6 +203,7 @@ function updateCanvas() {
     }
     if (typeof renderHalftoneLayer === "function") renderHalftoneLayer();
     if (typeof renderFrameDecoration === "function") renderFrameDecoration();
+    if (typeof syncColorSwatches === "function") syncColorSwatches();
     scheduleRefitAfterFonts();
 }
 
@@ -2969,103 +2970,6 @@ document.getElementById("btnSave").addEventListener("click", async () => {
         });
 });
 
-// ==== 여러 장 한번에 저장 (가로선 기준으로 카드 분할) ====
-function captureCanvasAsPNG(filename) {
-    return new Promise((resolve) => {
-        if (!els.captureArea) { resolve(); return; }
-        const originalHeight = els.captureArea.style.height;
-        const originalOverflow = els.captureArea.style.overflow;
-        const originalTransform = els.captureArea.style.transform;
-        els.captureArea.style.transform = "none";
-        if (els.ratioSelect.value === "free") {
-            els.captureArea.style.height = els.captureArea.scrollHeight + "px";
-        }
-        els.captureArea.style.overflow = "visible";
-        prepareCanvasForCapture(els.captureArea);
-        bakeBackgroundBlurForCapture().then(() => {
-        html2canvas(els.captureArea, { useCORS: true, allowTaint: true, backgroundColor: null, scale: 2 })
-            .then((canvas) => {
-                restoreCanvasAfterCapture(els.captureArea);
-                restoreBackgroundBlurAfterCapture();
-                els.captureArea.style.height = originalHeight;
-                els.captureArea.style.overflow = originalOverflow;
-                els.captureArea.style.transform = originalTransform;
-                applyPreviewScale();
-                canvas.toBlob((blob) => {
-                    if (blob) {
-                        const blobURL = URL.createObjectURL(blob);
-                        const link = document.createElement("a");
-                        link.href = blobURL;
-                        link.download = filename;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        setTimeout(() => URL.revokeObjectURL(blobURL), 1000);
-                    }
-                    resolve();
-                }, "image/png");
-            })
-            .catch(() => {
-                restoreCanvasAfterCapture(els.captureArea);
-                restoreBackgroundBlurAfterCapture();
-                els.captureArea.style.height = originalHeight;
-                els.captureArea.style.overflow = originalOverflow;
-                els.captureArea.style.transform = originalTransform;
-                applyPreviewScale();
-                resolve();
-            });
-        });
-    });
-}
-
-function wait(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-onClick("btnExportMulti", async () => {
-    if (!els.editor) return;
-    const originalHTML = els.editor.innerHTML;
-
-    // 가로선이 문단 중간에 삽입돼 있어도(최상위가 아니어도) 정확히 찾도록
-    // 캔버스 렌더링과 동일한 평탄화 로직을 거쳐서 최상위 블록 목록을 얻는다.
-    const flatContainer = document.createElement("div");
-    flatContainer.innerHTML = originalHTML;
-    normalizeParagraphs(flatContainer);
-
-    const groups = [[]];
-    Array.from(flatContainer.childNodes).forEach((node) => {
-        if (node.nodeType === 1 && node.classList && node.classList.contains("hr-divider")) {
-            groups.push([]);
-        } else {
-            groups[groups.length - 1].push(node);
-        }
-    });
-    const nonEmptyGroups = groups.filter((g) =>
-        g.some((n) => (n.textContent || "").trim().length > 0 || (n.nodeType === 1 && n.querySelector && n.querySelector(".editor-image-block, .template-block")))
-    );
-
-    if (nonEmptyGroups.length < 2) {
-        showToast("가로선으로 나눌 지점을 먼저 표시해 주세요.");
-        return;
-    }
-
-    showToast(`${nonEmptyGroups.length}장을 순서대로 저장할게요.`);
-
-    for (let i = 0; i < nonEmptyGroups.length; i++) {
-        const wrapper = document.createElement("div");
-        nonEmptyGroups[i].forEach((n) => wrapper.appendChild(n.cloneNode(true)));
-        els.editor.innerHTML = wrapper.innerHTML || "<div><br></div>";
-        updateCanvas();
-        await wait(80);
-        await captureCanvasAsPNG(`excerpt_${i + 1}.png`);
-        await wait(350);
-    }
-
-    els.editor.innerHTML = originalHTML;
-    updateCanvas();
-    showToast("전체 저장이 끝났어요.");
-});
-
 document.getElementById("bgImageInput").addEventListener("change", function (e) {
     const file = e.target.files[0];
     if (file) {
@@ -4270,6 +4174,95 @@ function applySideImage() {
 // ==========================================================================
 // 테두리 장식 (Chat2Img 스타일): 기본 테두리 / 네 모서리 기호 장식 / 없음
 // ==========================================================================
+// ==========================================================================
+// 색 선택칸 꾸미기: 아이폰 사파리는 <input type="color">에 무지개 링을 억지로 그려서
+// CSS로는 지울 수 없다. 그래서 진짜 입력칸은 투명하게 위에 겹쳐 두고(터치/선택은 그대로 동작),
+// 눈에 보이는 건 직접 그린 동그란 색 견본으로 바꾼다.
+// ==========================================================================
+function wrapColorInputs() {
+    document.querySelectorAll('input[type="color"]').forEach((input) => {
+        if (input.__swatchDot) return;
+        const wrap = document.createElement("span");
+        wrap.className = "color-swatch-wrap";
+        const dot = document.createElement("span");
+        dot.className = "color-swatch-dot";
+        dot.style.background = input.value;
+        input.parentNode.insertBefore(wrap, input);
+        wrap.appendChild(dot);
+        wrap.appendChild(input);
+        input.__swatchDot = dot;
+    });
+}
+function syncColorSwatches() {
+    wrapColorInputs();
+    document.querySelectorAll('input[type="color"]').forEach((input) => {
+        if (input.__swatchDot) input.__swatchDot.style.background = input.value;
+    });
+}
+["input", "change"].forEach((evt) => {
+    document.addEventListener(evt, (e) => {
+        const t = e.target;
+        if (t && t.type === "color" && t.__swatchDot) t.__swatchDot.style.background = t.value;
+    }, true);
+});
+wrapColorInputs();
+
+// ==========================================================================
+// 색 팔레트: 누르면 배경/글자/보조색/강조선/구분선/하프톤 색이 한 번에 바뀐다 (글 내용은 그대로)
+// ==========================================================================
+(function setupColorPalettes() {
+    const grid = document.getElementById("paletteGrid");
+    if (!grid) return;
+
+    // bg 배경, text 글자, sub 보조색, accent 강조선+하프톤, divider 구분선
+    const PALETTES = [
+        { name: "로즈 핑크", bg: "#fff5f8", text: "#3a2a31", sub: "#b83b73", accent: "#e62c7a", divider: "#e8b4c8" },
+        { name: "크림 모노", bg: "#faf7f2", text: "#222222", sub: "#8a8279", accent: "#222222", divider: "#cfc8bd" },
+        { name: "블랙 로즈", bg: "#151215", text: "#f5eef1", sub: "#e8719f", accent: "#e62c7a", divider: "#4a3a42" },
+        { name: "민트 소다", bg: "#f1fbf7", text: "#1f3a33", sub: "#3f9b86", accent: "#6fcfb4", divider: "#bfe3d8" },
+        { name: "라벤더 밀크", bg: "#f6f3ff", text: "#2d2840", sub: "#7a62c9", accent: "#b9a6f2", divider: "#d6cdf5" },
+        { name: "레몬 버터", bg: "#fffbe8", text: "#3a3320", sub: "#b58a12", accent: "#f2c94c", divider: "#efe2a8" },
+        { name: "스카이 블루", bg: "#eff7ff", text: "#1d2f45", sub: "#3a7bd5", accent: "#7fb5ee", divider: "#c5dcf4" },
+        { name: "버건디", bg: "#f7ece9", text: "#3b1f24", sub: "#9c2f45", accent: "#9c2f45", divider: "#e2c4c0" },
+        { name: "미드나잇", bg: "#14192b", text: "#eef0fa", sub: "#8fa2ff", accent: "#5b6bff", divider: "#39415f" },
+    ];
+
+    PALETTES.forEach((p) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "palette-chip";
+
+        const preview = document.createElement("span");
+        preview.className = "palette-chip-preview";
+        preview.style.background = p.bg;
+        preview.innerHTML = '<span class="pc-main">Aa</span><span class="pc-sub">가나</span><span class="pc-dot"></span>';
+        preview.querySelector(".pc-main").style.color = p.text;
+        preview.querySelector(".pc-sub").style.color = p.sub;
+        preview.querySelector(".pc-dot").style.background = p.accent;
+
+        const name = document.createElement("span");
+        name.className = "palette-chip-name";
+        name.textContent = p.name;
+
+        chip.appendChild(preview);
+        chip.appendChild(name);
+        chip.addEventListener("click", () => {
+            if (typeof applyPresetSnapshot !== "function") return;
+            applyPresetSnapshot({
+                bgType: "solid",
+                bgColor1: p.bg,
+                globalTextColor: p.text,
+                subTextColor: p.sub,
+                quoteLineColor: p.accent,
+                dividerColor: p.divider,
+                halftoneColor: p.accent,
+            });
+            if (typeof showToast === "function") showToast(`${p.name} 팔레트를 적용했어요`);
+        });
+        grid.appendChild(chip);
+    });
+})();
+
 // ==========================================================================
 // 설정 패널 꾸밈: 섹션 제목(.panel-section-title) 하나가 한 묶음.
 // 묶음의 "첫 번째 칸"에는 왼쪽 위, "마지막 칸"에는 오른쪽 아래 모서리에 하트를 붙인다.
