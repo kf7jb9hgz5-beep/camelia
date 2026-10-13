@@ -5173,7 +5173,7 @@ const HEART_STEPS = {
                 btn.addEventListener("contextmenu", (e) => e.preventDefault());
                 elev.appendChild(btn);
             });
-            box.appendChild(elev);
+            box.insertAdjacentElement("afterend", elev); // 숫자 알약 밖, 행의 오른쪽 끝
         });
     }
 
