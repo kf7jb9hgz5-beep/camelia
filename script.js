@@ -757,7 +757,8 @@ function fitTextToCanvas() {
     };
 
     // 높이를 "자동"으로 풀어서 내용이 원래 얼마나 필요한지 재본다.
-    const limit = targetH - 2; // html2canvas 저장 시 미세한 오차를 위한 여유
+    // html2canvas로 저장할 때는 글자 높이가 화면보다 살짝 더 나오는 경우가 있어서 2% 여유를 둔다.
+    const limit = targetH - Math.max(3, targetH * 0.02);
     const fits = () => area.scrollHeight <= limit;
     area.style.height = "auto";
     area.style.overflow = "visible";
@@ -2895,8 +2896,22 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => updateCanvas(), 1200);
 });
 
+// 저장/복사 직전에 한 번 더 맞춰 두기:
+// 폰트가 다 불러와진 뒤 글자 크기(자동 축소)/장식 위치를 지금 설정 기준으로 다시 계산해서,
+// 화면에 보이는 그대로 저장되게 한다.
+async function syncBeforeExport() {
+    try {
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    } catch (e) {}
+    try {
+        if (typeof refitCanvasNow === "function") refitCanvasNow();
+    } catch (e) {}
+    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+}
+
 document.getElementById("btnCopy").addEventListener("click", async () => {
     if (!els.captureArea) return;
+    await syncBeforeExport();
     const originalHeight = els.captureArea.style.height;
     const originalOverflow = els.captureArea.style.overflow;
     const originalTransform = els.captureArea.style.transform;
@@ -2935,6 +2950,7 @@ document.getElementById("btnCopy").addEventListener("click", async () => {
 
 document.getElementById("btnSave").addEventListener("click", async () => {
     if (!els.captureArea) return;
+    await syncBeforeExport();
     const originalHeight = els.captureArea.style.height;
     const originalOverflow = els.captureArea.style.overflow;
     const originalTransform = els.captureArea.style.transform;

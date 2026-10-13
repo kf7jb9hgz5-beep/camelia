@@ -2,6 +2,91 @@
 @import url("https://cdn.jsdelivr.net/gh/cartax/webfont-nanum/dist/NanumMyeongjoEco/subset/kr/font.css");
 @import url('https://cdn.jsdelivr.net/gh/MonadABXY/mona-font/web/mona.css');
 
+/* ===== 추가 폰트: 고딕A1(9굵기) / 서초돋움 / 부크크고딕(2굵기) ===== */
+@font-face {
+    font-family: 'GothicA1';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2205@1.0/GothicA1-Thin.woff2') format('woff2');
+    font-weight: 100;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'GothicA1';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2205@1.0/GothicA1-ExtraLight.woff2') format('woff2');
+    font-weight: 200;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'GothicA1';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2205@1.0/GothicA1-Light.woff2') format('woff2');
+    font-weight: 300;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'GothicA1';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2205@1.0/GothicA1-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'GothicA1';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2205@1.0/GothicA1-Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'GothicA1';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2205@1.0/GothicA1-SemiBold.woff2') format('woff2');
+    font-weight: 600;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'GothicA1';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2205@1.0/GothicA1-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'GothicA1';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2205@1.0/GothicA1-ExtraBold.woff2') format('woff2');
+    font-weight: 800;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'GothicA1';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2205@1.0/GothicA1-Black.woff2') format('woff2');
+    font-weight: 900;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'SeochoDotum';
+    src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/2610082345@seochodotum-regular/seochodotum-regular/SeochoDotum-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'BookkGothic';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302@1.0/BookkGothic-Lt.woff2') format('woff2');
+    font-weight: 300;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'BookkGothic';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302@1.0/BookkGothic-Bd.woff2') format('woff2');
+    font-weight: 700;
+    font-display: swap;
+}
+
 @font-face {
     font-family: 'Tangba';
     src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-4@1.1/Tangba12.woff2') format('woff2');
@@ -2878,38 +2963,6 @@ body.mobile-theme input[type="radio"]:focus-visible {
     50%, 100% { opacity: 0.15; }
 }
 
-/* ---- 설정 시트 = 대사창 (반투명 흰 창 + 핑크 이중 테두리 + 깜빡이는 ▼) ---- */
-.adaptive-settings-window {
-    background-color: rgba(255, 255, 255, 0.9);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAANwAAAETBAMAAACvvXVnAAAAMFBMVEXmLHrmLHrmLHrmLHrmLHrmLHrmLHrmLHoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHpAMWAAAADHRSTlMALvdPb4+uzgAAAADaZulpAAAM5ElEQVR42u1dUVMb1xX+LrsrnGKkuyDsNsY2OGl4QWiFjPXQCpYIcKbpoAXj1E8NdnCmnelM6ziZ/J2+9yHCfUubiW0y09QpjmNI4xTbUmphkwRJC0ggDNrtwwLSSiuMzd7tJNZ9ku9d6fic+51zzzl77gEAAEHCGTgx6gAAPpmbgXODp+iH00Nod0iYtfHDHheoy0mo5KA7yZ3XCSLczqffrS04yV2PczYTAETqKLnONvyIoXJOX3BSmLlEzdTZNoizULngLFSSCYf1jpMBXup3hrvfSvwDwD3wwCnuiAxwVHaGuwjlAgAXCeL0qT+xJ9cAEgM2aQwbNOaI5kkARyXwRHLCrRVWAM9YFsNDS06Q08LAyr0wktP+mpHdP1QChh0lEpoZRXYln11ZDQAQzf0HnhRzqGz6ug1jPe1H0IHD6PyYc+cd4FIfZlhH5SWfHx/knIVmh6OxuR51NhUwDU5yjhyJwyM7KMx2LF+tWVf79FAaQQsvY4C9mgOAeyCGMD7Hfae4k8FzMisTXZ6C414KItItYdoZcg3iJDaaJp0RpQiOyuDZmRazVRHhmUhieGDJGavSjZXpMJI3+5w47wAAqoob+LMzwryJxoiDKfcAOCqhNmwaQv9555wHoDE45agzxhYq5dzpKytOkgMUp5x2g736hJPk+Lq0k8LcbHV070i7o3vHL6edJKdp+ZpttUmY9cqv/gEAbyd7vnm3MVX4o+8ma8cPAMQjtG6yoY1cuc6WWyqDIxTNPCB7QaQACCRmwhTP3E6PHFtVf78WmuOH9PSBQqrpD7fTrISZvWc4fg/mVW14PqEN9yJ7M8w24OJknCw54AMjzKDiHpxBOPoNSsTXODDLjjtaEXDxNibfKwKuSBAR39XSgKs5EsSrEhtyG4hho2yKxGrm0L5BmUGlbrzikaYJL1491caEnGDhx6tRCEz8wSB4WhGD8VSxLVw3h5MZuMvIkSW4L36J4T6VQWx+Astl5PR2rPy9E1PX7dk7c2zejrpyYbaDNFG024ROszA/wsGyPSJTONg9hdbuWwz0KwhiBRXZtld6ppcy3iz0MkiQVbhHr6I3963twtSjlZl2fRhCJorcfRm18XRQsUQ7AbWt/qLOBJXDVo+IE170MzjNtXCX1SPZeBRZBhE0kSOst8ukd0mNNblSYT5u9ThJjg/2OEmOxERHhdn4oaNQyWpOktPCKw69+nkOBpGMTDvDEguTic4uwTORRfSNJXjYk9v0dWPlIx+mPvLjJfbkQI0zjzijCPyUhsZgDL8UbuCeA1CRgzvv70T2whQeDMAzlkRvREWGPTld0ZHLRCGoiiN6J0cMl9mZE8GVjMM9kcQwOxe2NAWndTXFN7KHEt//u2Zh9y1MLtp630FyrvU068Its+PH/O6K2fF7ycm94xf+m3KQu43Wg05y5yJrTtb4aeHsfQeFqWeY33MyneazjnrRjw86cgXiOTHXI8Xa2kFBIm/1gFPGIMhs9E5YL6mtPe6fXe7RU/nFFD39KRv2tsqwAUDkAIkDpAA4ysjxWxkEALx6qg1veBQuV4DQPwjPwMtsnHZFNcjqCnRBNS43ZiAwKrklsiFMU640YOv1ErPjZ1S/DfcXq+DIKjwXk0xP8+vXjhftaCuW/9bKhBzX3gSQ8zjReLU4KaJObGeid/zSwwz45XTIkygKs5Dy/OI6m6oLSoHyXCkFsfEN1/MzhEtvo/7MZfPURdSfuYyQTfIsPV7JX7mdEovtqSs8GpomcWT9lt02BUQOgCvNthMQKWBrhFnUu0uSkFyFZ1wtLp6XhJVVuM8mMSzZLczZhBYWvjal1JMJrZf/Onu/765dNx2L5DIql4nhcaxkMaNymRXoaTfiqt3CDEt8eVltWOJn4mgcmEXY9nDduMxYMRVhBJUI5QNlixHKB7rRHAkiItlNbgOIlS1uADGCDVJRdVEb+ziYbD/Nyc9HK3/0AnW1v4KmCa/t5BC1KK5QoSsKBNU+x2/HeXD9s9JD+Cqv1z9MrCc9d+wmxwlnrbpY1EPN0ImptN3k9N5Zy1LF8E/im9lX7tgNPvLWkDX+JpgkOrhln2VLEJJjk9mRq6BdZMMdP2TdmsDewt5tvdOi8wnUhj1OHygxBwVsMjoGVLpPz7RGDajwL6ZHj62q76yH7jAgV7fj4W35doWt2lo2TS0M7tbTefpFGgD4rnzicdqTeCGxmmfGXdc4N284yu6BJMJ93yDTpbCDCk+3rcr2+7tmnkkMaXDXLJGTQQoABfUqgr5bONMssSO3QTHZsDPXQAHxCMMImUN53brI5uq5wZ1/nFstI+cfZ0duNlEoq1sPzt5CbTwbVCgkc1FFszVUJNugEjX9lMcSKnzOlmB5Riv4ZkzYCMasXmFsds7ZwV3peWeMv1ied4SesoNcp8xNdZr3pdNqm+o+6bTD2BRNdKmULX5ZbraDuy6ZzPeaf92tcC2VCE6m7CA3bxFwqWDW04Kn6K/0ohl0pzK0WYp+xg+We9E8n/qhc/c8DEGCxcWpkR5WUOn7bLMCF/xmD6P2cNZ9a/vt75O45fjJxKJLxscRyobcEQqrxhUNbey8aItpL2y8x1hqohXuocXisFS/xIJcpeO3FYdt+lmQ01WoFosflk+SkR7wI2M26N2GpT12rZoo8hs98UJ+H52rDNfoi/uFBsvlx+ai182GSZXUCjGeaKLP9FRMAeCUElwcksj5HvDK2NbiMyPTJ3G3feafMP7JzcyU+oJ1n/goNzuDxv1p/1Y9RSVkS6sutp4iUgDc/vSuAJKNmu1xwRDp0mBxyq9w2SgVVgbhUfZFDoAiWK4rpTqmatEcdEWHsD81h3WmHdDXHhVP2EcJ1N/K6Kvxhfyj/P7IccKg1dFdf6BQam04fiiuv5DPiG/ut0DH+uguvxrU7wUnR/DMOZ6dvTtxwjqsNeWiSdsJEFHEM1/+K2baLf0gPr9oEuZyT7ywtpiiof3mJai14S27tEYJ65r+H8Mg756m/KVK233pIgAg1DKOt0MyuXwawqX3Kr/+Hg4rTwWV7zrXFhcqjml+4UEKAELeaTVzyDP3rS9eWJirOPjJ96mO40+FHuoFkSvewBCJAqDgiYQgb8TmFlceaWCPqrhjxPLn9DQ5UM6ey7UACC+mlWPzqtvnn+NOx/P5CgNW/7PNlNR362nUHLmEFq64Xaj1AdDCSN6U0felqkXnrTy2Qrj3GdpNc8pA5ZTRxaLF+hsDAjWeiuzxgH9CTbtrVQUdu55+7bD1f97fcQeAaz2bkvqe1mpbXNUkstHFokroFeS3nurfI1TMNe1B1I+XTIxSPmB0sVisQi4oG188ic3ipnIvj9I9kEOs0hbGdu1iIRqlFyQWqxnK/VnZCtNiTJGSVCHdTRGAjlTdheWiMlyIa8cOVctUjboF9f21jgQAV1tLqunXS5nRYwX1fdfxB0fkR1pbS6rp9aXMqPvsp9WgAt18oSoHXalq6HO6At3wAHUlCkFXkMsoO7f/FUCAgtzuNVildUz9XhC5amKshZPMeqegxdzrgqcKvJyEIE+3867l7jd960Za6bgDADw/qGegVosdz9FH6gt+/x0A9SSXks5eS59rS5TyIg3cSJ9DZumAPzTLvfFV3jIWGkEL3UlScUrVO+EtvFy0mWcgBEbQ4zWJXgiM7Dy1lfCqaFbzBUW7MA4ApIlQIlYtQmgXKUSxjVweAhFFiJ4P8NmiSd03Pv8A3xPjqS0H0qp9Wch7UwXAL/esLaqL1ZB5+uCXav6Vw3e/88UL6oNUR6iKiV5b2nz58N1lX9zaz6fgOQmEADKH7cpsK1BtQUX2gsjVfUFCd9wAK+6Qh3L0ofrOemiOX4QLhWrcKUfnVffR0F1uKK5pu2QG89h2A2D9t5xy6Siy86oWBfTh4ap6l1HQJ6j6cA767l5YNKcimlOfbwu8FRBYLhrYIHsKFmjxjVa1oP791dBca199+qduK6g0vW7Y4xPteynEON7lnzuiVIUKANxPqlpvMqH1+qxWs6leJG9KGNiTu9c1m9DCySdCpX+r+jQwAi9n2KKd6FWGl5P3uC+RkhqHXQ4HbkjPIJOhY9fSrx29p8IfmuGG4hrJZOjY7fQ5utf6XuIPzXJD8fweuJOMyx0lMcL2lHfPnZVKrMpuf7Lt4yDlAifBR4IIeiUEgzIJngTffxJ8MIDFQrWggHv3NyY8TwdlEkw9kRyOoO6qiAZxEg3tFOIGrZtsoOTKNTSIV3b7Xqy8ARqt22sH6sBOJ0FxOydW5cnivNS8Fy/acpuNmzLRIQqxb5zLvkldVZLvruwOxnJR+ozkdB+y/wrjk2kJwdlbWnhWLVRpJl3M1Rd6k8+zPWYzLHpPs/xTif6z2d2ddnvH4mbHHQe5s7ivxJJc58mp/zNUaqM29jj+B9vFzXqXiTkDAAAAAElFTkSuQmCC");
-    background-repeat: no-repeat;
-    background-position: left 8px bottom 8px;
-    background-size: 84px auto;
-    border: 2px solid var(--vn-pink);
-    border-radius: 20px;
-    box-shadow: inset 0 0 0 4px #ffffff, inset 0 0 0 5px var(--vn-line), 0 -14px 36px rgba(230, 44, 122, 0.2);
-}
-.adaptive-settings-window::after {
-    content: "▼";
-    position: sticky;
-    bottom: 0;
-    align-self: flex-end;
-    flex-shrink: 0;
-    height: 16px;
-    line-height: 16px;
-    margin-top: -2px;
-    padding-right: 4px;
-    font-size: 13px;
-    color: var(--vn-pink);
-    pointer-events: none;
-    animation: vn-blink 1s linear infinite;
-}
-.control-minimal-row {
-    background-color: rgba(255, 255, 255, 0.78);
-}
-
 /* ---- 섹션 제목 = 캐릭터 이름표 (◤ 모서리를 자르고 ♡ 불릿 + ◢) ---- */
 .panel-section-title {
     padding: 6px 16px 6px 14px;
@@ -2934,45 +2987,24 @@ body.mobile-theme input[type="radio"]:focus-visible {
     color: var(--vn-pink);
 }
 .panel-section-title::after {
-    content: "◢";
+    content: "▼";
     margin-left: 8px;
     font-size: 9px;
     color: var(--vn-pink);
+    animation: vn-blink 1s linear infinite;
 }
 
-/* ---- 하단 탭 = 게임 시스템 메뉴 ( [ 제목 ] / 선택되면 ▶ 제목 ) ---- */
-.bottom-tab-bar {
-    padding: 6px;
-    border: 2px solid var(--vn-pink);
-    border-radius: 16px;
-    box-shadow: inset 0 0 0 3px #ffffff, inset 0 0 0 4px var(--vn-line), 0 10px 26px rgba(230, 44, 122, 0.2);
-}
+/* ---- 하단 탭: 바/아이콘 모양은 예전 그대로, 아래에 [ 제목 ] 라벨 (현재 탭은 하트 + ▶ 제목) ---- */
 .dock-btn {
-    height: 44px;
-    border-radius: 10px;
-    flex-direction: row;
-    color: var(--text-muted);
+    height: 58px;
+    justify-content: flex-start;
+    padding-top: 5px;
+    gap: 4px;
 }
 .dock-btn::before {
-    display: none !important;
-}
-.dock-btn.active {
-    transform: none;
-    color: var(--vn-pink) !important;
-    background: var(--accent-tint);
-}
-.dock-btn.active:not(#captureArea button):not(:disabled):active {
-    transform: scale(0.96);
-}
-.dock-icon {
-    display: none !important;
-}
-.dock-icon-wrap {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 0;
-    height: 0;
+    top: -6px;
+    width: 40px;
+    height: 40px;
 }
 .dock-btn .dock-btn-label,
 .dock-btn.active .dock-btn-label {
@@ -2980,8 +3012,10 @@ body.mobile-theme input[type="radio"]:focus-visible {
     height: auto;
     min-height: 0;
     overflow: visible;
-    font-size: 12px;
+    margin-top: 9px;
+    font-size: 11.5px;
     font-weight: 800;
+    line-height: 14px;
     white-space: nowrap;
 }
 .dock-btn .dock-btn-label::before { content: "[\2009"; }
@@ -3085,4 +3119,12 @@ body.mobile-theme input[type="radio"]:focus-visible {
 }
 .segmented-control[data-target="frameStyle"] button {
     flex: 1 1 28%;
+}
+
+
+/* 아이폰 사파리의 "글자 자동 크기 조정"을 끈다. 켜져 있으면 화면(미리보기)의 글자만 키워서 그리고,
+   저장할 때 쓰는 복제본에는 적용되지 않아서 둘의 줄바꿈/글자 크기가 달라질 수 있다. */
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
