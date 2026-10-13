@@ -11,7 +11,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=64" />
+        <link rel="stylesheet" href="style.css?v=65" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -152,8 +152,10 @@
         <div class="sheet-overlay" id="sheetOverlay"></div>
 
         <section class="adaptive-settings-window" id="modalSubWindow">
-            <div class="sheet-grip"></div>
-            <button type="button" class="sheet-close" id="btnCloseSheet" aria-label="닫기">✕</button>
+            <div class="sheet-header">
+                <div class="sheet-grip"></div>
+                <button type="button" class="sheet-close" id="btnCloseSheet" aria-label="닫기">✕</button>
+            </div>
 
             <div class="tab-panel" id="panel-title">
                 <div class="panel-section-title">제목 · 부제목</div>
@@ -237,12 +239,8 @@
                     </div>
                 </div>
                 <div class="control-minimal-row">
-                    <label for="headingTitleSize">크기 (px)</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('headingTitleSize', -1)">-</button>
-                        <input type="number" id="headingTitleSize" value="24" />
-                        <button onclick="stepInput('headingTitleSize', 1)">+</button>
-                    </div>
+                    <label for="headingTitleSize">『크기』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="headingTitleSize" value="24" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="control-minimal-row">
                     <label for="headingTitleBold">굵기</label>
@@ -300,12 +298,8 @@
                     </div>
                 </div>
                 <div class="control-minimal-row">
-                    <label for="headingSubtitleSize">크기 (px)</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('headingSubtitleSize', -1)">-</button>
-                        <input type="number" id="headingSubtitleSize" value="15" />
-                        <button onclick="stepInput('headingSubtitleSize', 1)">+</button>
-                    </div>
+                    <label for="headingSubtitleSize">『크기』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="headingSubtitleSize" value="15" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="control-minimal-row">
                     <label for="headingSubtitleBold">굵기</label>
@@ -354,14 +348,6 @@
                         <option value="'BookkGothic', sans-serif">부크크고딕</option>
                     </select>
                 </div>
-                <div class="control-minimal-row">
-                    <label for="fontWeightSelect">굵기</label>
-                    <select id="fontWeightSelect">
-                        <option value="400" selected>보통</option>
-                        <option value="700">굵게</option>
-                        <option value="800">매우 굵게</option>
-                    </select>
-                </div>
 
                 <div class="control-minimal-row">
                     <label>전체 정렬</label>
@@ -383,60 +369,32 @@
 
                 <div class="panel-section-title">간격 디테일</div>
                 <div class="control-minimal-row">
-                    <label for="fontSize">크기 (px)</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('fontSize', -1)">-</button>
-                        <input type="number" id="fontSize" value="16" />
-                        <button onclick="stepInput('fontSize', 1)">+</button>
-                    </div>
+                    <label for="fontSize">『크기』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="fontSize" value="16" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="control-minimal-row">
-                    <label for="letterSpacing">자간 (px)</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('letterSpacing', -0.5, 2)">-</button>
-                        <input type="number" id="letterSpacing" value="-0.5" />
-                        <button onclick="stepInput('letterSpacing', 0.5, 2)">+</button>
-                    </div>
+                    <label for="letterSpacing">『자간』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="letterSpacing" value="-0.5" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="control-minimal-row">
-                    <label for="lineHeight">행간 (px)</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('lineHeight', -2)">-</button>
-                        <input type="number" id="lineHeight" value="28" />
-                        <button onclick="stepInput('lineHeight', 2)">+</button>
-                    </div>
+                    <label for="lineHeight">『행간』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="lineHeight" value="28" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="control-minimal-row">
-                    <label for="paraSpacing">문단 (px)</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('paraSpacing', -2)">-</button>
-                        <input type="number" id="paraSpacing" value="16" />
-                        <button onclick="stepInput('paraSpacing', 2)">+</button>
-                    </div>
+                    <label for="paraSpacing">『문단』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="paraSpacing" value="16" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="control-minimal-row">
-                    <label for="indentSize">들여쓰기 폭 (em)</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('indentSize', -0.5, 1)">-</button>
-                        <input type="number" id="indentSize" value="1" step="0.5" />
-                        <button onclick="stepInput('indentSize', 0.5, 1)">+</button>
-                    </div>
+                    <label for="indentSize">『들여쓰기 폭』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="indentSize" value="1" step="0.5" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="control-minimal-row">
-                    <label for="fontScaleX">장평 (%)</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('fontScaleX', -1)">-</button>
-                        <input type="number" id="fontScaleX" value="100" />
-                        <button onclick="stepInput('fontScaleX', 1)">+</button>
-                    </div>
+                    <label for="fontScaleX">『장평』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="fontScaleX" value="100" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="control-minimal-row">
-                    <label for="infoFontSize">출처 글자 크기 (px)</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('infoFontSize', -1)">-</button>
-                        <input type="number" id="infoFontSize" value="11" />
-                        <button onclick="stepInput('infoFontSize', 1)">+</button>
-                    </div>
+                    <label for="infoFontSize">『출처 글자 크기』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="infoFontSize" value="11" /><span class="heart-unit">%</span></div>
                 </div>
             </div>
             <div class="tab-panel" id="panel-bg">
@@ -461,62 +419,38 @@
                     </div>
                 </div>
                 <div class="control-minimal-row" id="customWidthArea">
-                    <label for="canvasWidth">지정 너비 (px)</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('canvasWidth', -50)">-</button>
-                        <input type="number" id="canvasWidth" value="520" />
-                        <button onclick="stepInput('canvasWidth', 50)">+</button>
-                    </div>
+                    <label for="canvasWidth">『지정 너비』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="canvasWidth" value="520" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="field-hint" id="customWidthHint">지정한 값 그대로 미리보기 크기가 바뀝니다. 화면보다 넓게 설정하면 미리보기 영역을 좌우로 스크롤해서 확인할 수 있어요.</div>
                 <div class="control-minimal-row">
-                    <label for="paddingTop">위 여백 (px)</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('paddingTop', -5)">-</button>
-                        <input type="number" id="paddingTop" value="50" />
-                        <button onclick="stepInput('paddingTop', 5)">+</button>
-                    </div>
+                    <label for="paddingTop">『위 여백』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="paddingTop" value="50" /><span class="heart-unit">%</span></div>
                 </div>
                 <input type="range" id="paddingTopSlider" class="range-slider" min="0" max="500" value="50" oninput="syncRangeToNumber('paddingTopSlider','paddingTop')" />
 
                 <div class="control-minimal-row">
-                    <label for="paddingBottom">아래 여백 (px)</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('paddingBottom', -5)">-</button>
-                        <input type="number" id="paddingBottom" value="50" />
-                        <button onclick="stepInput('paddingBottom', 5)">+</button>
-                    </div>
+                    <label for="paddingBottom">『아래 여백』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="paddingBottom" value="50" /><span class="heart-unit">%</span></div>
                 </div>
                 <input type="range" id="paddingBottomSlider" class="range-slider" min="0" max="500" value="50" oninput="syncRangeToNumber('paddingBottomSlider','paddingBottom')" />
 
                 <div class="control-minimal-row">
-                    <label for="paddingLeft">왼쪽 여백 (px)</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('paddingLeft', -5)">-</button>
-                        <input type="number" id="paddingLeft" value="50" />
-                        <button onclick="stepInput('paddingLeft', 5)">+</button>
-                    </div>
+                    <label for="paddingLeft">『왼쪽 여백』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="paddingLeft" value="50" /><span class="heart-unit">%</span></div>
                 </div>
                 <input type="range" id="paddingLeftSlider" class="range-slider" min="0" max="500" value="50" oninput="syncRangeToNumber('paddingLeftSlider','paddingLeft')" />
 
                 <div class="control-minimal-row">
-                    <label for="paddingRight">오른쪽 여백 (px)</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('paddingRight', -5)">-</button>
-                        <input type="number" id="paddingRight" value="50" />
-                        <button onclick="stepInput('paddingRight', 5)">+</button>
-                    </div>
+                    <label for="paddingRight">『오른쪽 여백』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="paddingRight" value="50" /><span class="heart-unit">%</span></div>
                 </div>
                 <input type="range" id="paddingRightSlider" class="range-slider" min="0" max="500" value="50" oninput="syncRangeToNumber('paddingRightSlider','paddingRight')" />
 
                 <div class="panel-section-title">레이아웃</div>
                 <div class="control-minimal-row">
-                    <label for="textBlockWidth">텍스트 블록 너비 (%)</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('textBlockWidth', -5)">-</button>
-                        <input type="number" id="textBlockWidth" value="100" min="30" max="100" />
-                        <button onclick="stepInput('textBlockWidth', 5)">+</button>
-                    </div>
+                    <label for="textBlockWidth">『텍스트 블록 너비』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="textBlockWidth" value="100" min="30" max="100" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="control-minimal-row">
                     <label for="columnToggle">2단으로 나누기</label>
@@ -525,20 +459,12 @@
                     </div>
                 </div>
                 <div class="control-minimal-row" id="columnSplitArea">
-                    <label for="columnSplitIndex">분할 위치 (앞 단 문단 수)</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('columnSplitIndex', -1)">-</button>
-                        <input type="number" id="columnSplitIndex" value="1" min="1" />
-                        <button onclick="stepInput('columnSplitIndex', 1)">+</button>
-                    </div>
+                    <label for="columnSplitIndex">『분할 위치』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="columnSplitIndex" value="1" min="1" /></div>
                 </div>
                 <div class="control-minimal-row" id="columnGapArea">
-                    <label for="columnGap">단 간격 (px)</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('columnGap', -4)">-</button>
-                        <input type="number" id="columnGap" value="32" />
-                        <button onclick="stepInput('columnGap', 4)">+</button>
-                    </div>
+                    <label for="columnGap">『단 간격』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="columnGap" value="32" /><span class="heart-unit">%</span></div>
                 </div>
 
                 <div class="panel-section-title">배경 커스텀</div>
@@ -782,20 +708,12 @@
                     </div>
                 </div>
                 <div class="control-minimal-row">
-                    <label for="boxQuoteWidth">박스인용 굵기 (px)</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('boxQuoteWidth', -1)">-</button>
-                        <input type="number" id="boxQuoteWidth" value="2" min="1" max="10" />
-                        <button onclick="stepInput('boxQuoteWidth', 1)">+</button>
-                    </div>
+                    <label for="boxQuoteWidth">『박스인용 굵기』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="boxQuoteWidth" value="2" min="1" max="10" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="control-minimal-row">
-                    <label for="dividerWidth">가로선 굵기 (px)</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('dividerWidth', -0.5)">-</button>
-                        <input type="number" id="dividerWidth" value="1" min="0.5" max="10" step="0.5" />
-                        <button onclick="stepInput('dividerWidth', 0.5)">+</button>
-                    </div>
+                    <label for="dividerWidth">『가로선 굵기』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="dividerWidth" value="1" min="0.5" max="10" step="0.5" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="control-minimal-row">
                     <label>가로선 모양</label>
@@ -813,12 +731,8 @@
                     </div>
                 </div>
                 <div class="control-minimal-row" id="fadeStartArea" style="display:none;">
-                    <label for="fadeCount">흐려지는 문단 수</label>
-                    <div class="stepper-minimal">
-                        <button onclick="stepInput('fadeCount', -1)">-</button>
-                        <input type="number" id="fadeCount" value="3" min="1" max="10" />
-                        <button onclick="stepInput('fadeCount', 1)">+</button>
-                    </div>
+                    <label for="fadeCount">『흐려지는 문단 수』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="fadeCount" value="3" min="1" max="10" /></div>
                 </div>
                 <div class="control-minimal-row">
                     <div class="checkbox-minimal-group">
@@ -860,12 +774,8 @@
                     <input type="color" id="footnoteDividerColor" value="#787878" />
                 </div>
                 <div class="control-minimal-row" id="footnoteDividerWidthArea">
-                    <label for="footnoteDividerWidth">구분선 굵기 (px)</label>
-                    <div class="stepper-minimal">
-                        <button type="button" onclick="stepInput('footnoteDividerWidth', -0.5)">-</button>
-                        <input type="number" id="footnoteDividerWidth" value="1" min="0.5" max="10" step="0.5" />
-                        <button type="button" onclick="stepInput('footnoteDividerWidth', 0.5)">+</button>
-                    </div>
+                    <label for="footnoteDividerWidth">『구분선 굵기』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="footnoteDividerWidth" value="1" min="0.5" max="10" step="0.5" /><span class="heart-unit">%</span></div>
                 </div>
                 <div id="footnoteList" class="replacement-rule-list"></div>
 
@@ -939,12 +849,8 @@
                         <button type="button" id="btnRemoveImageBlock" class="text-danger">삭제</button>
                     </div>
                     <div class="control-minimal-row" id="imgBlockSizeArea">
-                        <label for="imgBlockSize">크기 (px)</label>
-                        <div class="stepper-minimal">
-                            <button type="button" data-img-step="size" data-step="-10">-</button>
-                            <input type="number" id="imgBlockSize" value="240" />
-                            <button type="button" data-img-step="size" data-step="10">+</button>
-                        </div>
+                        <label for="imgBlockSize">『크기』</label>
+                        <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="imgBlockSize" value="240" /><span class="heart-unit">%</span></div>
                     </div>
                     <div class="field-hint" id="imgBlockSizeHint">사진 비율은 자른 모양 그대로 고정돼요. 숫자로 전체 크기만 키우거나 줄일 수 있어요.</div>
                     <div class="panel-section-title" style="margin-top: 10px; padding-top: 0; border-top: none">사진 자르기</div>
@@ -965,12 +871,8 @@
                     </div>
                     <div class="field-hint" id="imgBlockAlignHint">좌/우를 선택하면 글자가 사진 옆으로 자연스럽게 흐르고, 중앙을 선택하면 사진이 혼자 한 줄을 차지해요.</div>
                     <div class="control-minimal-row">
-                        <label for="imgBlockRadius">모서리 둥글기 (px)</label>
-                        <div class="stepper-minimal">
-                            <button type="button" data-img-step="radius" data-step="-2">-</button>
-                            <input type="number" id="imgBlockRadius" value="0" />
-                            <button type="button" data-img-step="radius" data-step="2">+</button>
-                        </div>
+                        <label for="imgBlockRadius">『모서리 둥글기』</label>
+                        <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="imgBlockRadius" value="0" /><span class="heart-unit">%</span></div>
                     </div>
                 </div>
             </div>
@@ -982,56 +884,7 @@
                     <div class="segmented-control segmented-control-minimal" data-target="dialogueMode">
                         <button type="button" data-value="log" class="active">로그</button>
                         <button type="button" data-value="block">블록</button>
-                        <button type="button" data-value="bubble">말풍선</button>
                     </div>
-                </div>
-
-                <div class="panel-section-title" id="dlgBubbleOnlyTitle" style="display: none">말풍선 세부 설정</div>
-                <div class="control-minimal-row" id="dlgBubbleThemeArea" style="display: none">
-                    <label>말풍선 테마</label>
-                    <input type="hidden" id="dlgBubbleTheme" value="soft" />
-                    <div class="segmented-control segmented-control-minimal" data-target="dlgBubbleTheme">
-                        <button type="button" data-value="soft" class="active">말랑</button>
-                        <button type="button" data-value="tail">꼬리형</button>
-                        <button type="button" data-value="kakao">카톡형</button>
-                    </div>
-                </div>
-                <div class="field-hint" id="dlgBubbleThemeHint" style="display: none">말랑: 양쪽 다 둥근 알약 모양 · 꼬리형: 말풍선 아래에 작은 꼬리가 달린 모양 · 카톡형: 프로필 쪽 모서리만 각져서 꼬리처럼 보이는 모양</div>
-                <div class="control-minimal-row" id="dlgBubbleOpacityArea" style="display: none">
-                    <label for="dlgBubbleOpacity">말풍선 투명도 (%)</label>
-                    <div class="stepper-minimal">
-                        <button type="button" onclick="stepInput('dlgBubbleOpacity', -5)">-</button>
-                        <input type="number" id="dlgBubbleOpacity" value="100" min="0" max="100" />
-                        <button type="button" onclick="stepInput('dlgBubbleOpacity', 5)">+</button>
-                    </div>
-                </div>
-                <div class="control-minimal-row" id="dlgBubblePadYArea" style="display: none">
-                    <label for="dlgBubblePadY">말풍선 안 여백 · 위아래 (px)</label>
-                    <div class="stepper-minimal">
-                        <button type="button" onclick="stepInput('dlgBubblePadY', -1)">-</button>
-                        <input type="number" id="dlgBubblePadY" value="10" />
-                        <button type="button" onclick="stepInput('dlgBubblePadY', 1)">+</button>
-                    </div>
-                </div>
-                <div class="control-minimal-row" id="dlgBubblePadXArea" style="display: none">
-                    <label for="dlgBubblePadX">말풍선 안 여백 · 좌우 (px)</label>
-                    <div class="stepper-minimal">
-                        <button type="button" onclick="stepInput('dlgBubblePadX', -1)">-</button>
-                        <input type="number" id="dlgBubblePadX" value="14" />
-                        <button type="button" onclick="stepInput('dlgBubblePadX', 1)">+</button>
-                    </div>
-                </div>
-                <div class="control-minimal-row" id="dlgBubbleRadiusArea" style="display: none">
-                    <label for="dlgBubbleRadius">말풍선 모서리 둥글기 (px)</label>
-                    <div class="stepper-minimal">
-                        <button type="button" onclick="stepInput('dlgBubbleRadius', -1)">-</button>
-                        <input type="number" id="dlgBubbleRadius" value="18" />
-                        <button type="button" onclick="stepInput('dlgBubbleRadius', 1)">+</button>
-                    </div>
-                </div>
-                <div class="control-minimal-row" id="dlgBubbleTextColorArea" style="display: none">
-                    <label for="dlgBubbleTextColor">말풍선 글자색</label>
-                    <input type="color" id="dlgBubbleTextColor" value="#ffffff" />
                 </div>
 
                 <div class="panel-section-title">프로필 · 이름</div>
@@ -1049,12 +902,8 @@
                     </div>
                 </div>
                 <div class="control-minimal-row" id="dlgAvatarSizeArea">
-                    <label for="dlgAvatarSize">프사 크기 (px)</label>
-                    <div class="stepper-minimal">
-                        <button type="button" onclick="stepInput('dlgAvatarSize', -2)">-</button>
-                        <input type="number" id="dlgAvatarSize" value="32" />
-                        <button type="button" onclick="stepInput('dlgAvatarSize', 2)">+</button>
-                    </div>
+                    <label for="dlgAvatarSize">『프사 크기』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="dlgAvatarSize" value="32" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="control-minimal-row">
                     <div class="checkbox-minimal-group">
@@ -1062,12 +911,8 @@
                     </div>
                 </div>
                 <div class="control-minimal-row" id="dlgNameFontSizeArea">
-                    <label for="dlgNameFontSize">이름 크기 (px)</label>
-                    <div class="stepper-minimal">
-                        <button type="button" onclick="stepInput('dlgNameFontSize', -1)">-</button>
-                        <input type="number" id="dlgNameFontSize" value="16" />
-                        <button type="button" onclick="stepInput('dlgNameFontSize', 1)">+</button>
-                    </div>
+                    <label for="dlgNameFontSize">『이름 크기』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="dlgNameFontSize" value="16" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="control-minimal-row" id="dlgUseCharColorArea">
                     <div class="checkbox-minimal-group">
@@ -1099,22 +944,14 @@
                     </div>
                 </div>
                 <div class="control-minimal-row" id="dlgContinuationGapArea">
-                    <label for="dlgContinuationGap">같은 인물 연속 대사 간격 (px)</label>
-                    <div class="stepper-minimal">
-                        <button type="button" onclick="stepInput('dlgContinuationGap', -2)">-</button>
-                        <input type="number" id="dlgContinuationGap" value="4" />
-                        <button type="button" onclick="stepInput('dlgContinuationGap', 2)">+</button>
-                    </div>
+                    <label for="dlgContinuationGap">『같은 인물 연속 대사 간격』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="dlgContinuationGap" value="4" /><span class="heart-unit">%</span></div>
                 </div>
 
                 <div class="panel-section-title" id="dlgBlockOnlyTitle" style="display: none">블록 세부 설정</div>
                 <div class="control-minimal-row" id="dlgNameGapArea" style="display: none">
-                    <label for="dlgNameGap">이름-대사 사이 간격 (px)</label>
-                    <div class="stepper-minimal">
-                        <button type="button" onclick="stepInput('dlgNameGap', -2)">-</button>
-                        <input type="number" id="dlgNameGap" value="14" />
-                        <button type="button" onclick="stepInput('dlgNameGap', 2)">+</button>
-                    </div>
+                    <label for="dlgNameGap">『이름-대사 사이 간격』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="dlgNameGap" value="14" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="control-minimal-row" id="dlgParagraphLayoutArea" style="display: none">
                     <div class="checkbox-minimal-group">
@@ -1122,30 +959,18 @@
                     </div>
                 </div>
                 <div class="control-minimal-row" id="dlgParagraphIndentArea" style="display: none">
-                    <label for="dlgParagraphIndent">줄글 들여쓰기 (px)</label>
-                    <div class="stepper-minimal">
-                        <button type="button" onclick="stepInput('dlgParagraphIndent', -2)">-</button>
-                        <input type="number" id="dlgParagraphIndent" value="16" />
-                        <button type="button" onclick="stepInput('dlgParagraphIndent', 2)">+</button>
-                    </div>
+                    <label for="dlgParagraphIndent">『줄글 들여쓰기』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="dlgParagraphIndent" value="16" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="control-minimal-row" id="dlgNameColumnWidthArea" style="display: none">
-                    <label for="dlgNameColumnWidth">이름 칸 너비 (px)</label>
-                    <div class="stepper-minimal">
-                        <button type="button" onclick="stepInput('dlgNameColumnWidth', -4)">-</button>
-                        <input type="number" id="dlgNameColumnWidth" value="88" />
-                        <button type="button" onclick="stepInput('dlgNameColumnWidth', 4)">+</button>
-                    </div>
+                    <label for="dlgNameColumnWidth">『이름 칸 너비』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="dlgNameColumnWidth" value="88" /><span class="heart-unit">%</span></div>
                 </div>
 
                 <div class="panel-section-title">간격</div>
                 <div class="control-minimal-row">
-                    <label for="dlgLineGap" id="dlgLineGapLabel">대사(턴) 간 간격 (px)</label>
-                    <div class="stepper-minimal">
-                        <button type="button" onclick="stepInput('dlgLineGap', -2)">-</button>
-                        <input type="number" id="dlgLineGap" value="10" />
-                        <button type="button" onclick="stepInput('dlgLineGap', 2)">+</button>
-                    </div>
+                    <label for="dlgLineGap" id="dlgLineGapLabel">『대사(턴) 간 간격』</label>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="dlgLineGap" value="10" /><span class="heart-unit">%</span></div>
                 </div>
 
                 <div class="panel-section-title">캐릭터</div>
@@ -1161,14 +986,6 @@
                     <div class="control-minimal-row char-editor-color-row">
                         <label for="charEditorColor">포인트 색상</label>
                         <input type="color" id="charEditorColor" value="#171717" />
-                    </div>
-                    <div class="control-minimal-row" id="charEditorBubbleSideArea" style="display: none">
-                        <label>말풍선 위치</label>
-                        <div class="segmented-control segmented-control-minimal" data-target="charEditorBubbleSide">
-                            <button type="button" data-value="left" class="active">왼쪽</button>
-                            <button type="button" data-value="right">오른쪽</button>
-                        </div>
-                        <input type="hidden" id="charEditorBubbleSide" value="left" />
                     </div>
                     <div class="char-editor-btn-row">
                         <button type="button" class="btn-minimal-save" id="btnSaveCharacter">저장</button>
@@ -1282,8 +1099,8 @@
 
         <div class="toast" id="toast"></div>
 
-        <script src="presets.js?v=47"></script>
+        <script src="presets.js?v=48"></script>
         <script src="decor-assets.js?v=1"></script>
-        <script src="script.js?v=56"></script>
+        <script src="script.js?v=58"></script>
     </body>
 </html>

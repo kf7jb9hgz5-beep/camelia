@@ -43,7 +43,6 @@ const els = {
     enableParenColor: document.getElementById("enableParenColor"),
     parenColor: document.getElementById("parenColor"),
     fontSelect: document.getElementById("fontSelect"),
-    fontWeightSelect: document.getElementById("fontWeightSelect"),
     alignH: document.getElementById("alignH"),
     wordBreak: document.getElementById("wordBreak"),
     tabs: document.querySelectorAll(".tab-btn"),
@@ -117,7 +116,7 @@ function syncEditorTypography() {
     const realSize = Math.max(IOS_ZOOM_SAFE_MIN, desiredSize);
 
     editor.style.fontFamily = els.fontSelect.value;
-    editor.style.fontWeight = els.fontWeightSelect?.value || "400";
+    editor.style.fontWeight = "400";
     editor.style.fontSize = `${realSize}px`;
     // 폰트 크기를 16px로 올려야 했던 만큼 줄간격/자간도 같은 비율로 늘려서
     // (편집창 안에서의) 상대적인 느낌이 캔버스와 비슷하게 유지되도록 함
@@ -226,7 +225,7 @@ function scheduleRefitAfterFonts() {
     if (!document.fonts || typeof document.fonts.load !== "function" || !els.fontSelect) return;
     const token = ++__fontRefitToken;
     const family = els.fontSelect.value;
-    const weight = els.fontWeightSelect?.value || "400";
+    const weight = "400";
     const size = parseFloat(els.fontSize?.value) || 16;
     try {
         document.fonts.load(`${weight} ${size}px ${family}`, "가나다ABC abc123").then(() => {
@@ -412,7 +411,7 @@ function updateCanvasCore() {
         }
 
         textWrapper.style.fontFamily = els.fontSelect.value;
-        textWrapper.style.fontWeight = els.fontWeightSelect?.value || "400";
+        textWrapper.style.fontWeight = "400";
         textWrapper.style.textAlign = els.alignH.value;
         textWrapper.style.whiteSpace = "pre-wrap";
         textWrapper.style.wordBreak = els.wordBreak.value;
@@ -1544,12 +1543,7 @@ function openCharacterEditor(id) {
     const avatarBox = document.getElementById("charEditorAvatar");
     const deleteBtn = document.getElementById("btnDeleteCharacter");
     const colorInput = document.getElementById("charEditorColor");
-    const bubbleSideArea = document.getElementById("charEditorBubbleSideArea");
-    const bubbleSideInput = document.getElementById("charEditorBubbleSide");
     if (!editor || !nameInput || !avatarBox || !deleteBtn) return;
-
-    const mode = document.getElementById("dialogueMode")?.value || "log";
-    if (bubbleSideArea) bubbleSideArea.style.display = mode === "bubble" ? "" : "none";
 
     if (id) {
         const c = characters.find((x) => x.id === id);
@@ -1559,16 +1553,13 @@ function openCharacterEditor(id) {
         avatarBox.dataset.hasImage = c.avatarData ? "true" : "false";
         if (colorInput) colorInput.value = c.color || "#171717";
         deleteBtn.style.display = "block";
-        setSegmentedValue("charEditorBubbleSide", c.bubbleSide || "left");
     } else {
         nameInput.value = "";
         avatarBox.style.backgroundImage = "none";
         avatarBox.dataset.hasImage = "false";
         if (colorInput) colorInput.value = "#171717";
         deleteBtn.style.display = "none";
-        setSegmentedValue("charEditorBubbleSide", "left");
     }
-    if (bubbleSideInput && !id) bubbleSideInput.value = "left";
 
     editor.style.display = "flex";
     editor.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -1608,44 +1599,32 @@ function getQuoteChars(style) {
 
 // 대사 탭: 로그/블록 모드에 따라 관련 설정 행을 보이기/숨기기 (프리셋 적용 시에도 재사용)
 function syncDialogueModeUI() {
-    const mode = document.getElementById("dialogueMode")?.value || "log";
+    let mode = document.getElementById("dialogueMode")?.value || "log";
+    // 예전에 저장된 프리셋에 말풍선 모드가 남아 있으면 로그 모드로 바꿔준다
+    if (mode !== "log" && mode !== "block") {
+        mode = "log";
+        const modeHidden = document.getElementById("dialogueMode");
+        if (modeHidden) modeHidden.value = "log";
+        document.querySelectorAll('.segmented-control[data-target="dialogueMode"] button').forEach((b) => b.classList.toggle("active", b.dataset.value === "log"));
+    }
     const isLog = mode === "log";
     const isBlock = mode === "block";
-    const isBubble = mode === "bubble";
-    const hint = document.getElementById("dialogueModeHint");
     const areaMap = {
-        dlgShowAvatarArea: isLog || isBubble,
+        dlgShowAvatarArea: isLog,
         dlgQuoteStyleArea: isLog,
         dlgTranslationArea: isLog,
         dlgContinuationGapArea: isLog,
         dlgLogOnlyTitle: isLog,
         dlgNameGapArea: isBlock,
         dlgBlockOnlyTitle: isBlock,
-        dlgParagraphLayoutArea: isBlock,
-        dlgBubbleOnlyTitle: isBubble,
-        dlgBubbleThemeArea: isBubble,
-        dlgBubbleThemeHint: isBubble,
-        dlgBubbleOpacityArea: isBubble,
-        dlgBubblePadYArea: isBubble,
-        dlgBubblePadXArea: isBubble,
-        dlgBubbleRadiusArea: isBubble,
-        dlgBubbleTextColorArea: isBubble
+        dlgParagraphLayoutArea: isBlock
     };
     Object.keys(areaMap).forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.style.display = areaMap[id] ? "" : "none";
     });
-    const bubbleSideArea = document.getElementById("charEditorBubbleSideArea");
-    if (bubbleSideArea) bubbleSideArea.style.display = isBubble ? "" : "none";
     const lineGapLabel = document.getElementById("dlgLineGapLabel");
-    if (lineGapLabel) lineGapLabel.textContent = isLog ? "대사(턴) 간 간격 (px)" : "대사 줄 사이 간격 (px)";
-    if (hint) {
-        hint.textContent = isLog
-            ? "이름과 프로필 사진을 앞에 두고, 대사를 한 줄씩 이어 보여줘요."
-            : isBubble
-                ? "채팅 앱처럼 둥근 말풍선으로 보여줘요. 캐릭터별로 왼쪽/오른쪽, 색을 따로 정할 수 있어요."
-                : "이름과 대사를 한 줄씩, 하나의 박스 안에 모아 보여줘요.";
-    }
+    if (lineGapLabel) lineGapLabel.textContent = isLog ? "『대사(턴) 간 간격』" : "『대사 줄 사이 간격』";
     syncParagraphLayoutUI();
     renderDialogueLineList();
     if (typeof updateCanvas === "function") updateCanvas();
@@ -1944,82 +1923,6 @@ function buildDialogueBlockHTML(line) {
     const nameColor = (useCharColor && c.color) ? `color:${c.color};` : "";
     const quotedText = `${quoteChars.open}${escapeHtml(line.text || "")}${quoteChars.close}`;
     const narrationText = (line.narration || "").trim();
-
-    if (mode === "bubble") {
-        const side = c.bubbleSide === "right" ? "right" : "left";
-        const padYRaw = parseFloat(document.getElementById("dlgBubblePadY")?.value);
-        const padY = isNaN(padYRaw) ? 10 : padYRaw;
-        const padXRaw = parseFloat(document.getElementById("dlgBubblePadX")?.value);
-        const padX = isNaN(padXRaw) ? 14 : padXRaw;
-        const radiusRaw = parseFloat(document.getElementById("dlgBubbleRadius")?.value);
-        const radius = isNaN(radiusRaw) ? 18 : radiusRaw;
-        const theme = document.getElementById("dlgBubbleTheme")?.value || "soft";
-        const opacityRaw = parseFloat(document.getElementById("dlgBubbleOpacity")?.value);
-        const opacityPct = isNaN(opacityRaw) ? 100 : Math.min(100, Math.max(0, opacityRaw));
-
-        // 테마 3가지: 말랑(양쪽 다 완전히 둥근 알약 모양) / 꼬리형(말풍선 아래에 작은 삼각형 꼬리가
-        // 달린 모양) / 카톡형(프로필이 있는 쪽 모서리 하나만 거의 각지게 만들어서 카카오톡처럼
-        // 꼬리가 있는 듯한 느낌).
-        let borderRadiusCss;
-        if (theme === "soft") {
-            borderRadiusCss = "999px";
-        } else if (theme === "kakao") {
-            const sharp = "4px";
-            borderRadiusCss = side === "right"
-                ? `${radius}px ${radius}px ${sharp} ${radius}px`
-                : `${radius}px ${radius}px ${radius}px ${sharp}`;
-        } else if (theme === "tail") {
-            // 꼬리형: 글자가 짧아서 말풍선 자체가 작을 때도 뭉개져 보이지 않도록,
-            // 모서리를 카톡형만큼 확 깎지 않고 살짝만 깎아서(라운드 유지) 둥근 사각형 느낌을 지킨다.
-            const sharp = `${Math.max(6, radius * 0.4)}px`;
-            borderRadiusCss = side === "right"
-                ? `${radius}px ${radius}px ${sharp} ${radius}px`
-                : `${radius}px ${radius}px ${radius}px ${sharp}`;
-        } else {
-            borderRadiusCss = `${radius}px`;
-        }
-
-        const bubbleTextColor = document.getElementById("dlgBubbleTextColor")?.value || "#ffffff";
-        const bubbleHex = c.color || "#171717";
-        const bubbleRgb = hexToRgb(bubbleHex).replace("rgb(", "").replace(")", "");
-        const bubbleBg = `rgba(${bubbleRgb}, ${opacityPct / 100})`;
-
-        // 꼬리형 테마일 때만, 말풍선 모서리에 둥근 물방울 모양 꼬리를 붙인다(아이메시지 느낌).
-        // ⚠️ 꼬리를 말풍선 "안쪽 자식"으로 넣으면, 투명도가 있을 때 겹치는 부분이 두 겹으로
-        // 칠해져서 그 자리만 유독 진하게 보이는 문제가 있었다. 그래서 꼬리를 말풍선보다 먼저
-        // (아래에) 그리고, 말풍선 자체는 그 위에 나중에 그려서 겹치는 부분을 말풍선이 그냥
-        // 덮어버리게 했다 — 이러면 겹친 부분도 항상 말풍선 하나 분량의 색만 보이고,
-        // 꼬리가 말풍선 밖으로 삐져나온 부분만 꼬리 색이 보여서 이중으로 진해지지 않는다.
-        const tailSize = Math.max(9, Math.min(14, radius * 0.7));
-        const tailHtml = theme === "tail"
-            ? (side === "right"
-                ? `<div style="position:absolute;bottom:-1px;right:-1px;width:${tailSize}px;height:${tailSize}px;background-color:${bubbleBg};border-radius:${tailSize}px 0 ${tailSize}px ${tailSize}px;"></div>`
-                : `<div style="position:absolute;bottom:-1px;left:-1px;width:${tailSize}px;height:${tailSize}px;background-color:${bubbleBg};border-radius:0 ${tailSize}px ${tailSize}px ${tailSize}px;"></div>`)
-            : "";
-
-        const nameHtml = showName ? `<div style="${DLG_FONT}${nameSizeStyle}font-weight:700;${nameColor}margin-bottom:3px;text-align:${side === "right" ? "right" : "left"};">${escapeHtml(c.name)}</div>` : "";
-        const narrationHtml = narrationText ? `<div style="${DLG_FONT}margin-top:4px;white-space:pre-wrap;text-align:${side === "right" ? "right" : "left"};opacity:0.7;">${escapeHtml(narrationText)}</div>` : "";
-        // 말풍선 자체는 flex로 좌/우 정렬한다. 말풍선 "안쪽" 레이아웃은 텍스트 하나뿐이라
-        // 이전에 겪었던 flex+gap 관련 html2canvas 문제와는 무관하다(그건 아바타처럼 서로 다른
-        // 두 요소를 나란히 놓을 때 생겼던 문제였음). 그래도 안전하게 태그 사이 공백 없이 한 줄로 만든다.
-        const bubbleText = escapeHtml(line.text || "");
-        const bubbleHtml = `<div style="display:flex;justify-content:${side === "right" ? "flex-end" : "flex-start"};">`
-            + `<div style="position:relative;max-width:78%;">`
-            + tailHtml
-            + `<div style="position:relative;${DLG_FONT}background-color:${bubbleBg};color:${bubbleTextColor};padding:${padY}px ${padX}px;border-radius:${borderRadiusCss};white-space:pre-wrap;word-break:break-word;box-sizing:border-box;">${bubbleText}</div>`
-            + `</div>`
-            + `</div>`;
-
-        const bodyHtml = `${nameHtml}${bubbleHtml}${narrationHtml}`;
-
-        // 프사 표시: 왼쪽(상대) 말풍선일 때만 옆에 프사를 보여준다(카톡·아이메시지 등 흔한 채팅 UI 관례).
-        // 내 말풍선(오른쪽)엔 보통 프사를 안 보여주므로 여긴 항상 생략한다.
-        if (showAvatar && side === "left") {
-            const avatarStyle = `flex:0 0 ${avatarSize}px;width:${avatarSize}px;height:${avatarSize}px;border-radius:${avatarRadius};background-color:#f3f3f1;border:1px solid #eaeaea;background-size:cover;background-position:center;box-sizing:border-box;align-self:flex-end;${c.avatarData ? `background-image:url(${c.avatarData});` : ""}`;
-            return `<div style="display:flex;align-items:flex-end;gap:8px;"><div style="${avatarStyle}"></div><div style="flex:1 1 auto;min-width:0;">${bodyHtml}</div></div>`;
-        }
-        return `<div>${bodyHtml}</div>`;
-    }
 
     if (paragraphLayoutOn) {
         const indentRaw = parseFloat(document.getElementById("dlgParagraphIndent")?.value);
@@ -2495,16 +2398,14 @@ onClick("btnSaveCharacter", () => {
     const existing = editingCharacterId ? characters.find((x) => x.id === editingCharacterId) : null;
     const avatarData = pendingCharAvatarData !== null ? pendingCharAvatarData : (existing ? existing.avatarData : null);
     const color = document.getElementById("charEditorColor")?.value || "#171717";
-    const bubbleSide = document.getElementById("charEditorBubbleSide")?.value || "left";
 
     if (existing) {
         existing.name = name;
         existing.avatarData = avatarData;
         existing.color = color;
-        existing.bubbleSide = bubbleSide;
         updateExistingDialogueNames(existing.id);
     } else {
-        characters.push({ id: uid(), name, avatarData, color, bubbleSide });
+        characters.push({ id: uid(), name, avatarData, color });
     }
 
     renderCharacterList();
@@ -2858,7 +2759,7 @@ document.addEventListener("DOMContentLoaded", () => {
         els.globalTextColor, els.subTextColor, els.hlColorA, els.hlColorB, els.hlColorC,
         els.quoteLineColor, els.enableQuoteColor, els.quoteColor, els.enableParenColor, els.parenColor,
         els.boxQuoteColor, els.boxQuoteWidth, els.dividerColor, document.getElementById("dividerWidth"), document.getElementById("dividerStyle"), els.fadeCount, els.indentSize,
-        els.fontSelect, els.fontWeightSelect, els.wordBreak, els.fontSize, els.letterSpacing, els.lineHeight,
+        els.fontSelect, els.wordBreak, els.fontSize, els.letterSpacing, els.lineHeight,
         els.paraSpacing, els.fontScaleX, els.infoFontSize,
         els.columnSplitIndex, els.columnGap, els.textVerticalAlign, els.textHorizontalAnchor, els.textBlockWidth,
         els.headingTitleInput, els.headingSubtitleInput,
@@ -5114,4 +5015,156 @@ function renderFrameDecoration() {
     document.getElementById("btnStickerBack")?.addEventListener("click", () => {
         if (currentSticker) layer.insertBefore(currentSticker, layer.firstChild); // 첫 자식 = 맨 뒤
     });
+})();
+
+// ==========================================================================
+// 값 변경 감시 도우미: 코드에서 input.value = ... 로 값을 바꿀 때도(프리셋 불러오기 등) 알림을 받는다
+// ==========================================================================
+function watchInputValue(el, fn) {
+    const proto = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+    const own = Object.getOwnPropertyDescriptor(el, "value");
+    const get = own ? own.get : proto.get;
+    const set = own ? own.set : proto.set;
+    Object.defineProperty(el, "value", {
+        configurable: true,
+        get() { return get.call(this); },
+        set(v) {
+            set.call(this, v);
+            try { fn(this); } catch (e) {}
+        }
+    });
+}
+
+// ==========================================================================
+// ♥ 숫자(눌러서 입력) % 숫자칸
+// 기존 [-] 숫자 [+] 칸을 없애고, 같은 id의 원래 입력칸은 그대로 두어(숨김) 다른 코드가 읽는 값은 바뀌지 않는다.
+// 화면에 보이는 숫자 = 원래 값 그대로.
+// ==========================================================================
+// 숫자는 입력한 값 그대로 쓰고, 뒤의 "%"는 디자인용 표시일 뿐이다 (값 변환 없음)
+
+(function setupHeartNumbers() {
+    function fmt(n) {
+        return String(Math.round(n * 10) / 10);
+    }
+
+    function init() {
+        document.querySelectorAll(".stepper-minimal.heart-num").forEach((box) => {
+            const orig = box.querySelector('input[type="number"]');
+            if (!orig || box.dataset.heartReady) return;
+            box.dataset.heartReady = "1";
+            const minAttr = orig.getAttribute("min");
+            const maxAttr = orig.getAttribute("max");
+
+            const shown = document.createElement("input");
+            shown.type = "text";
+            shown.inputMode = "decimal";
+            shown.className = "heart-num-input";
+            shown.autocomplete = "off";
+            shown.setAttribute("aria-label", orig.id);
+            orig.style.display = "none";
+            orig.insertAdjacentElement("afterend", shown);
+
+            const toShown = (v) => {
+                const n = parseFloat(v);
+                if (isNaN(n)) return "";
+                return String(n);
+            };
+            const toValue = (txt) => {
+                const n = parseFloat(String(txt).replace(",", "."));
+                if (isNaN(n)) return null;
+                let v = n;
+                if (minAttr !== null && minAttr !== "" && v < parseFloat(minAttr)) v = parseFloat(minAttr);
+                if (maxAttr !== null && maxAttr !== "" && v > parseFloat(maxAttr)) v = parseFloat(maxAttr);
+                return v;
+            };
+
+            const refresh = () => {
+                if (document.activeElement === shown) return; // 입력 중에는 덮어쓰지 않음
+                shown.value = toShown(orig.value);
+            };
+            watchInputValue(orig, refresh);
+            shown.value = toShown(orig.value);
+
+            shown.addEventListener("focus", () => setTimeout(() => { try { shown.select(); } catch (e) {} }, 0));
+            shown.addEventListener("input", () => {
+                const v = toValue(shown.value);
+                if (v === null) return;
+                orig.value = v;
+                orig.dispatchEvent(new Event("input", { bubbles: true }));
+            });
+            shown.addEventListener("change", () => {
+                const v = toValue(shown.value);
+                if (v !== null) {
+                    orig.value = v;
+                    orig.dispatchEvent(new Event("input", { bubbles: true }));
+                    orig.dispatchEvent(new Event("change", { bubbles: true }));
+                }
+                shown.value = toShown(orig.value);
+            });
+            shown.addEventListener("blur", () => { shown.value = toShown(orig.value); });
+            shown.addEventListener("keydown", (e) => { if (e.key === "Enter") shown.blur(); });
+        });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
+})();
+
+// ==========================================================================
+// 폰트 탭 '간격 디테일' 마지막 설정 기억하기: 새로고침/재접속해도 마지막 값을 그대로 유지
+// (크기·자간·행간·문단·들여쓰기 폭·장평·출처 글자 크기)
+// ==========================================================================
+(function setupSpacingMemory() {
+    const STORAGE_KEY = "quoteStudioSpacingPrefs";
+    const IDS = ["fontSize", "letterSpacing", "lineHeight", "paraSpacing", "indentSize", "fontScaleX", "infoFontSize"];
+
+    function load() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            return raw ? JSON.parse(raw) : {};
+        } catch (e) {
+            return {};
+        }
+    }
+    function save(prefs) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs)); } catch (e) {}
+    }
+
+    function init() {
+        const prefs = load();
+        const inputs = IDS.map((id) => document.getElementById(id)).filter(Boolean);
+
+        let changed = false;
+        inputs.forEach((el) => {
+            const saved = prefs[el.id];
+            if (saved !== undefined && saved !== null && saved !== "" && String(saved) !== el.value && !isNaN(parseFloat(saved))) {
+                el.value = saved;
+                changed = true;
+            }
+        });
+        if (changed && typeof updateCanvas === "function") updateCanvas();
+
+        // 이후 값이 바뀔 때마다 저장 (직접 입력, 프리셋 불러오기 등 모든 경우)
+        inputs.forEach((el) => {
+            const store = () => {
+                const v = el.value;
+                if (v === "" || isNaN(parseFloat(v))) return;
+                const p = load();
+                p[el.id] = v;
+                save(p);
+            };
+            el.addEventListener("input", store);
+            el.addEventListener("change", store);
+            watchInputValue(el, store);
+        });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
 })();

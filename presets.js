@@ -53,7 +53,6 @@ function getPresetSnapshot() {
         gradientDir: els.gradientDir.value,
         gradMode: document.querySelector('input[name="gradMode"]:checked')?.value || "2",
         fontSelect: els.fontSelect.value,
-        fontWeightSelect: els.fontWeightSelect?.value,
         dialogueMode: document.getElementById("dialogueMode")?.value,
         dlgNameSuffix: els.dlgNameSuffix?.value,
         dlgQuoteStyle: els.dlgQuoteStyle?.value,
@@ -157,10 +156,10 @@ function applyPresetSnapshot(data) {
     }
 
     els.fontSelect.value = data.fontSelect ?? els.fontSelect.value;
-    if (els.fontWeightSelect) els.fontWeightSelect.value = data.fontWeightSelect ?? els.fontWeightSelect.value;
     if (data.dialogueMode) {
         const modeHidden = document.getElementById("dialogueMode");
         const modeGroup = document.querySelector('.segmented-control[data-target="dialogueMode"]');
+        if (data.dialogueMode === "bubble") data.dialogueMode = "log";
         if (modeHidden) modeHidden.value = data.dialogueMode;
         if (modeGroup) {
             modeGroup.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b.dataset.value === data.dialogueMode));
