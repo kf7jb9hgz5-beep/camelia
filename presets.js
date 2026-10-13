@@ -430,6 +430,34 @@ async function savePreset() {
     }
 }
 
+// ==== 프리셋 적용 취소(되돌리기) ====
+// 프리셋을 누를 때마다 "적용 직전 상태"를 기억해 두고, 되돌리기 버튼으로 한 단계씩 취소한다.
+const __presetUndoStack = [];
+
+function updatePresetUndoUI() {
+    const btn = document.getElementById("btnPresetUndo");
+    if (!btn) return;
+    const n = __presetUndoStack.length;
+    btn.style.display = n ? "" : "none";
+    if (n) btn.textContent = `↩ "${__presetUndoStack[n - 1].name}" 적용 취소`;
+}
+
+function applyPresetWithUndo(preset) {
+    __presetUndoStack.push({ name: preset.name, before: getPresetSnapshot() });
+    if (__presetUndoStack.length > 10) __presetUndoStack.shift();
+    applyPresetSnapshot(preset.data);
+    updatePresetUndoUI();
+    if (typeof showToast === "function") showToast(`"${preset.name}" 프리셋을 적용했어요. 위의 취소 버튼으로 되돌릴 수 있어요`);
+}
+
+function undoPresetApply() {
+    const last = __presetUndoStack.pop();
+    if (!last) return;
+    applyPresetSnapshot(last.before);
+    updatePresetUndoUI();
+    if (typeof showToast === "function") showToast(`"${last.name}" 적용을 취소했어요`);
+}
+
 function deletePreset(index) {
     const list = getPresetsFromStorage();
     list.splice(index, 1);
@@ -528,7 +556,7 @@ function renderPresets() {
         item.appendChild(thumbBox);
         item.appendChild(foot);
         item.addEventListener("click", () => {
-            applyPresetSnapshot(preset.data);
+            applyPresetWithUndo(preset);
             if (!preset.thumb) {
                 // 글꼴/장식이 다 적용된 뒤에 찍도록 잠깐 기다림
                 setTimeout(() => fillMissingPresetThumb(index, preset.name), 700);

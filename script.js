@@ -306,6 +306,7 @@ function updateCanvasCore() {
         refreshAllDialogueMarkers();
         // 대사 블록 위에 있는 위/아래 이동 버튼(.dlg-marker-controls)은 편집 편의용이라 실제
         // 저장/캔버스 결과물에는 나오면 안 되므로, 캔버스용 rawHTML을 만들 때는 항상 제외한다.
+        stripStaleTypography(els.editor);
         let rawHTML;
         if (els.editor.querySelector(".dlg-marker-controls")) {
             const editorClone = els.editor.cloneNode(true);
@@ -511,7 +512,14 @@ function updateCanvasCore() {
         textContainer.style.justifyContent = els.textVerticalAlign?.value || "center";
         textContainer.style.alignItems = els.textHorizontalAnchor?.value || "center";
         const blockWidth = Math.min(Math.max(parseFloat(els.textBlockWidth?.value) || 100, 30), 100);
-        textWrapper.style.width = `${blockWidth}%`;
+        // 장평(가로 늘이기/줄이기)은 scaleX로 처리하므로, 늘어나는 만큼 미리 폭을 나눠서 잡아야
+        // 화면에 보이는 폭이 정확히 '텍스트 블록 너비'가 된다. (예전엔 여기서 장평 보정이 지워져서
+        // 장평을 바꾸면 오른쪽 여백이 줄거나 글이 오른쪽으로 삐져나왔다)
+        const blockScale = (parseFloat(els.fontScaleX?.value) || 100) / 100;
+        textWrapper.style.width = `${blockWidth / blockScale}%`;
+        textWrapper.style.marginLeft = "0";
+        const blockAnchor = els.textHorizontalAnchor?.value || "center";
+        textWrapper.style.transformOrigin = blockAnchor === "flex-start" ? "left top" : blockAnchor === "flex-end" ? "right top" : "center top";
     }
 
     if (infoContainer && textContainer) {
@@ -3753,8 +3761,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
             const reader = new FileReader();
-            reader.onload = (event) => {
-                const dataURL = event.target.result;
+            reader.onload = async (event) => {
+                let dataURL = event.target.result;
+                const conv = await maybeAsciiConvert(dataURL);
+                if (conv) dataURL = conv.dataUrl;
                 const tempImg = new Image();
                 tempImg.onload = () => insertImageBlock(dataURL, tempImg.naturalWidth, tempImg.naturalHeight);
                 tempImg.onerror = () => insertImageBlock(dataURL, 0, 0);
@@ -3972,13 +3982,16 @@ function applySideImage() {
         const f = e.target.files && e.target.files[0];
         if (!f) return;
         const r = new FileReader();
-        r.onload = (ev) => {
+        r.onload = async (ev) => {
+            let srcData = ev.target.result;
+            const conv = await maybeAsciiConvert(srcData);
+            if (conv) srcData = conv.dataUrl;
             const im = new Image();
             im.onload = () => {
-                Object.assign(sideImg, { src: ev.target.result, nw: im.naturalWidth, nh: im.naturalHeight, posX: 50, posY: 50 });
+                Object.assign(sideImg, { src: srcData, nw: im.naturalWidth, nh: im.naturalHeight, posX: 50, posY: 50 });
                 updateCanvas();
             };
-            im.src = ev.target.result;
+            im.src = srcData;
         };
         r.readAsDataURL(f);
     });
@@ -4987,96 +5000,6 @@ function renderFrameDecoration() {
         delHandle.addEventListener("touchend", removeThisSticker, { passive: false });
     }
 
-    // ---- 사진 → 점자 도트 아스키아트 변환 ----
-    // 점자 한 칸(가로 2점 × 세로 4점)을 기준으로 사진을 점으로 바꿔 투명 PNG로 만든다.
-    // 어두운 부분일수록 점이 찍히고(반전하면 밝은 부분), 투명한 부분은 점이 없다.
-    // 중간 밝기는 오차 확산(디더링)으로 표현해서 장미 장식처럼 점 농도로 명암이 나온다.
-    function photoToBrailleDataUrl(dataUrl, opts) {
-        return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => {
-                const cells = Math.max(10, opts.cells || 60);
-                const dotsW = cells * 2;
-                const aspect = img.naturalHeight / img.naturalWidth;
-                const cellsH = Math.max(1, Math.round((dotsW * aspect) / 4));
-                const dotsH = cellsH * 4;
-
-                const tmp = document.createElement("canvas");
-                tmp.width = dotsW; tmp.height = dotsH;
-                const tctx = tmp.getContext("2d", { willReadFrequently: true });
-                tctx.drawImage(img, 0, 0, dotsW, dotsH);
-                const px = tctx.getImageData(0, 0, dotsW, dotsH).data;
-
-                // 점이 찍힐 정도(0~1): 어두울수록 1, 투명하면 0
-                const dark = new Float32Array(dotsW * dotsH);
-                let lo = 1, hi = 0;
-                for (let i = 0; i < dotsW * dotsH; i++) {
-                    const a = px[i * 4 + 3] / 255;
-                    const lum = (0.299 * px[i * 4] + 0.587 * px[i * 4 + 1] + 0.114 * px[i * 4 + 2]) / 255;
-                    let d = opts.invert ? lum : 1 - lum;
-                    d = d * a;
-                    dark[i] = d;
-                    if (a > 0.5) { if (d < lo) lo = d; if (d > hi) hi = d; }
-                }
-                // 대비를 늘려서 밋밋한 사진도 또렷하게
-                const range = hi - lo > 0.05 ? hi - lo : 1;
-                for (let i = 0; i < dark.length; i++) {
-                    const a = px[i * 4 + 3] / 255;
-                    dark[i] = a < 0.5 ? 0 : Math.min(1, Math.max(0, (dark[i] - lo) / range));
-                }
-
-                // Floyd–Steinberg 디더링
-                const on = new Uint8Array(dotsW * dotsH);
-                for (let y = 0; y < dotsH; y++) {
-                    for (let x = 0; x < dotsW; x++) {
-                        const i = y * dotsW + x;
-                        if (px[i * 4 + 3] < 128) continue;
-                        const old = dark[i];
-                        const nv = old >= 0.5 ? 1 : 0;
-                        on[i] = nv;
-                        const err = old - nv;
-                        if (x + 1 < dotsW) dark[i + 1] += err * 7 / 16;
-                        if (y + 1 < dotsH) {
-                            if (x > 0) dark[i + dotsW - 1] += err * 3 / 16;
-                            dark[i + dotsW] += err * 5 / 16;
-                            if (x + 1 < dotsW) dark[i + dotsW + 1] += err * 1 / 16;
-                        }
-                    }
-                }
-
-                // 점자 칸 사이는 살짝 더 띄워서 '점자 같은' 느낌을 낸다
-                const p = 6, gapX = 4, gapY = 8, r = 2.2; // 가로·세로 평균 간격이 같아야(8px) 사진 비율이 안 틀어진다
-                const outW = cells * (2 * p + gapX);
-                const outH = cellsH * (4 * p + gapY);
-                const out = document.createElement("canvas");
-                out.width = outW; out.height = outH;
-                const ctx = out.getContext("2d");
-                ctx.fillStyle = opts.color || "#e62c7a";
-                for (let y = 0; y < dotsH; y++) {
-                    for (let x = 0; x < dotsW; x++) {
-                        if (!on[y * dotsW + x]) continue;
-                        const cx = Math.floor(x / 2) * (2 * p + gapX) + (x % 2) * p + p / 2 + gapX / 2;
-                        const cy = Math.floor(y / 4) * (4 * p + gapY) + (y % 4) * p + p / 2 + gapY / 2;
-                        ctx.beginPath();
-                        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                }
-                resolve({ dataUrl: out.toDataURL("image/png"), w: outW, h: outH });
-            };
-            img.onerror = () => resolve(null);
-            img.src = dataUrl;
-        });
-    }
-
-    const asciiToggle = document.getElementById("stickerAsciiToggle");
-    const asciiOptions = document.getElementById("stickerAsciiOptions");
-    if (asciiToggle && asciiOptions) {
-        const syncAsciiUI = () => { asciiOptions.style.display = asciiToggle.checked ? "" : "none"; };
-        asciiToggle.addEventListener("change", syncAsciiUI);
-        syncAsciiUI();
-    }
-
     input.addEventListener("change", (e) => {
         const files = Array.from(e.target.files || []);
         files.forEach((file) => {
@@ -5085,14 +5008,7 @@ function renderFrameDecoration() {
             reader.onload = async (ev) => {
                 let prepared = await prepareStickerImage(ev.target.result, file.type);
                 if (!prepared) return;
-                if (asciiToggle && asciiToggle.checked) {
-                    const converted = await photoToBrailleDataUrl(prepared.dataUrl, {
-                        cells: parseInt(document.getElementById("stickerAsciiDetail")?.value, 10) || 60,
-                        color: document.getElementById("stickerAsciiColor")?.value || "#e62c7a",
-                        invert: !!document.getElementById("stickerAsciiInvert")?.checked
-                    });
-                    if (converted) prepared = converted;
-                }
+                prepared = (await maybeAsciiConvert(prepared.dataUrl, prepared)) || prepared;
                 createSticker(prepared.dataUrl, prepared.w, prepared.h);
                 // 보관함에 저장 (같은 사진이면 중복 저장하지 않음)
                 try {
@@ -5139,6 +5055,17 @@ function watchInputValue(el, fn) {
 // 화면에 보이는 숫자 = 원래 값 그대로.
 // ==========================================================================
 // 숫자는 입력한 값 그대로 쓰고, 뒤의 "%"는 디자인용 표시일 뿐이다 (값 변환 없음)
+
+// 엘리베이터 버튼을 한 번 누를 때 바뀌는 크기 (예전 +/- 버튼과 같은 값)
+const HEART_STEPS = {
+    headingTitleSize: 1, headingSubtitleSize: 1, fontSize: 1, letterSpacing: 0.5, lineHeight: 2, paraSpacing: 2,
+    indentSize: 0.5, fontScaleX: 1, infoFontSize: 1, canvasWidth: 50,
+    paddingTop: 5, paddingBottom: 5, paddingLeft: 5, paddingRight: 5, textBlockWidth: 5,
+    columnSplitIndex: 1, columnGap: 4, boxQuoteWidth: 1, dividerWidth: 0.5, fadeCount: 1, footnoteDividerWidth: 0.5,
+    imgBlockSize: 10, imgBlockRadius: 2,
+    dlgAvatarSize: 2, dlgNameFontSize: 1, dlgContinuationGap: 2, dlgNameGap: 2, dlgParagraphIndent: 2,
+    dlgNameColumnWidth: 4, dlgLineGap: 2
+};
 
 (function setupHeartNumbers() {
     function fmt(n) {
@@ -5201,6 +5128,52 @@ function watchInputValue(el, fn) {
             });
             shown.addEventListener("blur", () => { shown.value = toShown(orig.value); });
             shown.addEventListener("keydown", (e) => { if (e.key === "Enter") shown.blur(); });
+
+            // 칸 전체에 물방울 무늬 배경을 입히기 위해 바깥 행에 표시를 달아둔다
+            box.closest(".control-minimal-row")?.classList.add("row-dots");
+
+            // ---- 엘리베이터 버튼 (▲ 늘리기 / ▼ 줄이기) ----
+            const step = HEART_STEPS[orig.id] || 1;
+            const decimals = (n) => (String(n).split(".")[1] || "").length;
+            const nudge = (dir) => {
+                const cur = parseFloat(orig.value);
+                const base = isNaN(cur) ? 0 : cur;
+                const prec = Math.max(decimals(step), Math.min(decimals(base), 2));
+                let v = parseFloat((base + dir * step).toFixed(prec));
+                if (minAttr !== null && minAttr !== "" && v < parseFloat(minAttr)) v = parseFloat(minAttr);
+                if (maxAttr !== null && maxAttr !== "" && v > parseFloat(maxAttr)) v = parseFloat(maxAttr);
+                if (document.activeElement === shown) shown.blur();
+                orig.value = v;
+                orig.dispatchEvent(new Event("input", { bubbles: true }));
+            };
+            const elev = document.createElement("span");
+            elev.className = "heart-elev";
+            [["elev-up", 1, "값 올리기"], ["elev-down", -1, "값 내리기"]].forEach(([cls, dir, label]) => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = `elev-btn ${cls}`;
+                btn.setAttribute("aria-label", label);
+                let delay = null, timer = null, held = false;
+                const stop = () => {
+                    clearTimeout(delay); clearInterval(timer);
+                    delay = timer = null;
+                    btn.classList.remove("pressed");
+                    if (held) orig.dispatchEvent(new Event("change", { bubbles: true }));
+                    held = false;
+                };
+                btn.addEventListener("pointerdown", (e) => {
+                    e.preventDefault(); // 입력칸에 포커스가 가서 키보드가 뜨는 걸 막음
+                    btn.classList.add("pressed");
+                    held = true;
+                    nudge(dir);
+                    // 꾹 누르고 있으면 빠르게 계속 올라가거나 내려감
+                    delay = setTimeout(() => { timer = setInterval(() => nudge(dir), 80); }, 420);
+                });
+                ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => btn.addEventListener(ev, stop));
+                btn.addEventListener("contextmenu", (e) => e.preventDefault());
+                elev.appendChild(btn);
+            });
+            box.appendChild(elev);
         });
     }
 
@@ -5211,58 +5184,159 @@ function watchInputValue(el, fn) {
     }
 })();
 
+
+
 // ==========================================================================
-// 폰트 탭 '간격 디테일' 마지막 설정 기억하기: 새로고침/재접속해도 마지막 값을 그대로 유지
-// (크기·자간·행간·문단·들여쓰기 폭·장평·출처 글자 크기)
+// 자간/크기가 글자마다 제멋대로 보이는 문제 해결
+// 크롬/사파리의 편집창(contenteditable)은 글을 지우거나 붙이거나 줄을 합칠 때, 그 순간의
+// 자간·글자 크기·줄 높이·글꼴을 해당 글자 <span>에 "인라인 스타일"로 박아 넣는다.
+// 이후에 자간 같은 설정을 바꿔도 그 글자들만 옛 값을 계속 들고 있어서 문단마다 간격이 달라 보였다.
+// 본문 글자에는 이 값들을 직접 지정하는 기능이 없으므로(대사 블록·사진 블록 제외) 매번 지워서
+// 항상 폰트 탭의 설정 하나만 따르게 한다.
 // ==========================================================================
-(function setupSpacingMemory() {
-    const STORAGE_KEY = "quoteStudioSpacingPrefs";
-    const IDS = ["fontSize", "letterSpacing", "lineHeight", "paraSpacing", "indentSize", "fontScaleX", "infoFontSize"];
+function stripStaleTypography(root) {
+    if (!root) return;
+    const PROPS = ["letter-spacing", "word-spacing", "font-size", "line-height", "font-family"];
+    root.querySelectorAll("[style]").forEach((el) => {
+        if (el.closest(".dlg-editor-marker, .editor-image-block, .dialogue-line")) return;
+        let touched = false;
+        PROPS.forEach((p) => {
+            if (el.style.getPropertyValue(p)) { el.style.removeProperty(p); touched = true; }
+        });
+        if (touched && !el.getAttribute("style")) el.removeAttribute("style");
+    });
+}
 
-    function load() {
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            return raw ? JSON.parse(raw) : {};
-        } catch (e) {
-            return {};
-        }
+// ==========================================================================
+// 폰트 탭 '간격 디테일' 기본값 되돌리기 (이전 버전이 저장해 둔 "마지막 설정"은 지운다)
+// ==========================================================================
+const SPACING_DEFAULTS = { fontSize: 14, letterSpacing: 0, lineHeight: 18, paraSpacing: 2, indentSize: 1, fontScaleX: 100, infoFontSize: 11 };
+
+function resetSpacingDefaults() {
+    Object.keys(SPACING_DEFAULTS).forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.value = SPACING_DEFAULTS[id];
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    if (typeof updateCanvas === "function") updateCanvas();
+    if (typeof showToast === "function") showToast("간격 디테일을 기본값으로 되돌렸어요");
+}
+
+(function dropOldSpacingMemory() {
+    try { localStorage.removeItem("quoteStudioSpacingPrefs"); } catch (e) {}
+    document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("btnResetSpacing")?.addEventListener("click", resetSpacingDefaults);
+    });
+    if (document.readyState !== "loading") {
+        document.getElementById("btnResetSpacing")?.addEventListener("click", resetSpacingDefaults);
     }
-    function save(prefs) {
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs)); } catch (e) {}
-    }
+})();
 
-    function init() {
-        const prefs = load();
-        const inputs = IDS.map((id) => document.getElementById(id)).filter(Boolean);
+// ---- 사진 → 점자 도트 아스키아트 변환 ----
+// 점자 한 칸(가로 2점 × 세로 4점)을 기준으로 사진을 점으로 바꿔 투명 PNG로 만든다.
+// 어두운 부분일수록 점이 찍히고(반전하면 밝은 부분), 투명한 부분은 점이 없다.
+// 중간 밝기는 오차 확산(디더링)으로 표현해서 장미 장식처럼 점 농도로 명암이 나온다.
+function photoToBrailleDataUrl(dataUrl, opts) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const cells = Math.max(10, opts.cells || 60);
+            const dotsW = cells * 2;
+            const aspect = img.naturalHeight / img.naturalWidth;
+            const cellsH = Math.max(1, Math.round((dotsW * aspect) / 4));
+            const dotsH = cellsH * 4;
 
-        let changed = false;
-        inputs.forEach((el) => {
-            const saved = prefs[el.id];
-            if (saved !== undefined && saved !== null && saved !== "" && String(saved) !== el.value && !isNaN(parseFloat(saved))) {
-                el.value = saved;
-                changed = true;
+            const tmp = document.createElement("canvas");
+            tmp.width = dotsW; tmp.height = dotsH;
+            const tctx = tmp.getContext("2d", { willReadFrequently: true });
+            tctx.drawImage(img, 0, 0, dotsW, dotsH);
+            const px = tctx.getImageData(0, 0, dotsW, dotsH).data;
+
+            // 점이 찍힐 정도(0~1): 어두울수록 1, 투명하면 0
+            const dark = new Float32Array(dotsW * dotsH);
+            let lo = 1, hi = 0;
+            for (let i = 0; i < dotsW * dotsH; i++) {
+                const a = px[i * 4 + 3] / 255;
+                const lum = (0.299 * px[i * 4] + 0.587 * px[i * 4 + 1] + 0.114 * px[i * 4 + 2]) / 255;
+                let d = opts.invert ? lum : 1 - lum;
+                d = d * a;
+                dark[i] = d;
+                if (a > 0.5) { if (d < lo) lo = d; if (d > hi) hi = d; }
             }
-        });
-        if (changed && typeof updateCanvas === "function") updateCanvas();
+            // 대비를 늘려서 밋밋한 사진도 또렷하게
+            const range = hi - lo > 0.05 ? hi - lo : 1;
+            for (let i = 0; i < dark.length; i++) {
+                const a = px[i * 4 + 3] / 255;
+                dark[i] = a < 0.5 ? 0 : Math.min(1, Math.max(0, (dark[i] - lo) / range));
+            }
 
-        // 이후 값이 바뀔 때마다 저장 (직접 입력, 프리셋 불러오기 등 모든 경우)
-        inputs.forEach((el) => {
-            const store = () => {
-                const v = el.value;
-                if (v === "" || isNaN(parseFloat(v))) return;
-                const p = load();
-                p[el.id] = v;
-                save(p);
-            };
-            el.addEventListener("input", store);
-            el.addEventListener("change", store);
-            watchInputValue(el, store);
-        });
-    }
+            // Floyd–Steinberg 디더링
+            const on = new Uint8Array(dotsW * dotsH);
+            for (let y = 0; y < dotsH; y++) {
+                for (let x = 0; x < dotsW; x++) {
+                    const i = y * dotsW + x;
+                    if (px[i * 4 + 3] < 128) continue;
+                    const old = dark[i];
+                    const nv = old >= 0.5 ? 1 : 0;
+                    on[i] = nv;
+                    const err = old - nv;
+                    if (x + 1 < dotsW) dark[i + 1] += err * 7 / 16;
+                    if (y + 1 < dotsH) {
+                        if (x > 0) dark[i + dotsW - 1] += err * 3 / 16;
+                        dark[i + dotsW] += err * 5 / 16;
+                        if (x + 1 < dotsW) dark[i + dotsW + 1] += err * 1 / 16;
+                    }
+                }
+            }
 
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", init);
-    } else {
-        init();
-    }
+            // 점자 칸 사이는 살짝 더 띄워서 '점자 같은' 느낌을 낸다
+            const p = 6, gapX = 4, gapY = 8, r = 2.2; // 가로·세로 평균 간격이 같아야(8px) 사진 비율이 안 틀어진다
+            const outW = cells * (2 * p + gapX);
+            const outH = cellsH * (4 * p + gapY);
+            const out = document.createElement("canvas");
+            out.width = outW; out.height = outH;
+            const ctx = out.getContext("2d");
+            ctx.fillStyle = opts.color || "#e62c7a";
+            for (let y = 0; y < dotsH; y++) {
+                for (let x = 0; x < dotsW; x++) {
+                    if (!on[y * dotsW + x]) continue;
+                    const cx = Math.floor(x / 2) * (2 * p + gapX) + (x % 2) * p + p / 2 + gapX / 2;
+                    const cy = Math.floor(y / 4) * (4 * p + gapY) + (y % 4) * p + p / 2 + gapY / 2;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            resolve({ dataUrl: out.toDataURL("image/png"), w: outW, h: outH });
+        };
+        img.onerror = () => resolve(null);
+        img.src = dataUrl;
+    });
+}
+
+
+// 변환 옵션(점자 아스키아트 변환 섹션)이 켜져 있으면 점 그림으로 바꿔 {dataUrl,w,h}를 돌려주고,
+// 꺼져 있거나 실패하면 null(= 원본 그대로 사용)
+async function maybeAsciiConvert(dataUrl) {
+    const toggle = document.getElementById("stickerAsciiToggle");
+    if (!toggle || !toggle.checked) return null;
+    return photoToBrailleDataUrl(dataUrl, {
+        cells: parseInt(document.getElementById("stickerAsciiDetail")?.value, 10) || 60,
+        color: document.getElementById("stickerAsciiColor")?.value || "#e62c7a",
+        invert: !!document.getElementById("stickerAsciiInvert")?.checked
+    });
+}
+
+(function setupAsciiOptionsUI() {
+    const init = () => {
+        const toggle = document.getElementById("stickerAsciiToggle");
+        const options = document.getElementById("stickerAsciiOptions");
+        if (!toggle || !options) return;
+        const sync = () => { options.style.display = toggle.checked ? "" : "none"; };
+        toggle.addEventListener("change", sync);
+        sync();
+    };
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+    else init();
 })();

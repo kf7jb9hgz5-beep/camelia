@@ -11,7 +11,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=66" />
+        <link rel="stylesheet" href="style.css?v=68" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -370,19 +370,19 @@
                 <div class="panel-section-title">간격 디테일</div>
                 <div class="control-minimal-row">
                     <label for="fontSize">「크기」</label>
-                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="fontSize" value="16" /><span class="heart-unit">%</span></div>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="fontSize" value="14" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="control-minimal-row">
                     <label for="letterSpacing">「자간」</label>
-                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="letterSpacing" value="-0.5" /><span class="heart-unit">%</span></div>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="letterSpacing" value="0" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="control-minimal-row">
                     <label for="lineHeight">「행간」</label>
-                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="lineHeight" value="28" /><span class="heart-unit">%</span></div>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="lineHeight" value="18" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="control-minimal-row">
                     <label for="paraSpacing">「문단」</label>
-                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="paraSpacing" value="16" /><span class="heart-unit">%</span></div>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="paraSpacing" value="2" /><span class="heart-unit">%</span></div>
                 </div>
                 <div class="control-minimal-row">
                     <label for="indentSize">「들여쓰기 폭」</label>
@@ -396,6 +396,10 @@
                     <label for="infoFontSize">「출처 글자 크기」</label>
                     <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="infoFontSize" value="11" /><span class="heart-unit">%</span></div>
                 </div>
+                <div class="control-minimal-row">
+                    <button type="button" class="btn-minimal-save" id="btnResetSpacing" style="width: 100%">기본값으로 되돌리기</button>
+                </div>
+                <div class="field-hint">기본값: 크기 14 · 자간 0 · 행간 18 · 문단 2 · 폭 1 · 장평 100 · 출처 크기 11</div>
             </div>
             <div class="tab-panel" id="panel-bg">
                 <div class="panel-section-title">색 팔레트</div>
@@ -785,14 +789,10 @@
                 <button type="button" class="btn-minimal-save" style="width:100%;margin-top:8px;" onclick="addReplacementRule()">+ 치환 규칙 추가</button>
             </div>
             <div class="tab-panel" id="panel-image">
-                <div class="panel-section-title">캔버스 스티커</div>
-                <div class="control-minimal-row">
-                    <label>사진 추가</label>
-                    <input type="file" id="stickerInput" accept="image/*" multiple />
-                </div>
+                <div class="panel-section-title">점자 아스키아트 변환</div>
                 <div class="control-minimal-row">
                     <div class="checkbox-minimal-group">
-                        <label><input type="checkbox" id="stickerAsciiToggle" /> 점자 아스키아트로 변환해서 붙이기</label>
+                        <label><input type="checkbox" id="stickerAsciiToggle" /> 사진을 추가할 때 점자 아스키아트로 변환</label>
                     </div>
                 </div>
                 <div id="stickerAsciiOptions" style="display: none">
@@ -813,7 +813,12 @@
                             <label><input type="checkbox" id="stickerAsciiInvert" /> 밝은 부분에 점 찍기 (반전)</label>
                         </div>
                     </div>
-                    <div class="field-hint">켜 둔 상태로 사진을 추가하면, 테두리 장식의 점자 장미처럼 점으로만 된 그림으로 바뀌어 붙어요. 투명한 부분은 점이 안 찍혀요. 변환된 그림이 보관함에도 저장돼요.</div>
+                    <div class="field-hint">켜 둔 상태로 사진을 추가하면 테두리 장식의 점자 장미처럼 점으로만 된 그림으로 바뀌어요. 스티커 · 본문에 넣는 사진 · 본문 옆 사진에 모두 적용되고, 투명한 부분에는 점이 찍히지 않아요. 이미 추가한 사진은 바뀌지 않아요.</div>
+                </div>
+                <div class="panel-section-title">캔버스 스티커</div>
+                <div class="control-minimal-row">
+                    <label>사진 추가</label>
+                    <input type="file" id="stickerInput" accept="image/*" multiple />
                 </div>
                 <div class="field-hint">갖고 계신 사진(투명 배경 PNG 포함)을 캔버스 위에 스티커처럼 붙일 수 있어요. 여러 장을 한 번에 고를 수 있고, 올라온 스티커는 직접 눌러서 드래그로 옮기고, 오른쪽 아래 분홍 동그라미를 끌어 크기를 바꾸고, 왼쪽 위 ✕로 지워요.</div>
                 <div class="panel-section-title">내 스티커 보관함</div>
@@ -1029,6 +1034,7 @@
                     <input type="text" id="presetNameInput" placeholder="프리셋 이름 입력" />
                     <button class="btn-minimal-save" onclick="savePreset()">저장</button>
                 </div>
+                <button type="button" class="btn-minimal-save" id="btnPresetUndo" style="display: none; width: 100%; margin-bottom: 10px" onclick="undoPresetApply()"></button>
                 <div class="preset-list-scroll" id="presetList"></div>
             </div>
         </section>
@@ -1124,8 +1130,8 @@
 
         <div class="toast" id="toast"></div>
 
-        <script src="presets.js?v=48"></script>
+        <script src="presets.js?v=49"></script>
         <script src="decor-assets.js?v=1"></script>
-        <script src="script.js?v=59"></script>
+        <script src="script.js?v=61"></script>
     </body>
 </html>
