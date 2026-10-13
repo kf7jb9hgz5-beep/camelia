@@ -75,13 +75,6 @@
 
 @font-face {
     font-family: 'BookkGothic';
-    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302@1.0/BookkGothic-Lt.woff2') format('woff2');
-    font-weight: 300;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'BookkGothic';
     src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302@1.0/BookkGothic-Bd.woff2') format('woff2');
     font-weight: 700;
     font-display: swap;
@@ -1138,14 +1131,20 @@ body.mobile-theme {
        명시적으로 켜준다. 다른 스크롤 영역(예: 본문 에디터)엔 이미 들어가 있던 속성. */
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
-    transform: translateY(calc(100% + 20px));
-    transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+    /* 닫힌 상태: 화면 밖으로 완전히 내리고 숨김 처리 (하단탭 뒤로 삐져나와 보이던 현상 방지) */
+    transform: translateY(calc(100% + var(--bottom-bar-height) + 80px + env(safe-area-inset-bottom, 0px)));
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1), visibility 0s linear 0.28s;
 }
 
 
 
 .adaptive-settings-window.active {
     transform: translateY(0);
+    visibility: visible;
+    pointer-events: auto;
+    transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1), visibility 0s;
 }
 
 /* 태블릿 정도로 넓어지면 바텀바처럼 가운데로 정렬 */
@@ -1153,7 +1152,7 @@ body.mobile-theme {
     .adaptive-settings-window {
         max-width: 480px;
         left: 50%;
-        transform: translate(-50%, 100%);
+        transform: translate(-50%, calc(100% + var(--bottom-bar-height) + 80px + env(safe-area-inset-bottom, 0px)));
     }
     .adaptive-settings-window.active {
         transform: translate(-50%, 0);
