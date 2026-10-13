@@ -812,7 +812,7 @@ function applySmartHighlighting(container) {
 
     const intervals = [];
     if (hasQuotes) {
-        const quoteRegex = /("[^"\n]*"|"[^"\n]*"|「[^」\n]*」|『[^』\n]*』|‹[^›\n]*›|«[^»\n]*»)/g;
+        const quoteRegex = /("[^"\n]*"|"[^"\n]*"|「[^」\n]*」|「[^」\n]*」|‹[^›\n]*›|«[^»\n]*»)/g;
         let match;
         while ((match = quoteRegex.exec(fullText)) !== null)
             intervals.push({ start: match.index, end: match.index + match[0].length, color: els.quoteColor.value });
@@ -1624,7 +1624,7 @@ function syncDialogueModeUI() {
         if (el) el.style.display = areaMap[id] ? "" : "none";
     });
     const lineGapLabel = document.getElementById("dlgLineGapLabel");
-    if (lineGapLabel) lineGapLabel.textContent = isLog ? "『대사(턴) 간 간격』" : "『대사 줄 사이 간격』";
+    if (lineGapLabel) lineGapLabel.textContent = isLog ? "「대사(턴) 간 간격」" : "「대사 줄 사이 간격」";
     syncParagraphLayoutUI();
     renderDialogueLineList();
     if (typeof updateCanvas === "function") updateCanvas();
@@ -4987,14 +4987,112 @@ function renderFrameDecoration() {
         delHandle.addEventListener("touchend", removeThisSticker, { passive: false });
     }
 
+    // ---- 사진 → 점자 도트 아스키아트 변환 ----
+    // 점자 한 칸(가로 2점 × 세로 4점)을 기준으로 사진을 점으로 바꿔 투명 PNG로 만든다.
+    // 어두운 부분일수록 점이 찍히고(반전하면 밝은 부분), 투명한 부분은 점이 없다.
+    // 중간 밝기는 오차 확산(디더링)으로 표현해서 장미 장식처럼 점 농도로 명암이 나온다.
+    function photoToBrailleDataUrl(dataUrl, opts) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                const cells = Math.max(10, opts.cells || 60);
+                const dotsW = cells * 2;
+                const aspect = img.naturalHeight / img.naturalWidth;
+                const cellsH = Math.max(1, Math.round((dotsW * aspect) / 4));
+                const dotsH = cellsH * 4;
+
+                const tmp = document.createElement("canvas");
+                tmp.width = dotsW; tmp.height = dotsH;
+                const tctx = tmp.getContext("2d", { willReadFrequently: true });
+                tctx.drawImage(img, 0, 0, dotsW, dotsH);
+                const px = tctx.getImageData(0, 0, dotsW, dotsH).data;
+
+                // 점이 찍힐 정도(0~1): 어두울수록 1, 투명하면 0
+                const dark = new Float32Array(dotsW * dotsH);
+                let lo = 1, hi = 0;
+                for (let i = 0; i < dotsW * dotsH; i++) {
+                    const a = px[i * 4 + 3] / 255;
+                    const lum = (0.299 * px[i * 4] + 0.587 * px[i * 4 + 1] + 0.114 * px[i * 4 + 2]) / 255;
+                    let d = opts.invert ? lum : 1 - lum;
+                    d = d * a;
+                    dark[i] = d;
+                    if (a > 0.5) { if (d < lo) lo = d; if (d > hi) hi = d; }
+                }
+                // 대비를 늘려서 밋밋한 사진도 또렷하게
+                const range = hi - lo > 0.05 ? hi - lo : 1;
+                for (let i = 0; i < dark.length; i++) {
+                    const a = px[i * 4 + 3] / 255;
+                    dark[i] = a < 0.5 ? 0 : Math.min(1, Math.max(0, (dark[i] - lo) / range));
+                }
+
+                // Floyd–Steinberg 디더링
+                const on = new Uint8Array(dotsW * dotsH);
+                for (let y = 0; y < dotsH; y++) {
+                    for (let x = 0; x < dotsW; x++) {
+                        const i = y * dotsW + x;
+                        if (px[i * 4 + 3] < 128) continue;
+                        const old = dark[i];
+                        const nv = old >= 0.5 ? 1 : 0;
+                        on[i] = nv;
+                        const err = old - nv;
+                        if (x + 1 < dotsW) dark[i + 1] += err * 7 / 16;
+                        if (y + 1 < dotsH) {
+                            if (x > 0) dark[i + dotsW - 1] += err * 3 / 16;
+                            dark[i + dotsW] += err * 5 / 16;
+                            if (x + 1 < dotsW) dark[i + dotsW + 1] += err * 1 / 16;
+                        }
+                    }
+                }
+
+                // 점자 칸 사이는 살짝 더 띄워서 '점자 같은' 느낌을 낸다
+                const p = 6, gapX = 4, gapY = 8, r = 2.2; // 가로·세로 평균 간격이 같아야(8px) 사진 비율이 안 틀어진다
+                const outW = cells * (2 * p + gapX);
+                const outH = cellsH * (4 * p + gapY);
+                const out = document.createElement("canvas");
+                out.width = outW; out.height = outH;
+                const ctx = out.getContext("2d");
+                ctx.fillStyle = opts.color || "#e62c7a";
+                for (let y = 0; y < dotsH; y++) {
+                    for (let x = 0; x < dotsW; x++) {
+                        if (!on[y * dotsW + x]) continue;
+                        const cx = Math.floor(x / 2) * (2 * p + gapX) + (x % 2) * p + p / 2 + gapX / 2;
+                        const cy = Math.floor(y / 4) * (4 * p + gapY) + (y % 4) * p + p / 2 + gapY / 2;
+                        ctx.beginPath();
+                        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                resolve({ dataUrl: out.toDataURL("image/png"), w: outW, h: outH });
+            };
+            img.onerror = () => resolve(null);
+            img.src = dataUrl;
+        });
+    }
+
+    const asciiToggle = document.getElementById("stickerAsciiToggle");
+    const asciiOptions = document.getElementById("stickerAsciiOptions");
+    if (asciiToggle && asciiOptions) {
+        const syncAsciiUI = () => { asciiOptions.style.display = asciiToggle.checked ? "" : "none"; };
+        asciiToggle.addEventListener("change", syncAsciiUI);
+        syncAsciiUI();
+    }
+
     input.addEventListener("change", (e) => {
         const files = Array.from(e.target.files || []);
         files.forEach((file) => {
             if (!file.type.startsWith("image/")) return;
             const reader = new FileReader();
             reader.onload = async (ev) => {
-                const prepared = await prepareStickerImage(ev.target.result, file.type);
+                let prepared = await prepareStickerImage(ev.target.result, file.type);
                 if (!prepared) return;
+                if (asciiToggle && asciiToggle.checked) {
+                    const converted = await photoToBrailleDataUrl(prepared.dataUrl, {
+                        cells: parseInt(document.getElementById("stickerAsciiDetail")?.value, 10) || 60,
+                        color: document.getElementById("stickerAsciiColor")?.value || "#e62c7a",
+                        invert: !!document.getElementById("stickerAsciiInvert")?.checked
+                    });
+                    if (converted) prepared = converted;
+                }
                 createSticker(prepared.dataUrl, prepared.w, prepared.h);
                 // 보관함에 저장 (같은 사진이면 중복 저장하지 않음)
                 try {

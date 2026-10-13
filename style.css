@@ -640,12 +640,10 @@ body.mobile-theme {
     flex-shrink: 0;
 }
 
-/* 설정시트 맨 위 줄: 손잡이(가운데) + 닫기 버튼(오른쪽)을 같은 줄에 두고,
-   스크롤해도 위에 붙어 있게(sticky) 해서 아래 내용과 절대 겹치지 않게 한다 */
+/* 설정시트 맨 위 줄: 손잡이(가운데) + 닫기 버튼(오른쪽)을 같은 줄에 둔다.
+   고정하지 않아서, 아래로 스크롤하면 내용과 함께 위로 올라가 자연스럽게 사라진다 */
 .sheet-header {
-    position: sticky;
-    top: 0;
-    z-index: 5;
+    position: relative;
     flex-shrink: 0;
     display: flex;
     align-items: center;
