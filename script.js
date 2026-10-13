@@ -1089,7 +1089,7 @@ function bakeBackgroundBlurForCapture() {
                 // 적용), CSS로 보여주는 크기(backgroundSize)만 원래 크기로 맞춰서 고해상도를 유지한다.
                 // 단, 픽셀 단위 블러는 계산량이 크므로 캔버스 자체 해상도는 EXPORT_SCALE 그대로 쓰되
                 // 블러 반경은 너무 커지지 않게 적당히 맞춘다.
-                const EXPORT_SCALE = 2;
+                const EXPORT_SCALE = getExportScale(els.captureArea);
                 const off = document.createElement("canvas");
                 off.width = (containerW + pad * 2) * EXPORT_SCALE;
                 off.height = (containerH + pad * 2) * EXPORT_SCALE;
@@ -2831,7 +2831,7 @@ document.getElementById("btnCopy").addEventListener("click", async () => {
     els.captureArea.style.overflow = "visible";
     prepareCanvasForCapture(els.captureArea);
     await bakeBackgroundBlurForCapture();
-    html2canvas(els.captureArea, { useCORS: true, allowTaint: true, backgroundColor: null, scale: 2 })
+    html2canvas(els.captureArea, { useCORS: true, allowTaint: true, backgroundColor: null, scale: getExportScale(els.captureArea) })
         .then((canvas) => {
             restoreCanvasAfterCapture(els.captureArea);
             restoreBackgroundBlurAfterCapture();
@@ -2870,7 +2870,7 @@ document.getElementById("btnSave").addEventListener("click", async () => {
     els.captureArea.style.overflow = "visible";
     prepareCanvasForCapture(els.captureArea);
     await bakeBackgroundBlurForCapture();
-    html2canvas(els.captureArea, { useCORS: true, allowTaint: true, backgroundColor: null, scale: 2 })
+    html2canvas(els.captureArea, { useCORS: true, allowTaint: true, backgroundColor: null, scale: getExportScale(els.captureArea) })
         .then((canvas) => {
             restoreCanvasAfterCapture(els.captureArea);
             restoreBackgroundBlurAfterCapture();
@@ -4162,6 +4162,13 @@ wrapColorInputs();
         { name: "미드나잇", bg: "#14192b", text: "#eef0fa", sub: "#8fa2ff", accent: "#5b6bff", divider: "#39415f" },
     ];
 
+    const PALETTE_KEYS = ["bgType", "bgColor1", "globalTextColor", "subTextColor", "quoteLineColor", "dividerColor", "halftoneColor"];
+    let appliedIdx = -1;
+    let beforeSnap = null;
+    const markApplied = () => {
+        grid.querySelectorAll(".palette-chip").forEach((c, i) => c.classList.toggle("applied", i === appliedIdx));
+    };
+
     PALETTES.forEach((p, idx) => {
         const chip = document.createElement("button");
         chip.type = "button";
@@ -4186,6 +4193,24 @@ wrapColorInputs();
         chip.appendChild(name);
         chip.addEventListener("click", () => {
             if (typeof applyPresetSnapshot !== "function") return;
+
+            // 이미 적용 중인 팔레트를 다시 누르면 → 팔레트를 누르기 전 색으로 되돌린다
+            if (appliedIdx === idx && beforeSnap) {
+                applyPresetSnapshot(beforeSnap);
+                appliedIdx = -1;
+                beforeSnap = null;
+                markApplied();
+                if (typeof showToast === "function") showToast(`${p.name} 팔레트 적용을 취소했어요`);
+                return;
+            }
+            // 처음 누를 때만 "누르기 전 색"을 기억 (팔레트끼리 갈아타도 맨 처음 색으로 돌아갈 수 있게)
+            if (appliedIdx === -1 && typeof getPresetSnapshot === "function") {
+                const full = getPresetSnapshot();
+                beforeSnap = {};
+                PALETTE_KEYS.forEach((k) => { beforeSnap[k] = full[k]; });
+            }
+            appliedIdx = idx;
+            markApplied();
             applyPresetSnapshot({
                 bgType: "solid",
                 bgColor1: p.bg,
@@ -5340,3 +5365,32 @@ async function maybeAsciiConvert(dataUrl) {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
     else init();
 })();
+
+
+// ==========================================================================
+// 선택형 칸(드롭다운 / 선택 버튼이 들어 있는 칸)에 배경 무늬용 표시 달기
+// ==========================================================================
+(function markPickRows() {
+    const run = () => {
+        document.querySelectorAll(".control-minimal-row").forEach((row) => {
+            if (row.classList.contains("row-dots")) return;
+            if (row.querySelector("select, .segmented-control")) row.classList.add("row-pick");
+        });
+    };
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
+    else run();
+})();
+
+
+// ==========================================================================
+// 저장/복사 해상도: 예전엔 항상 2배(가로 1040px 정도)라서 화질이 아쉬웠다.
+// 이제 캔버스가 작으면 최대 4배까지 올리고, 아주 긴 글(자유 높이)은 아이폰 사파리의
+// 캔버스 한계(약 1천6백만 픽셀)를 넘지 않는 선에서 자동으로 낮춘다. (최소 2배)
+// ==========================================================================
+function getExportScale(el) {
+    const w = el.offsetWidth || 520;
+    const h = Math.max(el.scrollHeight || 0, el.offsetHeight || 0) || 693;
+    const MAX_PIXELS = 14000000;
+    const fit = Math.sqrt(MAX_PIXELS / (w * h));
+    return Math.min(4, Math.max(2, Math.floor(fit * 2) / 2));
+}
