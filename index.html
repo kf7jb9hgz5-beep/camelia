@@ -11,7 +11,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=61" />
+        <link rel="stylesheet" href="style.css?v=62" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -20,6 +20,7 @@
                     <div class="bg-image-layer" id="bgImageLayer"></div>
                     <div class="bg-overlay-layer" id="bgOverlayLayer"></div>
                     <div id="halftoneLayer" style="position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden;"></div>
+                    <div id="watermarkLayer" style="position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden;"></div>
                     <div id="canvasContentContainer">
                         <div class="heading-area" id="canvasHeading"></div>
                         <div id="sideImageRow">
@@ -640,6 +641,38 @@
                     <input type="range" id="halftoneOpacity" min="0.1" max="1" step="0.05" value="0.9" />
                 </div>
 
+                <div class="panel-section-title">워터마크</div>
+                <div class="control-minimal-row">
+                    <label for="wmType">종류</label>
+                    <select id="wmType">
+                        <option value="none" selected>없음</option>
+                        <option value="stripeRose">줄무늬 장미</option>
+                        <option value="stripeClef">줄무늬 음표 하트</option>
+                        <option value="dotRose">점자 장미</option>
+                        <option value="dotClef">점자 음표 하트</option>
+                    </select>
+                </div>
+                <div class="control-minimal-row" id="wmColorArea" style="display: none">
+                    <label for="wmColor">색</label>
+                    <input type="color" id="wmColor" value="#e62c7a" />
+                </div>
+                <div class="control-minimal-row" id="wmSizeArea" style="display: none">
+                    <label for="wmSize">크기</label>
+                    <input type="range" id="wmSize" min="30" max="120" step="1" value="70" />
+                </div>
+                <div class="control-minimal-row" id="wmPosArea" style="display: none">
+                    <label for="wmPos">위치</label>
+                    <select id="wmPos">
+                        <option value="center" selected>가운데</option>
+                        <option value="top">위쪽</option>
+                        <option value="bottom">아래쪽</option>
+                    </select>
+                </div>
+                <div class="control-minimal-row" id="wmOpacityArea" style="display: none">
+                    <label for="wmOpacity">투명도</label>
+                    <input type="range" id="wmOpacity" min="0.05" max="1" step="0.05" value="0.25" />
+                </div>
+
                 <div class="panel-section-title">테두리 장식</div>
                 <div class="control-minimal-row">
                     <label>스타일</label>
@@ -650,13 +683,17 @@
                         <button type="button" data-value="corner">사방 장식</button>
                         <button type="button" data-value="rose">장미</button>
                         <button type="button" data-value="clef">음표</button>
+                        <button type="button" data-value="dotrose">점자 장미</button>
+                        <button type="button" data-value="dotclef">점자 음표</button>
+                        <button type="button" data-value="dotvine">점자 덩굴</button>
+                        <button type="button" data-value="edgetext">글자 테두리</button>
                     </div>
                 </div>
                 <div class="control-minimal-row" id="frameRoseColorArea" style="display: none">
                     <label>장식 색</label>
                     <input type="hidden" id="frameRoseColor" value="black" />
                     <div class="segmented-control" data-target="frameRoseColor">
-                        <button type="button" data-value="original">원본</button>
+                        <button type="button" data-value="original">핑크·원본</button>
                         <button type="button" data-value="black" class="active">검정</button>
                         <button type="button" data-value="white">흰색</button>
                     </div>
@@ -677,6 +714,18 @@
                 <div class="control-minimal-row" id="frameRoseOpacityArea" style="display: none">
                     <label>장식 투명도</label>
                     <input type="range" id="frameRoseOpacity" min="0.2" max="1" step="0.05" value="0.9" />
+                </div>
+                <div class="control-minimal-row" id="frameEdgeTextArea" style="display: none">
+                    <label for="frameEdgeText">테두리 문구</label>
+                    <input type="text" id="frameEdgeText" value="Camelia ♡ Rose Route ♡" maxlength="40" style="flex: 1; min-width: 0" />
+                </div>
+                <div class="control-minimal-row" id="frameEdgeFontArea" style="display: none">
+                    <label for="frameEdgeFont">테두리 글꼴</label>
+                    <select id="frameEdgeFont"></select>
+                </div>
+                <div class="control-minimal-row" id="frameEdgeSizeArea" style="display: none">
+                    <label for="frameEdgeSize">테두리 글자 크기</label>
+                    <input type="range" id="frameEdgeSize" min="4" max="16" step="0.5" value="8" />
                 </div>
                 <div class="control-minimal-row" id="frameSymbolArea" style="display: none">
                     <label>모서리 기호</label>
@@ -1221,7 +1270,8 @@
 
         <div class="toast" id="toast"></div>
 
-        <script src="presets.js?v=46"></script>
-        <script src="script.js?v=54"></script>
+        <script src="presets.js?v=47"></script>
+        <script src="decor-assets.js?v=1"></script>
+        <script src="script.js?v=55"></script>
     </body>
 </html>

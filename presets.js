@@ -116,7 +116,16 @@ function getPresetSnapshot() {
         frameRosePos: document.getElementById("frameRosePos")?.value,
         frameRoseSize: document.getElementById("frameRoseSize")?.value,
         frameRoseOpacity: document.getElementById("frameRoseOpacity")?.value,
-        frameSymbol: document.getElementById("frameSymbol")?.value
+        frameSymbol: document.getElementById("frameSymbol")?.value,
+        frameEdgeText: document.getElementById("frameEdgeText")?.value,
+        frameEdgeFont: document.getElementById("frameEdgeFont")?.value,
+        frameEdgeSize: document.getElementById("frameEdgeSize")?.value,
+        // 워터마크
+        wmType: document.getElementById("wmType")?.value,
+        wmColor: document.getElementById("wmColor")?.value,
+        wmSize: document.getElementById("wmSize")?.value,
+        wmPos: document.getElementById("wmPos")?.value,
+        wmOpacity: document.getElementById("wmOpacity")?.value
     };
 }
 
@@ -261,8 +270,16 @@ function applyPresetSnapshot(data) {
         const el = document.getElementById(id);
         if (el) el.value = value;
     };
-    ["halftoneColor", "halftoneSize", "halftoneRange", "halftoneOpacity", "frameRoseSize", "frameRoseOpacity", "frameSymbol"]
+    ["halftoneColor", "halftoneSize", "halftoneRange", "halftoneOpacity", "frameRoseSize", "frameRoseOpacity", "frameSymbol",
+        "frameEdgeText", "frameEdgeFont", "frameEdgeSize", "wmColor", "wmSize", "wmPos", "wmOpacity"]
         .forEach((id) => setValueById(id, data[id]));
+    if (data.wmType !== undefined) {
+        const wmEl = document.getElementById("wmType");
+        if (wmEl) {
+            wmEl.value = data.wmType;
+            wmEl.dispatchEvent(new Event("change")); // 종류에 따라 보이는 설정칸도 같이 맞춤
+        }
+    }
     if (data.halftoneDir !== undefined) {
         const dirEl = document.getElementById("halftoneDir");
         if (dirEl) {
@@ -460,12 +477,13 @@ function renderPresets() {
 
     if (list.length === 0) {
         const empty = document.createElement("div");
+        empty.className = "preset-empty";
         empty.style.textAlign = "center";
         empty.style.fontSize = "12px";
         empty.style.color = "var(--text-muted)";
         empty.style.padding = "12px 0";
         empty.style.gridColumn = "1 / -1";
-        empty.textContent = "저장된 프리셋이 없어요.";
+        empty.textContent = "NO DATA\n저장된 프리셋이 없어요.";
         container.appendChild(empty);
         return;
     }
@@ -504,6 +522,10 @@ function renderPresets() {
 
         foot.appendChild(nameSpan);
         foot.appendChild(delBtn);
+        const slot = document.createElement("span");
+        slot.className = "preset-slot";
+        slot.textContent = `SLOT ${String(index + 1).padStart(2, "0")}`;
+        thumbBox.appendChild(slot);
         item.appendChild(thumbBox);
         item.appendChild(foot);
         item.addEventListener("click", () => {
