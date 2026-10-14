@@ -5368,21 +5368,6 @@ async function maybeAsciiConvert(dataUrl) {
 
 
 // ==========================================================================
-// 선택형 칸(드롭다운 / 선택 버튼이 들어 있는 칸)에 배경 무늬용 표시 달기
-// ==========================================================================
-(function markPickRows() {
-    const run = () => {
-        document.querySelectorAll(".control-minimal-row").forEach((row) => {
-            if (row.classList.contains("row-dots")) return;
-            if (row.querySelector("select, .segmented-control")) row.classList.add("row-pick");
-        });
-    };
-    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
-    else run();
-})();
-
-
-// ==========================================================================
 // 저장/복사 해상도: 예전엔 항상 2배(가로 1040px 정도)라서 화질이 아쉬웠다.
 // 이제 캔버스가 작으면 최대 4배까지 올리고, 아주 긴 글(자유 높이)은 아이폰 사파리의
 // 캔버스 한계(약 1천6백만 픽셀)를 넘지 않는 선에서 자동으로 낮춘다. (최소 2배)
