@@ -2185,7 +2185,12 @@ function insertDialogueMarkerIntoEditor(line) {
         selection.addRange(range);
     }
     els.editor.focus();
-    trailing.scrollIntoView({ block: "center", behavior: "smooth" });
+    // ⚠️ scrollIntoView는 보이지 않게 잘라내는 바깥 칸(.editor-scroll-x, overflow:hidden)까지 같이
+    // 밀어 올려서 본문 첫 줄이 클릭 영역 밖으로 사라졌고, 그래서 드래그가 안 됐다.
+    // 그래서 편집창 안에서만 스크롤하고, 바깥 칸은 항상 0으로 되돌린다.
+    els.editor.scrollTop = Math.max(0, trailing.offsetTop - els.editor.clientHeight / 2);
+    const outerScroll = document.getElementById("editorScrollX");
+    if (outerScroll) { outerScroll.scrollTop = 0; outerScroll.scrollLeft = 0; }
     // 모바일 사파리는 가끔 이 시점에 focus를 줘도 키보드가 안 뜨는 경우가 있어서,
     // 다음 프레임에 한 번 더 확실히 포커스·커서 위치를 재적용한다.
     requestAnimationFrame(() => {
@@ -2223,7 +2228,11 @@ window.moveDialogueMarker = moveDialogueMarker;
 function updateDialogueMarkerInEditor(line) {
     if (!els.editor) return;
     const marker = els.editor.querySelector(`.dlg-editor-marker[data-line-id="${line.id}"]`);
-    if (marker) marker.innerHTML = buildDialogueMarkerInnerHTML(line);
+    if (marker) {
+        const html = buildDialogueMarkerInnerHTML(line);
+        marker.innerHTML = html;
+        marker.__lastMarkerHTML = html;
+    }
 }
 
 // 편집창에 이미 들어있는 모든 대사 블록을, 현재 설정(이름표시/따옴표/색상/폰트 등)에 맞춰 다시 그린다.
@@ -2233,8 +2242,16 @@ function refreshAllDialogueMarkers() {
     if (!els.editor) return;
     els.editor.querySelectorAll(".dlg-editor-marker").forEach((marker) => {
         const line = dialogueLines.find((l) => l.id === marker.dataset.lineId);
-        if (line) marker.innerHTML = buildDialogueMarkerInnerHTML(line);
-        else marker.remove(); // 삭제된 대사인데 편집창에 블록이 남아있으면 정리
+        if (line) {
+            // ⚠️ updateCanvas가 불릴 때마다 블록 속을 통째로 새로 만들면, 본문창에서 글자를 드래그해
+            // 선택하는 중에도 선택 영역/터치가 끊겨서 "드래그가 안 된다"고 느껴졌다.
+            // 그려질 HTML이 이전과 같으면 건드리지 않는다.
+            const html = buildDialogueMarkerInnerHTML(line);
+            if (marker.__lastMarkerHTML !== html) {
+                marker.innerHTML = html;
+                marker.__lastMarkerHTML = html;
+            }
+        } else marker.remove(); // 삭제된 대사인데 편집창에 블록이 남아있으면 정리
     });
 }
 
@@ -3898,9 +3915,131 @@ document.addEventListener("DOMContentLoaded", () => {
 // ===== 본문 옆 사진 (Chat2Img 스타일: 한쪽 칸을 채우는 사진) =====
 const sideImg = { src: "", nw: 0, nh: 0, posX: 50, posY: 50 };
 
+// ===== 본문 옆 글자 (위 · 아래 · 왼쪽 · 오른쪽에 글자 칸 붙이기) =====
+// 방향마다 글자 칸을 하나씩 둘 수 있고, 옆 사진과도 함께 쓸 수 있다.
+const SIDE_DIRS = ["left", "right", "top", "bottom"];
+function makeSideTextState() {
+    return {
+        text: "", size: 100, height: 0, fontSize: 14,
+        followColor: true, color: "#333333", bold: false,
+        align: "left", valign: "center",
+        bgOn: false, bgColor: "#f3f3f1",
+        padding: 8, radius: 8, border: 0, gap: 14,
+    };
+}
+const sideTexts = {
+    left: makeSideTextState(), right: makeSideTextState(),
+    top: makeSideTextState(), bottom: makeSideTextState(),
+};
+const sideTextEls = {}; // 방향별 글자 칸 DOM (한 번 만들어 두고 계속 재사용)
+// 옆 사진 칸은 사진이 없을 땐 화면 구조에서 빠져 있을 수 있어서(getElementById로 못 찾음),
+// 처음 로드될 때 한 번 잡아 두고 계속 이 참조를 쓴다.
+const SIDE_IMAGE_BOX = document.getElementById("sideImageBox");
+
+function getSideTextEl(dir) {
+    if (!sideTextEls[dir]) {
+        const el = document.createElement("div");
+        el.className = "side-text-box";
+        el.dataset.dir = dir;
+        const inner = document.createElement("div");
+        inner.className = "side-text-inner";
+        el.appendChild(inner);
+        sideTextEls[dir] = el;
+    }
+    return sideTextEls[dir];
+}
+
+function styleSideTextBox(el, dir, st) {
+    const isRowDir = dir === "left" || dir === "right";
+    const color = st.followColor ? (els.globalTextColor?.value || "#333333") : st.color;
+    const borderRgb = hexToRgb(color) || "rgb(0, 0, 0)";
+    const inner = el.firstChild;
+    inner.textContent = st.text;
+    inner.style.textAlign = st.align;
+
+    el.style.display = "flex";
+    el.style.flexDirection = "column";
+    el.style.justifyContent = st.valign;
+    el.style.boxSizing = "border-box";
+    el.style.padding = `${st.padding}px`;
+    el.style.borderRadius = `${st.radius}px`;
+    el.style.border = st.border ? `${st.border}px solid ${borderRgb.replace("rgb(", "rgba(").replace(")", ", 0.35)")}` : "none";
+    el.style.background = st.bgOn ? st.bgColor : "transparent";
+    el.style.color = color;
+    el.style.fontFamily = els.fontSelect?.value || "inherit";
+    el.style.fontSize = `${st.fontSize}px`;
+    el.style.fontWeight = st.bold ? "700" : "400";
+    el.style.lineHeight = "1.5";
+    el.style.letterSpacing = `${parseFloat(els.letterSpacing?.value) || 0}px`;
+    el.style.flexGrow = "0";
+    el.style.flexShrink = "0";
+    el.style.order = "";
+    if (isRowDir) {
+        el.style.flexBasis = `${st.size}px`;
+        el.style.width = `${st.size}px`;
+        el.style.height = "";
+    } else {
+        el.style.flexBasis = "auto";
+        el.style.width = "";
+        el.style.height = st.height ? `${st.height}px` : "auto";
+    }
+}
+
+// 본문(core)을 가운데 두고, 옆에 붙일 칸(items)을 바깥쪽으로 한 겹씩 감싸 나간다.
+// items 순서 = 안쪽부터 바깥쪽. 겹겹이 감싸는 방식이라 어떤 방향 조합이어도 서로 안 겹친다.
+// (각 겹은 평범한 flex라서, 예전 absolute 방식에서 났던 "높이 0" 문제가 없다)
+function buildSideLayout(row, core, imageBox, items) {
+    const sig = items.map((it) => `${it.key}:${it.dir}`).join("|");
+    const same = row._sideSig === sig && row._sideWraps && row._sideWraps.length === items.length
+        && row.contains(core) && (items.length === 0 || row.firstChild === row._sideWraps[row._sideWraps.length - 1]);
+    if (same) {
+        // 구조가 그대로면 DOM을 다시 옮기지 않고 간격만 갱신한다.
+        row._sideWraps.forEach((wrap, i) => { wrap.style.gap = `${items[i].gap}px`; });
+        return;
+    }
+
+    // 1) 본문을 먼저 꺼내 놓고 나머지(이전 겹/칸)는 전부 치운다.
+    row.appendChild(core);
+    Array.from(row.children).forEach((ch) => { if (ch !== core) row.removeChild(ch); });
+    row._sideWraps = [];
+    row._sideSig = sig;
+
+    if (!items.length) {
+        // 옆 칸이 하나도 없으면 원래(기본) 레이아웃으로 되돌린다.
+        row.insertBefore(imageBox, core);
+        row.style.display = "";
+        core.style.flex = "";
+        core.style.width = "";
+        core.style.minWidth = "";
+        core.style.order = "";
+        return;
+    }
+
+    row.style.display = "";
+    const fitChild = (child, parentIsRow) => {
+        child.style.flex = "1 1 auto";
+        child.style.minWidth = "0";
+        child.style.width = parentIsRow ? "" : "100%";
+        child.style.order = "";
+    };
+    let cur = core;
+    items.forEach((it) => {
+        const isRow = it.dir === "left" || it.dir === "right";
+        const wrap = document.createElement("div");
+        wrap.className = "side-wrap";
+        wrap.style.cssText = `display:flex;flex-direction:${isRow ? "row" : "column"};gap:${it.gap}px;align-items:stretch;width:100%;box-sizing:border-box;`;
+        fitChild(cur, isRow);
+        if (it.dir === "left" || it.dir === "top") { wrap.appendChild(it.el); wrap.appendChild(cur); }
+        else { wrap.appendChild(cur); wrap.appendChild(it.el); }
+        row._sideWraps.push(wrap);
+        cur = wrap;
+    });
+    row.appendChild(cur);
+}
+
 function applySideImage() {
     const row = document.getElementById("sideImageRow");
-    const box = document.getElementById("sideImageBox");
+    const box = SIDE_IMAGE_BOX;
     const textContainer = document.getElementById("canvasTextContainer");
     const wrapper = document.getElementById("canvasTextWrapper");
     if (!row || !box || !textContainer || !wrapper) return;
@@ -3910,73 +4049,161 @@ function applySideImage() {
     // 혹시 예전 방식(여백 트릭)이 남아있으면 초기화
     wrapper.style.paddingLeft = wrapper.style.paddingRight = wrapper.style.paddingTop = wrapper.style.paddingBottom = "";
 
-    if (!sideImg.src) {
-        // 꺼져 있을 땐 flex 관련 inline 스타일을 전부 지워서 기존 레이아웃(CSS 기본값)으로 되돌린다.
-        box.style.display = "none";
-        row.style.display = "";
-        row.style.flexDirection = "";
-        row.style.gap = "";
-        row.style.alignItems = "";
+    const items = []; // 안쪽 → 바깥쪽 순서
+
+    // ---- 옆 사진 ----
+    const v = (id, d) => { const n = parseFloat(document.getElementById(id)?.value); return isNaN(n) ? d : n; };
+    if (sideImg.src) {
+        const dir = document.getElementById("sideImageDir")?.value || "right";
+        const size = v("sideImageSize", 120);
+        const radius = v("sideImageRadius", 8), gap = v("sideImageGap", 14), border = v("sideImageBorder", 0);
+        const isRowDir = dir === "left" || dir === "right";
+        box.style.display = "block";
+        box.style.position = "static";
+        box.style.overflow = "hidden";
+        box.style.boxSizing = "border-box";
+        box.style.borderRadius = `${radius}px`;
+        box.style.border = border ? `${border}px solid rgba(0,0,0,0.25)` : "none";
+        box.style.touchAction = "none";
+        box.style.cursor = "grab";
+        box.style.flexShrink = "0";
+        box.style.flexGrow = "0";
+        box.style.flexBasis = `${size}px`;
+        box.style.width = isRowDir ? `${size}px` : "";
+        box.style.height = isRowDir ? "" : `${size}px`;
         box.style.order = "";
-        textContainer.style.order = "";
-        textContainer.style.width = "";
-        textContainer.style.minWidth = "";
-        return;
+        items.push({ key: "img", el: box, dir, gap });
+    } else {
+        box.style.display = "none";
+        box.style.backgroundImage = "";
     }
 
-    const v = (id, d) => { const n = parseFloat(document.getElementById(id)?.value); return isNaN(n) ? d : n; };
-    const dir = document.getElementById("sideImageDir")?.value || "right";
-    const size = v("sideImageSize", 120), zoom = v("sideImageZoom", 100) / 100;
-    const radius = v("sideImageRadius", 8), gap = v("sideImageGap", 14), border = v("sideImageBorder", 0);
-    const isRowDir = dir === "left" || dir === "right";
+    // ---- 옆 글자 (왼/오 → 위/아래 순으로 바깥에 감싼다: 위·아래 글자가 폭 전체를 쓰게) ----
+    ["left", "right", "top", "bottom"].forEach((dir) => {
+        const st = sideTexts[dir];
+        if (!st || !st.text.trim()) return;
+        const el = getSideTextEl(dir);
+        styleSideTextBox(el, dir, st);
+        items.push({ key: `txt-${dir}`, el, dir, gap: st.gap });
+    });
 
-    // ⚠️ 예전 버전의 버그: box를 position:absolute로 두고 height:calc(100% - ...)/bottom 으로
-    // 띄웠는데, 캔버스 비율이 기본값인 "자동 조절"일 때는 captureArea의 높이가 애초에 auto라서
-    // 그 100%가 계산이 안 되고(부모 체인에 "정해진 높이"가 하나도 없음) 박스가 찌그러지거나
-    // 0 높이로 사라졌다 — 그래서 위/아래는 깨지고 좌/우는 아예 안 보였던 것.
-    // absolute+퍼센트 대신, box를 canvasTextContainer와 나란한 '보통 flex 자식'으로 둔다.
-    // flex는 부모의 확정된 높이 없이도 형제 요소 크기에 맞춰 늘어나므로 이 문제 자체가 없어진다.
-    row.style.display = "flex";
-    row.style.flexDirection = isRowDir ? "row" : "column";
-    row.style.gap = `${gap}px`;
-    row.style.alignItems = "stretch";
-
-    box.style.display = "block";
-    box.style.position = "static";
-    box.style.overflow = "hidden";
-    box.style.boxSizing = "border-box";
-    box.style.borderRadius = `${radius}px`;
-    box.style.border = border ? `${border}px solid rgba(0,0,0,0.25)` : "none";
-    box.style.touchAction = "none";
-    box.style.cursor = "grab";
-    box.style.flexShrink = "0";
-    box.style.flexGrow = "0";
-    box.style.flexBasis = `${size}px`;
-    box.style.width = isRowDir ? `${size}px` : "";
-    box.style.height = isRowDir ? "" : `${size}px`;
-    box.style.order = (dir === "left" || dir === "top") ? "1" : "2";
-
-    textContainer.style.order = (dir === "left" || dir === "top") ? "2" : "1";
-    textContainer.style.flex = "1 1 auto";
-    textContainer.style.width = isRowDir ? "" : "100%";
-    textContainer.style.minWidth = "0"; // flex 자식이 내용 때문에 줄어들지 못해 줄바꿈이 깨지는 것 방지
+    buildSideLayout(row, textContainer, box, items);
 
     // 사진을 칸에 꽉 채우고(cover) 확대/위치 적용 — flex가 이미 레이아웃을 확정했으니
     // clientWidth/Height로 실제 박스 크기를 바로 읽을 수 있다.
-    const bw = box.clientWidth, bh = box.clientHeight;
-    if (bw && bh && sideImg.nw && sideImg.nh) {
-        const scale = Math.max(bw / sideImg.nw, bh / sideImg.nh) * zoom;
-        box.style.backgroundImage = `url("${sideImg.src}")`;
-        box.style.backgroundRepeat = "no-repeat";
-        box.style.backgroundSize = `${sideImg.nw * scale}px ${sideImg.nh * scale}px`;
-        box.style.backgroundPosition = `${sideImg.posX}% ${sideImg.posY}%`;
-        box._scaled = { w: sideImg.nw * scale, h: sideImg.nh * scale, bw, bh };
+    if (sideImg.src) {
+        const zoom = v("sideImageZoom", 100) / 100;
+        const bw = box.clientWidth, bh = box.clientHeight;
+        if (bw && bh && sideImg.nw && sideImg.nh) {
+            const scale = Math.max(bw / sideImg.nw, bh / sideImg.nh) * zoom;
+            box.style.backgroundImage = `url("${sideImg.src}")`;
+            box.style.backgroundRepeat = "no-repeat";
+            box.style.backgroundSize = `${sideImg.nw * scale}px ${sideImg.nh * scale}px`;
+            box.style.backgroundPosition = `${sideImg.posX}% ${sideImg.posY}%`;
+            box._scaled = { w: sideImg.nw * scale, h: sideImg.nh * scale, bw, bh };
+        }
     }
 }
 
+(function setupSideText() {
+    const $ = (id) => document.getElementById(id);
+    const dirInput = $("sideTextDir");
+    if (!dirInput) return;
+
+    const curState = () => sideTexts[dirInput.value] || sideTexts.right;
+    const num = (id, d) => { const n = parseFloat($(id)?.value); return isNaN(n) ? d : n; };
+    const setSeg = (targetId, value) => {
+        document.querySelectorAll(`.segmented-control[data-target="${targetId}"] button`).forEach((b) => {
+            b.classList.toggle("active", b.dataset.value === value);
+        });
+        const hidden = $(targetId);
+        if (hidden) hidden.value = value;
+    };
+    const syncColorRows = () => {
+        const colorRow = $("sideTextColorRow"), bgRow = $("sideTextBgColorRow");
+        if (colorRow) colorRow.style.display = $("sideTextFollowColor").checked ? "none" : "";
+        if (bgRow) bgRow.style.display = $("sideTextBgOn").checked ? "" : "none";
+    };
+
+    // 화면의 설정칸 → 지금 고른 방향의 저장값
+    function readControls() {
+        const st = curState();
+        st.text = $("sideTextContent").value;
+        st.size = num("sideTextSize", 100);
+        st.height = num("sideTextHeight", 0);
+        st.fontSize = num("sideTextFontSize", 14);
+        st.followColor = $("sideTextFollowColor").checked;
+        st.color = $("sideTextColor").value;
+        st.bold = $("sideTextBold").checked;
+        st.align = $("sideTextAlign").value || "left";
+        st.valign = $("sideTextVAlign").value || "center";
+        st.bgOn = $("sideTextBgOn").checked;
+        st.bgColor = $("sideTextBgColor").value;
+        st.padding = num("sideTextPadding", 8);
+        st.radius = num("sideTextRadius", 8);
+        st.border = num("sideTextBorder", 0);
+        st.gap = num("sideTextGap", 14);
+    }
+
+    // 지금 고른 방향의 저장값 → 화면의 설정칸
+    function loadControls() {
+        const st = curState();
+        $("sideTextContent").value = st.text;
+        $("sideTextSize").value = st.size;
+        $("sideTextHeight").value = st.height;
+        $("sideTextFontSize").value = st.fontSize;
+        $("sideTextFollowColor").checked = st.followColor;
+        $("sideTextColor").value = st.color;
+        $("sideTextBold").checked = st.bold;
+        setSeg("sideTextAlign", st.align);
+        setSeg("sideTextVAlign", st.valign);
+        $("sideTextBgOn").checked = st.bgOn;
+        $("sideTextBgColor").value = st.bgColor;
+        $("sideTextPadding").value = st.padding;
+        $("sideTextRadius").value = st.radius;
+        $("sideTextBorder").value = st.border;
+        $("sideTextGap").value = st.gap;
+        syncColorRows();
+        if (typeof syncColorSwatches === "function") syncColorSwatches();
+    }
+
+    const onChange = () => { readControls(); syncColorRows(); updateCanvas(); };
+    ["sideTextContent", "sideTextSize", "sideTextHeight", "sideTextFontSize", "sideTextColor", "sideTextBgColor",
+     "sideTextPadding", "sideTextRadius", "sideTextBorder", "sideTextGap"].forEach((id) => {
+        $(id)?.addEventListener("input", onChange);
+    });
+    ["sideTextFollowColor", "sideTextBold", "sideTextBgOn"].forEach((id) => {
+        $(id)?.addEventListener("change", onChange);
+    });
+
+    // 정렬(가로/세로)은 눌린 버튼의 값을 직접 읽어서 반영 (공통 처리와 순서가 달라도 안전)
+    ["sideTextAlign", "sideTextVAlign"].forEach((target) => {
+        document.querySelectorAll(`.segmented-control[data-target="${target}"] button`).forEach((b) => {
+            b.addEventListener("click", () => { setSeg(target, b.dataset.value); onChange(); });
+        });
+    });
+
+    // 방향을 바꾸면 그 방향에 저장된 글자·설정을 다시 보여준다.
+    document.querySelectorAll('.segmented-control[data-target="sideTextDir"] button').forEach((b) => {
+        b.addEventListener("click", () => {
+            setSeg("sideTextDir", b.dataset.value);
+            loadControls();
+            updateCanvas();
+        });
+    });
+
+    $("btnClearSideText")?.addEventListener("click", () => {
+        Object.assign(curState(), makeSideTextState());
+        loadControls();
+        updateCanvas();
+    });
+
+    loadControls();
+})();
+
 (function setupSideImage() {
     const input = document.getElementById("sideImageInput");
-    const box = document.getElementById("sideImageBox");
+    const box = SIDE_IMAGE_BOX;
     if (!input || !box) return;
     input.addEventListener("change", (e) => {
         const f = e.target.files && e.target.files[0];
@@ -4055,7 +4282,7 @@ function applySideImage() {
 (function setupColorMemory() {
     const STORAGE_KEY = "quoteStudioColorPrefs";
     // 특정 캐릭터/항목 하나에 속한 색은 "마지막으로 쓴 공통 색"으로 취급하면 안 되므로 제외
-    const EXCLUDE_IDS = new Set(["charEditorColor"]);
+    const EXCLUDE_IDS = new Set(["charEditorColor", "sideTextColor", "sideTextBgColor"]);
 
     function loadPrefs() {
         try {
@@ -5379,3 +5606,15 @@ function getExportScale(el) {
     const fit = Math.sqrt(MAX_PIXELS / (w * h));
     return Math.min(4, Math.max(2, Math.floor(fit * 2) / 2));
 }
+
+
+// 본문 편집창을 감싸는 칸(overflow:hidden)은 사용자가 직접 스크롤할 일이 없다.
+// 포커스/커서 이동 등으로 브라우저가 몰래 밀어도 바로 0으로 되돌려서 글자가 가려지지 않게 한다.
+(function guardEditorOuterScroll() {
+    const outer = document.getElementById("editorScrollX");
+    if (!outer) return;
+    outer.addEventListener("scroll", () => {
+        if (outer.scrollTop !== 0) outer.scrollTop = 0;
+        if (outer.scrollLeft !== 0) outer.scrollLeft = 0;
+    });
+})();
