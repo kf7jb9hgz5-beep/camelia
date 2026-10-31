@@ -11,12 +11,13 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=76" />
+        <link rel="stylesheet" href="style.css?v=78" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
             <div id="captureAreaScaleWrapper">
                 <div id="captureArea">
+                    <div id="bgHtmlLayer"></div>
                     <div class="bg-image-layer" id="bgImageLayer"></div>
                     <div class="bg-overlay-layer" id="bgOverlayLayer"></div>
                     <div id="halftoneLayer" style="position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden;"></div>
@@ -402,9 +403,6 @@
                 <div class="field-hint">기본값: 크기 14 · 자간 0 · 행간 18 · 문단 2 · 폭 1 · 장평 100 · 출처 크기 11</div>
             </div>
             <div class="tab-panel" id="panel-bg">
-                <div class="panel-section-title">색 팔레트</div>
-                <div class="field-hint">누르면 배경·글자·보조색·강조선·구분선·하프톤 색이 한 번에 바뀌어요. (글 내용은 그대로예요)</div>
-                <div class="palette-grid" id="paletteGrid"></div>
                 <div class="panel-section-title">캔버스 설정</div>
                 <div class="control-minimal-row">
                     <label for="ratioSelect">캔버스 비율</label>
@@ -477,6 +475,7 @@
                     <select id="bgType">
                         <option value="solid" selected>단색</option>
                         <option value="gradient">그라데이션</option>
+                        <option value="html">HTML 배경</option>
                     </select>
                 </div>
                 <div id="solidColorArea" class="picker-minimal-group">
@@ -518,6 +517,17 @@
                             <option value="45deg">빗각</option>
                         </select>
                     </div>
+                </div>
+                <div id="htmlBgArea" class="image-upload-config-box" style="display: none">
+                    <div class="control-minimal-row">
+                        <label>배경 HTML</label>
+                        <div>
+                            <button type="button" id="btnHtmlBgExample" class="btn-minimal-save">예시 넣기</button>
+                            <button type="button" id="btnHtmlBgClear" class="text-danger">비우기</button>
+                        </div>
+                    </div>
+                    <textarea id="bgHtml" class="side-text-input html-bg-input" rows="8" spellcheck="false" placeholder="&lt;style&gt;&#10;  body { background: #e6f4fd; }&#10;&lt;/style&gt;&#10;&lt;div class=&quot;deco&quot;&gt;&lt;/div&gt;"></textarea>
+                    <div class="field-hint" id="htmlBgStatus">입력한 HTML을 캔버스 크기 그대로 그림으로 바꿔 배경에 깔아요. &lt;style&gt;과 인라인 스타일을 쓸 수 있고, 스크립트는 실행되지 않아요. 위의 "배경 색상"은 HTML 뒤에 깔리는 바탕색이에요.</div>
                 </div>
                 <div id="bgImageControls" class="image-upload-config-box">
                     <div class="control-minimal-row">
@@ -674,6 +684,9 @@
                     <input type="text" id="frameSymbol" value="✦" maxlength="4" style="width: 64px; text-align: center" />
                 </div>
                 <div class="field-hint" id="frameHint" style="display: none">원하는 기호나 이모지를 입력하면 네 모서리에 올라가요 (예: ✦, ♡, 🌸).</div>
+                <div class="panel-section-title">색 팔레트</div>
+                <div class="field-hint">누르면 배경·글자·보조색·강조선·구분선·하프톤 색이 한 번에 바뀌어요. (글 내용은 그대로예요)</div>
+                <div class="palette-grid" id="paletteGrid"></div>
             </div>
             <div class="tab-panel" id="panel-text">
                 <div class="panel-section-title">색상 변경</div>
@@ -764,6 +777,16 @@
 
                 <div class="panel-section-title">각주</div>
                 <div class="field-hint">본문에서 각주를 넣을 위치를 누른 다음, 편집창 위 툴바의 "각주" 버튼을 누르면 작은 번호가 삽입돼요. 여기서 그 번호의 설명을 적으면 본문 맨 아래에 각주 목록으로 나와요.</div>
+                <div class="control-minimal-row">
+                    <label>각주 정렬</label>
+                    <input type="hidden" id="footnoteAlign" value="left" />
+                    <div class="segmented-control segmented-control-minimal" data-target="footnoteAlign">
+                        <button type="button" data-value="left" class="active">좌</button>
+                        <button type="button" data-value="center">중</button>
+                        <button type="button" data-value="right">우</button>
+                        <button type="button" data-value="justify">양쪽</button>
+                    </div>
+                </div>
                 <div class="control-minimal-row">
                     <label for="footnoteColor">각주 번호 색</label>
                     <input type="color" id="footnoteColor" value="#2563eb" />
@@ -930,25 +953,12 @@
                         </div>
                     </div>
                     <div class="control-minimal-row">
-                        <div class="checkbox-minimal-group">
-                            <label><input type="checkbox" id="sideTextBgOn" /> 칸 배경색 쓰기</label>
-                        </div>
-                    </div>
-                    <div class="control-minimal-row" id="sideTextBgColorRow" style="display: none">
-                        <label for="sideTextBgColor">배경색</label>
-                        <input type="color" id="sideTextBgColor" value="#f3f3f1" />
-                    </div>
-                    <div class="control-minimal-row">
                         <label>안쪽 여백</label>
                         <input type="range" id="sideTextPadding" min="0" max="30" value="8" />
                     </div>
                     <div class="control-minimal-row">
                         <label>모서리 둥글기</label>
                         <input type="range" id="sideTextRadius" min="0" max="40" value="8" />
-                    </div>
-                    <div class="control-minimal-row">
-                        <label>테두리</label>
-                        <input type="range" id="sideTextBorder" min="0" max="6" value="0" />
                     </div>
                     <div class="control-minimal-row">
                         <label>본문 사이 간격</label>
@@ -1037,8 +1047,8 @@
                 <div class="control-minimal-row" id="dlgNameSuffixArea">
                     <label for="dlgNameSuffix">이름 뒤 기호</label>
                     <select id="dlgNameSuffix">
-                        <option value="">없음</option>
-                        <option value=":" selected>:</option>
+                        <option value="" selected>없음</option>
+                        <option value=":">:</option>
                         <option value=" -"> -</option>
                         <option value=".">.</option>
                     </select>
@@ -1217,6 +1227,6 @@
 
         <script src="presets.js?v=49"></script>
         <script src="decor-assets.js?v=1"></script>
-        <script src="script.js?v=65"></script>
+        <script src="script.js?v=67"></script>
     </body>
 </html>

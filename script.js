@@ -276,7 +276,9 @@ function updateCanvasCore() {
 
     els.captureArea.style.padding = `${els.paddingTop.value}px ${els.paddingRight.value}px ${els.paddingBottom.value}px ${els.paddingLeft.value}px`;
 
-    if (els.bgType.value === "solid") {
+    const htmlBgAreaEl = document.getElementById("htmlBgArea");
+    if (htmlBgAreaEl) htmlBgAreaEl.style.display = els.bgType.value === "html" ? "" : "none";
+    if (els.bgType.value === "solid" || els.bgType.value === "html") {
         document.getElementById("solidColorArea").style.display = "grid";
         document.getElementById("gradientColorArea").style.display = "none";
         els.captureArea.style.background = els.bgColor1.value;
@@ -294,6 +296,7 @@ function updateCanvasCore() {
         }
     }
 
+    syncHtmlBackground();
     renderCanvasHeading();
 
     const textWrapper = document.getElementById("canvasTextWrapper");
@@ -302,6 +305,7 @@ function updateCanvasCore() {
         // 그려지는 진짜 대사 블록이다. 본문(rawHTML) 안에 그대로 살아있는 채로 캔버스에 반영되므로,
         // 여기서 매번 최신 설정(이름표시·따옴표·색상·폰트 등)에 맞춰 블록 모양부터 새로고침한 다음
         // 본문 내용을 그대로 캔버스에 옮긴다. (더 이상 대사 목록을 따로 append하지 않음 — 중복 방지)
+        rebindImageBlocks();
         ensureAllDialogueMarkersExist();
         refreshAllDialogueMarkers();
         // 대사 블록 위에 있는 위/아래 이동 버튼(.dlg-marker-controls)은 편집 편의용이라 실제
@@ -368,7 +372,7 @@ function updateCanvasCore() {
             els.editor.style.setProperty("--divider-style", dividerStyleVal);
         }
 
-        const dlgNameSuffixVal = `"${document.getElementById("dlgNameSuffix")?.value ?? ":"}"`;
+        const dlgNameSuffixVal = `"${document.getElementById("dlgNameSuffix")?.value ?? ""}"`;
         textWrapper.style.setProperty("--dlg-name-suffix", dlgNameSuffixVal);
         if (els.editor) els.editor.style.setProperty("--dlg-name-suffix", dlgNameSuffixVal);
 
@@ -939,7 +943,7 @@ function prepareCanvasForCapture(container) {
         container.__transparentSaved = {
             background: container.style.background,
             boxShadow: container.style.boxShadow,
-            layers: ["bgImageLayer", "bgOverlayLayer"].map((id) => {
+            layers: ["bgHtmlLayer", "bgImageLayer", "bgOverlayLayer"].map((id) => {
                 const el = document.getElementById(id);
                 const prev = el ? el.style.display : "";
                 if (el) el.style.display = "none";
@@ -1161,6 +1165,19 @@ function getContrastColor(colorStr) {
     return luminance > 0.55 ? "#000000" : "#ffffff";
 }
 
+// 반전 색상 = "선택한 글자색". 글자에 따로 색을 입힌 경우(보조색 등)엔 그 색을, 아무 색도
+// 안 입힌 기본 글자는 설정에서 고른 본문 글자색(globalTextColor)을 쓴다.
+// (편집창 안의 기본 글자는 화면용 어두운 색이라 computedStyle을 그대로 쓰면 고른 색과 달라진다)
+function getInvertSourceColor(el) {
+    for (let n = el; n && n !== els.editor; n = n.parentElement) {
+        if ((n.style && n.style.color) || (n.tagName === "FONT" && n.getAttribute("color"))) {
+            return window.getComputedStyle(n).color;
+        }
+    }
+    const picked = els.globalTextColor && hexToRgb(els.globalTextColor.value);
+    return picked || window.getComputedStyle(el).color;
+}
+
 // 선택 영역의 각 글자가 가진 "현재 글자색"을 그대로 배경색으로 바꾸고,
 // 글자색은 그 배경과 대비되는 색(흰/검)으로 반전시킨다.
 function applyInvertToSelection() {
@@ -1179,7 +1196,7 @@ function applyInvertToSelection() {
 
         textNodes.forEach((textNode) => {
             if (!textNode.nodeValue || !textNode.parentElement) return;
-            const computedColor = window.getComputedStyle(textNode.parentElement).color;
+            const computedColor = getInvertSourceColor(textNode.parentElement);
             const span = document.createElement("span");
             span.style.backgroundColor = computedColor;
             span.style.color = getContrastColor(computedColor);
@@ -1874,7 +1891,8 @@ function buildFootnoteListHTML() {
     const dividerWidth = isNaN(dividerWidthRaw) ? 1 : Math.max(0.5, dividerWidthRaw);
     const borderStyle = showDivider ? `border-top:${dividerWidth}px solid ${dividerColor};` : "";
     const rows = footnotes.map((note, i) => `<div style="margin-top:2px;"><span style="color:${color};font-weight:700;">${i + 1})</span> ${escapeHtml(note.text || "")}</div>`).join("");
-    return `<div style="margin-top:20px;padding-top:10px;${borderStyle}font-size:12px;line-height:1.6;opacity:0.75;text-align:left;">${rows}</div>`;
+    const align = document.getElementById("footnoteAlign")?.value || "left";
+    return `<div style="margin-top:20px;padding-top:10px;${borderStyle}font-size:12px;line-height:1.6;opacity:0.75;text-align:${align};">${rows}</div>`;
 }
 
 // 각주 번호(본문 안의 위첨자 마커) 색은 설정을 바꿀 때마다 즉시 반영되도록, updateCanvas가 실행될
@@ -1917,7 +1935,7 @@ function buildDialogueBlockHTML(line) {
     const showName = document.getElementById("dlgShowName")?.checked !== false && line.showName !== false;
     const showTranslation = document.getElementById("dlgShowTranslation")?.checked;
     const useCharColor = document.getElementById("dlgUseCharColor")?.checked;
-    const nameSuffix = document.getElementById("dlgNameSuffix")?.value ?? ":";
+    const nameSuffix = document.getElementById("dlgNameSuffix")?.value ?? "";
     const quoteChars = getQuoteChars(document.getElementById("dlgQuoteStyle")?.value || "none");
     const nameGapRaw = parseFloat(document.getElementById("dlgNameGap")?.value);
     const nameGap = isNaN(nameGapRaw) ? 14 : nameGapRaw;
@@ -2529,6 +2547,7 @@ function undoEdit() {
     if (historyIndex <= 0) return;
     historyIndex--;
     els.editor.innerHTML = editorHistory[historyIndex];
+    if (typeof deselectImageBlock === "function") deselectImageBlock();
     updateCanvas();
     updateHistoryButtons();
 }
@@ -2537,6 +2556,7 @@ function redoEdit() {
     if (historyIndex >= editorHistory.length - 1) return;
     historyIndex++;
     els.editor.innerHTML = editorHistory[historyIndex];
+    if (typeof deselectImageBlock === "function") deselectImageBlock();
     updateCanvas();
     updateHistoryButtons();
 }
@@ -2794,7 +2814,7 @@ document.addEventListener("DOMContentLoaded", () => {
         els.dlgAvatarSize, els.dlgUseCharColor, els.dlgLineGap, els.dlgContinuationGap,
         els.dlgNameGap,
         document.getElementById("dlgParagraphIndent"), document.getElementById("dlgNameColumnWidth"),
-        document.getElementById("footnoteColor"), document.getElementById("footnoteDividerShow"),
+        document.getElementById("footnoteColor"), document.getElementById("footnoteAlign"), document.getElementById("footnoteDividerShow"),
         document.getElementById("footnoteDividerColor"), document.getElementById("footnoteDividerWidth")
     ];
     autoTriggers.forEach((el) => {
@@ -3172,7 +3192,17 @@ function applyImageFillRatio(block, ratioStr) {
     block.style.aspectRatio = `${rw || 16} / ${rh || 9}`;
 }
 
-function selectImageBlock(block) {
+function scrollSheetToImageBlockPanel() {
+    const target = document.getElementById("imageBlockPanel");
+    if (!target) return;
+    let p = target.parentElement;
+    while (p && !(p.scrollHeight > p.clientHeight + 4 && /(auto|scroll)/.test(getComputedStyle(p).overflowY))) p = p.parentElement;
+    if (!p) return;
+    const delta = target.getBoundingClientRect().top - p.getBoundingClientRect().top;
+    p.scrollTop += delta - 56;
+}
+
+function selectImageBlock(block, scrollToPanel) {
     if (currentImageBlock && currentImageBlock !== block) {
         currentImageBlock.classList.remove("selected");
     }
@@ -3184,6 +3214,7 @@ function selectImageBlock(block) {
     if (panel) panel.style.display = "flex";
     if (emptyHint) emptyHint.style.display = "none";
     openSheetPanel("panel-image");
+    if (scrollToPanel) setTimeout(scrollSheetToImageBlockPanel, 60);
 
     const sizeInput = document.getElementById("imgBlockSize");
     const radiusInput = document.getElementById("imgBlockRadius");
@@ -3255,10 +3286,28 @@ function applyPanelToBlock() {
     updateCanvas();
 }
 
+// 되돌리기/다시실행 등으로 편집창 내용이 통째로 다시 만들어지면 사진 블록의 크기 조절 핸들 이벤트가
+// 사라져서 "사진 편집이 안 되는" 상태가 됐다. 그래서 캔버스를 갱신할 때마다 아직 이벤트가 안
+// 붙은 사진 블록을 찾아 다시 붙여 준다. (핸들이 없으면 새로 만든다)
+function rebindImageBlocks() {
+    if (!els.editor) return;
+    els.editor.querySelectorAll(".editor-image-block").forEach((block) => {
+        if (block.__imgBound) return;
+        if (!block.querySelector(".image-resize-handle")) {
+            const handle = document.createElement("div");
+            handle.className = "image-resize-handle no-export";
+            block.appendChild(handle);
+        }
+        attachImageBlockInteractions(block);
+        if (currentImageBlock && !els.editor.contains(currentImageBlock)) currentImageBlock = null;
+    });
+}
+
 function attachImageBlockInteractions(block) {
     const handle = block.querySelector(".image-resize-handle");
     const img = block.querySelector("img");
-    if (!handle || !img) return;
+    if (!handle || !img || block.__imgBound) return;
+    block.__imgBound = true;
 
     // ---- 모서리 드래그 = 박스 크기 조절 (항상 비율 고정) ----
     let resizing = false;
@@ -3367,7 +3416,7 @@ function insertImageBlock(dataURL, naturalW, naturalH) {
     }
 
     updateCanvas();
-    selectImageBlock(block);
+    selectImageBlock(block, true);
 }
 
 /* =========================================================
@@ -3801,7 +3850,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 // 선택된 사진을 한 번 더 누르면 선택 해제
                 deselectImageBlock();
             } else {
-                selectImageBlock(block);
+                selectImageBlock(block, true);
             }
         } else {
             deselectImageBlock();
@@ -3923,8 +3972,7 @@ function makeSideTextState() {
         text: "", size: 100, height: 0, fontSize: 14,
         followColor: true, color: "#333333", bold: false,
         align: "left", valign: "center",
-        bgOn: false, bgColor: "#f3f3f1",
-        padding: 8, radius: 8, border: 0, gap: 14,
+        padding: 8, radius: 8, gap: 14,
     };
 }
 const sideTexts = {
@@ -3952,7 +4000,6 @@ function getSideTextEl(dir) {
 function styleSideTextBox(el, dir, st) {
     const isRowDir = dir === "left" || dir === "right";
     const color = st.followColor ? (els.globalTextColor?.value || "#333333") : st.color;
-    const borderRgb = hexToRgb(color) || "rgb(0, 0, 0)";
     const inner = el.firstChild;
     inner.textContent = st.text;
     inner.style.textAlign = st.align;
@@ -3963,8 +4010,8 @@ function styleSideTextBox(el, dir, st) {
     el.style.boxSizing = "border-box";
     el.style.padding = `${st.padding}px`;
     el.style.borderRadius = `${st.radius}px`;
-    el.style.border = st.border ? `${st.border}px solid ${borderRgb.replace("rgb(", "rgba(").replace(")", ", 0.35)")}` : "none";
-    el.style.background = st.bgOn ? st.bgColor : "transparent";
+    el.style.border = "none";
+    el.style.background = "transparent";
     el.style.color = color;
     el.style.fontFamily = els.fontSelect?.value || "inherit";
     el.style.fontSize = `${st.fontSize}px`;
@@ -4089,6 +4136,26 @@ function applySideImage() {
 
     buildSideLayout(row, textContainer, box, items);
 
+    // 왼쪽/오른쪽 옆 사진: 높이를 "본문 글자가 실제로 차지하는 맨 위 ~ 맨 아래"에 딱 맞춘다.
+    // (글자 칸이 캔버스 높이만큼 늘어나 있어도 사진이 따라 늘어나지 않게 — 아래 제작자·제목과는 별개)
+    if (sideImg.src) {
+        const sideDir = document.getElementById("sideImageDir")?.value || "right";
+        if (sideDir === "left" || sideDir === "right") {
+            box.style.alignSelf = "flex-start";
+            box.style.height = "";
+            box.style.marginTop = "";
+            const scale = (textContainer.offsetHeight ? textContainer.getBoundingClientRect().height / textContainer.offsetHeight : 1) || 1;
+            const wrapTop = wrapper.getBoundingClientRect().top;
+            const boxTop = box.getBoundingClientRect().top;
+            const textH = Math.max(1, wrapper.offsetHeight);
+            box.style.marginTop = `${Math.max(0, (wrapTop - boxTop) / scale)}px`;
+            box.style.height = `${textH}px`;
+        } else {
+            box.style.alignSelf = "";
+            box.style.marginTop = "";
+        }
+    }
+
     // 사진을 칸에 꽉 채우고(cover) 확대/위치 적용 — flex가 이미 레이아웃을 확정했으니
     // clientWidth/Height로 실제 박스 크기를 바로 읽을 수 있다.
     if (sideImg.src) {
@@ -4120,9 +4187,8 @@ function applySideImage() {
         if (hidden) hidden.value = value;
     };
     const syncColorRows = () => {
-        const colorRow = $("sideTextColorRow"), bgRow = $("sideTextBgColorRow");
+        const colorRow = $("sideTextColorRow");
         if (colorRow) colorRow.style.display = $("sideTextFollowColor").checked ? "none" : "";
-        if (bgRow) bgRow.style.display = $("sideTextBgOn").checked ? "" : "none";
     };
 
     // 화면의 설정칸 → 지금 고른 방향의 저장값
@@ -4137,11 +4203,8 @@ function applySideImage() {
         st.bold = $("sideTextBold").checked;
         st.align = $("sideTextAlign").value || "left";
         st.valign = $("sideTextVAlign").value || "center";
-        st.bgOn = $("sideTextBgOn").checked;
-        st.bgColor = $("sideTextBgColor").value;
         st.padding = num("sideTextPadding", 8);
         st.radius = num("sideTextRadius", 8);
-        st.border = num("sideTextBorder", 0);
         st.gap = num("sideTextGap", 14);
     }
 
@@ -4157,22 +4220,19 @@ function applySideImage() {
         $("sideTextBold").checked = st.bold;
         setSeg("sideTextAlign", st.align);
         setSeg("sideTextVAlign", st.valign);
-        $("sideTextBgOn").checked = st.bgOn;
-        $("sideTextBgColor").value = st.bgColor;
         $("sideTextPadding").value = st.padding;
         $("sideTextRadius").value = st.radius;
-        $("sideTextBorder").value = st.border;
         $("sideTextGap").value = st.gap;
         syncColorRows();
         if (typeof syncColorSwatches === "function") syncColorSwatches();
     }
 
     const onChange = () => { readControls(); syncColorRows(); updateCanvas(); };
-    ["sideTextContent", "sideTextSize", "sideTextHeight", "sideTextFontSize", "sideTextColor", "sideTextBgColor",
-     "sideTextPadding", "sideTextRadius", "sideTextBorder", "sideTextGap"].forEach((id) => {
+    ["sideTextContent", "sideTextSize", "sideTextHeight", "sideTextFontSize", "sideTextColor",
+     "sideTextPadding", "sideTextRadius", "sideTextGap"].forEach((id) => {
         $(id)?.addEventListener("input", onChange);
     });
-    ["sideTextFollowColor", "sideTextBold", "sideTextBgOn"].forEach((id) => {
+    ["sideTextFollowColor", "sideTextBold"].forEach((id) => {
         $(id)?.addEventListener("change", onChange);
     });
 
@@ -4282,7 +4342,7 @@ function applySideImage() {
 (function setupColorMemory() {
     const STORAGE_KEY = "quoteStudioColorPrefs";
     // 특정 캐릭터/항목 하나에 속한 색은 "마지막으로 쓴 공통 색"으로 취급하면 안 되므로 제외
-    const EXCLUDE_IDS = new Set(["charEditorColor", "sideTextColor", "sideTextBgColor"]);
+    const EXCLUDE_IDS = new Set(["charEditorColor", "sideTextColor"]);
 
     function loadPrefs() {
         try {
@@ -5616,5 +5676,175 @@ function getExportScale(el) {
     outer.addEventListener("scroll", () => {
         if (outer.scrollTop !== 0) outer.scrollTop = 0;
         if (outer.scrollLeft !== 0) outer.scrollLeft = 0;
+    });
+})();
+
+
+/* ========================================================================
+   HTML 배경 (Chat2Img 방식)
+   - 입력한 HTML을 캔버스 크기(px 그대로) 그림으로 바꿔서 배경 맨 아래에 깐다.
+   - <style>·인라인 스타일 사용 가능, script/iframe/link 등은 제거된다.
+   - 외부 이미지·폰트 주소는 미리 받아서 HTML 안에 넣는다(그림으로 바꾸면 외부 파일을 못 읽기 때문).
+   ======================================================================== */
+const htmlBgState = { key: null, seq: 0, timer: null };
+const htmlBgUrlCache = new Map();
+
+function setHtmlBgStatus(text, isError) {
+    const el = document.getElementById("htmlBgStatus");
+    if (!el) return;
+    if (!el.dataset.defaultText) el.dataset.defaultText = el.textContent;
+    el.textContent = text || el.dataset.defaultText;
+    el.style.color = isError ? "#e11d48" : "";
+}
+
+async function htmlBgUrlToDataUrl(url) {
+    if (htmlBgUrlCache.has(url)) return htmlBgUrlCache.get(url);
+    const job = (async () => {
+        try {
+            const res = await fetch(url, { mode: "cors" });
+            if (!res.ok) return null;
+            const blob = await res.blob();
+            return await new Promise((resolve) => {
+                const fr = new FileReader();
+                fr.onload = () => resolve(fr.result);
+                fr.onerror = () => resolve(null);
+                fr.readAsDataURL(blob);
+            });
+        } catch (e) {
+            return null; // 외부 사이트가 막아두면 못 불러옴
+        }
+    })();
+    htmlBgUrlCache.set(url, job);
+    return job;
+}
+
+function htmlBgResolveUrl(u) {
+    if (!u || /^(data:|blob:|#)/i.test(u)) return null;
+    try { return new URL(u, location.href).href; } catch (e) { return null; }
+}
+
+async function htmlBgInlineUrls(doc) {
+    const tasks = [];
+    doc.querySelectorAll("img[src], image[href]").forEach((el) => {
+        const attr = el.hasAttribute("src") ? "src" : "href";
+        const abs = htmlBgResolveUrl(el.getAttribute(attr));
+        if (!abs) return;
+        tasks.push(htmlBgUrlToDataUrl(abs).then((d) => { if (d) el.setAttribute(attr, d); }));
+    });
+    const urlRe = /url\(\s*(['"]?)([^'")]+)\1\s*\)/gi;
+    const fixCss = async (css) => {
+        const found = [...css.matchAll(urlRe)].map((m) => m[2].trim());
+        const map = new Map();
+        await Promise.all([...new Set(found)].map(async (u) => {
+            const abs = htmlBgResolveUrl(u);
+            if (abs) map.set(u, await htmlBgUrlToDataUrl(abs));
+        }));
+        return css.replace(urlRe, (m, q, u) => {
+            const d = map.get(u.trim());
+            return d ? `url("${d}")` : m;
+        });
+    };
+    doc.querySelectorAll("style").forEach((el) => {
+        tasks.push(fixCss(el.textContent).then((css) => { el.textContent = css; }));
+    });
+    doc.querySelectorAll("[style]").forEach((el) => {
+        tasks.push(fixCss(el.getAttribute("style")).then((css) => el.setAttribute("style", css)));
+    });
+    await Promise.all(tasks);
+}
+
+async function buildHtmlBgDataUrl(html, w, h) {
+    const doc = new DOMParser().parseFromString(html || "", "text/html");
+    doc.querySelectorAll("script, iframe, object, embed, link, meta, base").forEach((el) => el.remove());
+    await htmlBgInlineUrls(doc);
+
+    // 기본값: 여백 없이 캔버스 크기에 딱 맞게 (사용자 스타일이 뒤에 오므로 덮어쓸 수 있음)
+    const font = (els.fontSelect && els.fontSelect.value) || "sans-serif";
+    const baseStyle = doc.createElement("style");
+    baseStyle.textContent =
+        `html,body{margin:0;padding:0;width:${w}px;height:${h}px;overflow:hidden;}` +
+        `body{position:relative;font-family:${font},sans-serif;}` +
+        `*{box-sizing:border-box;}`;
+    doc.head.insertBefore(baseStyle, doc.head.firstChild);
+
+    const xhtml = new XMLSerializer().serializeToString(doc.documentElement);
+    const svg =
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
+        `<foreignObject x="0" y="0" width="${w}" height="${h}">${xhtml}</foreignObject></svg>`;
+    const svgUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => reject(new Error("HTML을 그림으로 바꾸지 못했어요"));
+        img.src = svgUrl;
+    });
+    if (img.decode) { try { await img.decode(); } catch (e) {} }
+
+    // 저장 라이브러리가 SVG(foreignObject)를 못 그리는 경우가 있어서, 한 번 PNG로 구워서 쓴다.
+    try {
+        const scale = 2;
+        const c = document.createElement("canvas");
+        c.width = Math.round(w * scale);
+        c.height = Math.round(h * scale);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        return c.toDataURL("image/png");
+    } catch (e) {
+        return svgUrl; // 브라우저가 막으면 SVG 그대로
+    }
+}
+
+function syncHtmlBackground() {
+    const layer = document.getElementById("bgHtmlLayer");
+    if (!layer || !els.captureArea) return;
+    const html = (document.getElementById("bgHtml")?.value || "").trim();
+    if (els.bgType.value !== "html" || !html) {
+        layer.style.backgroundImage = "";
+        htmlBgState.key = null;
+        htmlBgState.seq++;
+        clearTimeout(htmlBgState.timer);
+        setHtmlBgStatus("");
+        return;
+    }
+    const w = els.captureArea.offsetWidth, h = els.captureArea.offsetHeight;
+    if (!w || !h) return;
+    const key = `${w}x${h}|${els.fontSelect ? els.fontSelect.value : ""}|${html}`;
+    if (htmlBgState.key === key) return;
+    htmlBgState.key = key;
+    const mySeq = ++htmlBgState.seq;
+    clearTimeout(htmlBgState.timer);
+    setHtmlBgStatus("그리는 중…");
+    htmlBgState.timer = setTimeout(async () => {
+        try {
+            const url = await buildHtmlBgDataUrl(html, w, h);
+            if (mySeq !== htmlBgState.seq) return;
+            layer.style.backgroundImage = `url("${url}")`;
+            setHtmlBgStatus(`적용됨 · 배경 크기 ${w} × ${h}px`);
+        } catch (err) {
+            if (mySeq !== htmlBgState.seq) return;
+            console.warn("HTML 배경 오류:", err);
+            setHtmlBgStatus("⚠ HTML을 그리지 못했어요. 닫는 태그나 따옴표를 확인해 주세요.", true);
+        }
+    }, 350);
+}
+
+(function setupHtmlBg() {
+    const input = document.getElementById("bgHtml");
+    if (!input) return;
+    input.addEventListener("input", () => updateCanvas());
+    document.getElementById("btnHtmlBgExample")?.addEventListener("click", () => {
+        input.value =
+`<style>
+  body { background: linear-gradient(160deg, #ffe4ec, #e6f4fd); }
+  .dot { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.7); }
+</style>
+<div class="dot" style="width:140px;height:140px;left:-40px;top:-40px"></div>
+<div class="dot" style="width:90px;height:90px;right:24px;bottom:48px"></div>
+<div class="dot" style="width:40px;height:40px;right:90px;top:60px"></div>`;
+        updateCanvas();
+    });
+    document.getElementById("btnHtmlBgClear")?.addEventListener("click", () => {
+        input.value = "";
+        updateCanvas();
     });
 })();
