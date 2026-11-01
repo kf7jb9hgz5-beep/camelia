@@ -204,6 +204,7 @@ function updateCanvas() {
     if (typeof renderWatermarkLayer === "function") renderWatermarkLayer();
     if (typeof renderFrameDecoration === "function") renderFrameDecoration();
     if (typeof syncColorSwatches === "function") syncColorSwatches();
+    if (typeof refreshHeartNumbers === "function") refreshHeartNumbers();
     scheduleRefitAfterFonts();
 }
 
@@ -937,6 +938,14 @@ function syncLiveHighlights(overrideColors = null) {
 }
 
 function prepareCanvasForCapture(container) {
+    // HTML 배경을 저장용 그림으로 못 바꾼 브라우저에서는, 그 배경 때문에 저장 전체가 실패하지 않도록 잠깐 빼고 저장
+    {
+        const htmlLayer = document.getElementById("bgHtmlLayer");
+        if (htmlLayer && typeof htmlBgState !== "undefined" && !htmlBgState.saveable && htmlLayer.style.backgroundImage) {
+            container.__htmlBgHidden = [htmlLayer, htmlLayer.style.display];
+            htmlLayer.style.display = "none";
+        }
+    }
     // 투명 배경으로 저장: 배경색/그라데이션/배경 사진/오버레이/그림자를 저장하는 순간만 잠깐 빼고,
     // 글자·스티커·테두리 장식·하프톤 같은 "올려둔 것들"만 PNG에 남긴다. (끝나면 restore에서 되돌림)
     if (document.getElementById("exportTransparent")?.checked) {
@@ -973,6 +982,11 @@ function prepareCanvasForCapture(container) {
 }
 
 function restoreCanvasAfterCapture(container) {
+    if (container.__htmlBgHidden) {
+        const [htmlLayer, prev] = container.__htmlBgHidden;
+        htmlLayer.style.display = prev;
+        container.__htmlBgHidden = null;
+    }
     if (container.__transparentSaved) {
         const saved = container.__transparentSaved;
         container.style.background = saved.background;
@@ -2849,6 +2863,8 @@ async function syncBeforeExport() {
     try {
         if (document.fonts && document.fonts.ready) await document.fonts.ready;
     } catch (e) {}
+    // HTML 배경이 아직 그려지는 중이면 끝날 때까지 기다림
+    if (typeof flushHtmlBackground === "function") await flushHtmlBackground();
     try {
         if (typeof refitCanvasNow === "function") refitCanvasNow();
     } catch (e) {}
@@ -2876,13 +2892,16 @@ document.getElementById("btnCopy").addEventListener("click", async () => {
             els.captureArea.style.overflow = originalOverflow;
             els.captureArea.style.transform = originalTransform;
             applyPreviewScale();
-            canvas.toBlob((blob) => {
+            try { canvas.toBlob((blob) => {
                 if (!blob) { showToast("이미지 변환에 실패했어요."); return; }
                 const item = new ClipboardItem({ "image/png": blob });
                 navigator.clipboard.write([item])
                     .then(() => showToast("클립보드에 복사됐어요"))
                     .catch(() => showToast("복사가 막혀 있어요 — 저장 버튼을 이용해 주세요."));
-            }, "image/png");
+            }, "image/png"); } catch (err) {
+                console.warn("복사 실패:", err);
+                showToast("이미지 변환에 실패했어요.");
+            }
         })
         .catch(() => {
             restoreCanvasAfterCapture(els.captureArea);
@@ -2915,7 +2934,7 @@ document.getElementById("btnSave").addEventListener("click", async () => {
             els.captureArea.style.overflow = originalOverflow;
             els.captureArea.style.transform = originalTransform;
             applyPreviewScale();
-            canvas.toBlob((blob) => {
+            try { canvas.toBlob((blob) => {
                 if (!blob) { showToast("이미지 변환에 실패했어요."); return; }
                 const blobURL = URL.createObjectURL(blob);
                 const link = document.createElement("a");
@@ -2925,7 +2944,10 @@ document.getElementById("btnSave").addEventListener("click", async () => {
                 link.click();
                 document.body.removeChild(link);
                 setTimeout(() => URL.revokeObjectURL(blobURL), 1000);
-            }, "image/png");
+            }, "image/png"); } catch (err) {
+                console.warn("저장 실패:", err);
+                showToast("이미지 변환에 실패했어요.");
+            }
         })
         .catch(() => {
             restoreCanvasAfterCapture(els.captureArea);
@@ -5379,6 +5401,20 @@ const HEART_STEPS = {
     dlgNameColumnWidth: 4, dlgLineGap: 2
 };
 
+// 화면에 보이는 숫자칸들을 원래 값과 다시 맞추는 함수 목록
+// (값이 setter를 거치지 않고 바뀌는 경우 — 사파리의 폼 복원, 앱 전환 후 복귀 등 — 에도 숫자가 비지 않게)
+// (var: 이 줄보다 먼저 updateCanvas가 불려도 오류가 나지 않게)
+var HEART_REFRESHERS = HEART_REFRESHERS || [];
+function refreshHeartNumbers() {
+    (HEART_REFRESHERS || []).forEach((fn) => { try { fn(); } catch (e) {} });
+}
+window.refreshHeartNumbers = refreshHeartNumbers;
+window.addEventListener("pageshow", () => setTimeout(refreshHeartNumbers, 0));
+document.addEventListener("visibilitychange", () => { if (!document.hidden) setTimeout(refreshHeartNumbers, 0); });
+document.addEventListener("click", (e) => {
+    if (e.target.closest && e.target.closest(".tab-btn")) setTimeout(refreshHeartNumbers, 0);
+});
+
 (function setupHeartNumbers() {
     function fmt(n) {
         return String(Math.round(n * 10) / 10);
@@ -5417,9 +5453,15 @@ const HEART_STEPS = {
 
             const refresh = () => {
                 if (document.activeElement === shown) return; // 입력 중에는 덮어쓰지 않음
-                shown.value = toShown(orig.value);
+                const want = toShown(orig.value);
+                if (shown.value !== want) shown.value = want;
+                // 사파리: 입력하다가 칸 안 글자가 옆으로 밀린(스크롤된) 채로 남아 숫자가 안 보이는 경우가 있어 되돌림
+                if (shown.scrollLeft) shown.scrollLeft = 0;
             };
             watchInputValue(orig, refresh);
+            HEART_REFRESHERS.push(refresh);
+            // 브라우저가 (뒤로가기/앱 전환 후) 숨긴 원래 칸 값을 몰래 복원하지 않도록
+            orig.autocomplete = "off";
             shown.value = toShown(orig.value);
 
             shown.addEventListener("focus", () => setTimeout(() => { try { shown.select(); } catch (e) {} }, 0));
@@ -5438,7 +5480,12 @@ const HEART_STEPS = {
                 }
                 shown.value = toShown(orig.value);
             });
-            shown.addEventListener("blur", () => { shown.value = toShown(orig.value); });
+            shown.addEventListener("blur", () => {
+                shown.value = toShown(orig.value);
+                shown.scrollLeft = 0;
+                // 키보드가 내려가며 화면이 다시 그려진 뒤에도 한 번 더 확인
+                setTimeout(refresh, 60);
+            });
             shown.addEventListener("keydown", (e) => { if (e.key === "Enter") shown.blur(); });
 
             // 칸 전체에 물방울 무늬 배경을 입히기 위해 바깥 행에 표시를 달아둔다
@@ -5686,7 +5733,7 @@ function getExportScale(el) {
    - <style>·인라인 스타일 사용 가능, script/iframe/link 등은 제거된다.
    - 외부 이미지·폰트 주소는 미리 받아서 HTML 안에 넣는다(그림으로 바꾸면 외부 파일을 못 읽기 때문).
    ======================================================================== */
-const htmlBgState = { key: null, seq: 0, timer: null };
+const htmlBgState = { key: null, seq: 0, timer: null, run: null, job: null, saveable: true };
 const htmlBgUrlCache = new Map();
 
 function setHtmlBgStatus(text, isError) {
@@ -5715,6 +5762,8 @@ async function htmlBgUrlToDataUrl(url) {
         }
     })();
     htmlBgUrlCache.set(url, job);
+    // 실패(네트워크 순간 끊김 등)는 기억하지 않음 — 다음에 그릴 때 다시 시도해서 그림이 영영 빠지지 않게
+    job.then((d) => { if (!d && htmlBgUrlCache.get(url) === job) htmlBgUrlCache.delete(url); });
     return job;
 }
 
@@ -5753,10 +5802,69 @@ async function htmlBgInlineUrls(doc) {
     await Promise.all(tasks);
 }
 
+// 아이폰(사파리)은 foreignObject(SVG 안의 HTML)를 캔버스에 그리면 캔버스를 "오염"시켜서
+// PNG로 바꾸는 게 막힌다. 그 상태로 배경에 깔면 미리보기는 보이지만 [저장]/[복사]가 통째로 실패했다.
+// → 이때는 숨긴 iframe에 HTML을 그대로 띄우고 html2canvas로 직접 그려서 PNG를 만든다(오염 없음).
+async function rasterizeHtmlBgWithHtml2Canvas(doc, w, h) {
+    if (typeof html2canvas !== "function") throw new Error("html2canvas 없음");
+    const frame = document.createElement("iframe");
+    frame.setAttribute("aria-hidden", "true");
+    frame.tabIndex = -1;
+    frame.style.cssText =
+        `position:fixed;left:-${w + 200}px;top:0;width:${w}px;height:${h}px;border:0;` +
+        "opacity:0;pointer-events:none;z-index:-1;";
+    document.body.appendChild(frame);
+    try {
+        const fdoc = frame.contentDocument;
+        fdoc.open();
+        fdoc.write("<!DOCTYPE html>" + doc.documentElement.outerHTML);
+        fdoc.close();
+        // 이미지·폰트가 다 그려질 때까지 기다림
+        await Promise.all([...fdoc.images].map((img) => img.complete ? null : new Promise((r) => { img.onload = img.onerror = r; })));
+        try { if (fdoc.fonts && fdoc.fonts.ready) await fdoc.fonts.ready; } catch (e) {}
+        await new Promise((r) => requestAnimationFrame(() => r()));
+        const canvas = await html2canvas(fdoc.documentElement, {
+            useCORS: true,
+            backgroundColor: null,
+            scale: 2,
+            width: w,
+            height: h,
+            windowWidth: w,
+            windowHeight: h,
+            x: 0,
+            y: 0,
+            scrollX: 0,
+            scrollY: 0,
+            logging: false
+        });
+        return canvas.toDataURL("image/png");
+    } finally {
+        frame.remove();
+    }
+}
+
 async function buildHtmlBgDataUrl(html, w, h) {
     const doc = new DOMParser().parseFromString(html || "", "text/html");
     doc.querySelectorAll("script, iframe, object, embed, link, meta, base").forEach((el) => el.remove());
+    // onclick / onerror 같은 실행 코드 속성도 제거
+    doc.querySelectorAll("*").forEach((el) => {
+        [...el.attributes].forEach((a) => { if (/^on/i.test(a.name)) el.removeAttribute(a.name); });
+    });
     await htmlBgInlineUrls(doc);
+
+    // 안에 들어간 그림들을 미리 한 번씩 풀어(디코딩)둔다 — 사파리가 SVG 안 그림을 빼먹는 걸 줄여줌
+    {
+        const srcs = new Set();
+        doc.querySelectorAll("img[src], image[href]").forEach((el) => srcs.add(el.getAttribute("src") || el.getAttribute("href")));
+        const cssText = [...doc.querySelectorAll("style")].map((el) => el.textContent).join("\n") +
+            [...doc.querySelectorAll("[style]")].map((el) => el.getAttribute("style")).join("\n");
+        for (const m of cssText.matchAll(/url\(\s*(['"]?)([^'")]+)\1\s*\)/gi)) srcs.add(m[2].trim());
+        await Promise.all([...srcs].filter((u) => u && /^data:image\//i.test(u)).map((u) => {
+            const im = new Image();
+            im.src = u;
+            return (im.decode ? im.decode() : Promise.resolve()).catch(() => {});
+        }));
+    }
 
     // 기본값: 여백 없이 캔버스 크기에 딱 맞게 (사용자 스타일이 뒤에 오므로 덮어쓸 수 있음)
     const font = (els.fontSelect && els.fontSelect.value) || "sans-serif";
@@ -5773,25 +5881,56 @@ async function buildHtmlBgDataUrl(html, w, h) {
         `<foreignObject x="0" y="0" width="${w}" height="${h}">${xhtml}</foreignObject></svg>`;
     const svgUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 
-    const img = new Image();
-    await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = () => reject(new Error("HTML을 그림으로 바꾸지 못했어요"));
-        img.src = svgUrl;
-    });
-    if (img.decode) { try { await img.decode(); } catch (e) {} }
-
-    // 저장 라이브러리가 SVG(foreignObject)를 못 그리는 경우가 있어서, 한 번 PNG로 구워서 쓴다.
+    // 1) SVG(foreignObject)로 그려서 PNG로 굽기 — 크롬/안드로이드 등에서는 이게 가장 정확함
+    let svgLoaded = false;
     try {
+        const img = new Image();
+        await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = () => reject(new Error("HTML을 그림으로 바꾸지 못했어요"));
+            img.src = svgUrl;
+        });
+        if (img.decode) { try { await img.decode(); } catch (e) {} }
+        svgLoaded = true;
         const scale = 2;
         const c = document.createElement("canvas");
         c.width = Math.round(w * scale);
         c.height = Math.round(h * scale);
-        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-        return c.toDataURL("image/png");
+        const ctx = c.getContext("2d", { willReadFrequently: true });
+        // ⚠️ 아이폰 사파리 버그: SVG 안의 HTML을 "처음" 그릴 때 안쪽 이미지·배경 그림·일부 요소를 아직
+        // 준비 못 한 채로 그려버린다. 그래서 고칠 때마다 어떤 요소는 빠지고 어떤 땐 다시 나타났다.
+        // → 같은 그림을 조금씩 기다리며 여러 번 그려서, 연속 두 번 결과가 똑같아질 때(=다 그려졌을 때) 확정한다.
+        const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+        const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
+        let prev = null;
+        for (let i = 0; i < 8; i++) {
+            ctx.clearRect(0, 0, c.width, c.height);
+            ctx.drawImage(img, 0, 0, c.width, c.height);
+            const cur = new Uint32Array(ctx.getImageData(0, 0, c.width, c.height).data.buffer);
+            if (prev && prev.length === cur.length) {
+                let same = true;
+                for (let k = 0; k < cur.length; k++) { if (cur[k] !== prev[k]) { same = false; break; } }
+                if (same) break;
+            }
+            prev = cur;
+            await frame();
+            await wait(i < 2 ? 30 : 120);
+        }
+        return { url: c.toDataURL("image/png"), saveable: true }; // 막히는 브라우저는 아래 2)로
     } catch (e) {
-        return svgUrl; // 브라우저가 막으면 SVG 그대로
+        // 아래 2)로
     }
+
+    // 2) 아이폰 사파리용: html2canvas로 직접 그리기
+    try {
+        return { url: await rasterizeHtmlBgWithHtml2Canvas(doc, w, h), saveable: true };
+    } catch (e) {
+        console.warn("HTML 배경 html2canvas 변환 실패:", e);
+    }
+
+    // 3) 둘 다 안 되면 미리보기용 SVG만 (저장할 때는 이 배경을 빼고 저장)
+    if (!svgLoaded) throw new Error("HTML을 그림으로 바꾸지 못했어요");
+    return { url: svgUrl, saveable: false };
 }
 
 function syncHtmlBackground() {
@@ -5802,6 +5941,9 @@ function syncHtmlBackground() {
         layer.style.backgroundImage = "";
         htmlBgState.key = null;
         htmlBgState.seq++;
+        htmlBgState.saveable = true;
+        htmlBgState.run = null;
+        htmlBgState.job = null;
         clearTimeout(htmlBgState.timer);
         setHtmlBgStatus("");
         return;
@@ -5814,18 +5956,38 @@ function syncHtmlBackground() {
     const mySeq = ++htmlBgState.seq;
     clearTimeout(htmlBgState.timer);
     setHtmlBgStatus("그리는 중…");
-    htmlBgState.timer = setTimeout(async () => {
+    const run = async () => {
+        if (htmlBgState.run === run) htmlBgState.run = null;
         try {
-            const url = await buildHtmlBgDataUrl(html, w, h);
+            const result = await buildHtmlBgDataUrl(html, w, h);
             if (mySeq !== htmlBgState.seq) return;
-            layer.style.backgroundImage = `url("${url}")`;
-            setHtmlBgStatus(`적용됨 · 배경 크기 ${w} × ${h}px`);
+            layer.style.backgroundImage = `url("${result.url}")`;
+            htmlBgState.saveable = result.saveable;
+            setHtmlBgStatus(result.saveable
+                ? `적용됨 · 배경 크기 ${w} × ${h}px`
+                : "⚠ 이 브라우저에서는 HTML 배경을 저장용 그림으로 바꾸지 못했어요. 미리보기에만 보이고 저장할 땐 빠져요.", !result.saveable);
         } catch (err) {
             if (mySeq !== htmlBgState.seq) return;
             console.warn("HTML 배경 오류:", err);
+            htmlBgState.saveable = true;
             setHtmlBgStatus("⚠ HTML을 그리지 못했어요. 닫는 태그나 따옴표를 확인해 주세요.", true);
         }
-    }, 350);
+    };
+    htmlBgState.run = run;
+    htmlBgState.timer = setTimeout(() => { htmlBgState.job = run(); }, 350);
+}
+
+// 저장/복사 직전: 아직 그리는 중인(또는 대기 중인) HTML 배경이 있으면 끝날 때까지 기다린다.
+// (HTML을 고치자마자 저장을 누르면 배경이 빠지거나 예전 배경으로 저장되던 문제)
+async function flushHtmlBackground() {
+    try {
+        if (typeof syncHtmlBackground === "function") syncHtmlBackground();
+        if (htmlBgState.run) {
+            clearTimeout(htmlBgState.timer);
+            htmlBgState.job = htmlBgState.run();
+        }
+        if (htmlBgState.job) await htmlBgState.job;
+    } catch (e) {}
 }
 
 (function setupHtmlBg() {

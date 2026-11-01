@@ -46,6 +46,8 @@ function getPresetSnapshot() {
         paddingLeft: els.paddingLeft.value,
         paddingRight: els.paddingRight.value,
         bgType: els.bgType.value,
+        // HTML 배경: 입력한 HTML 코드 그대로 저장 (그림으로 바꾼 결과가 아니라 코드라서 용량이 작음)
+        bgHtml: document.getElementById("bgHtml")?.value ?? "",
         bgColor1: els.bgColor1.value,
         gradColor1: els.gradColor1.value,
         gradColor2: els.gradColor2.value,
@@ -144,6 +146,10 @@ function applyPresetSnapshot(data) {
         if (slider && number) slider.value = number.value;
     });
     els.bgType.value = data.bgType ?? els.bgType.value;
+    {
+        const bgHtmlInput = document.getElementById("bgHtml");
+        if (bgHtmlInput && typeof data.bgHtml === "string") bgHtmlInput.value = data.bgHtml;
+    }
     els.bgColor1.value = data.bgColor1 ?? els.bgColor1.value;
     els.gradColor1.value = data.gradColor1 ?? els.gradColor1.value;
     els.gradColor2.value = data.gradColor2 ?? els.gradColor2.value;

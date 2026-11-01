@@ -3340,3 +3340,30 @@ html {
     white-space: pre;
     overflow: auto;
 }
+
+
+/* ---- ♥ 숫자칸: 아이폰에서 숫자가 안 보이던 문제 ----
+   ".control-minimal-row input[type=text]:not(#presetNameInput)" 규칙(아이디가 들어가서 우선순위가 더 높음)이
+   숫자칸에도 flex:1·높이·글자크기를 덮어써서 칸이 늘어나고, 사파리에서 가운데 정렬된 글자가 칸 밖으로 밀려
+   안 보이는 경우가 있었다. 숫자칸은 크기를 고정하고, 글자색도 확실히 지정한다.
+   (글자 크기 16px: 아이폰은 16px보다 작은 입력칸을 누르면 화면을 확대해 버려서 레이아웃이 틀어짐) */
+.control-minimal-row .stepper-minimal.heart-num {
+    flex: 0 0 auto;
+}
+.control-minimal-row .stepper-minimal.heart-num > input.heart-num-input {
+    flex: 0 0 58px !important;
+    width: 58px !important;
+    min-width: 58px !important;
+    height: 36px !important;
+    line-height: 36px;
+    padding: 0 !important;
+    margin: 0;
+    text-indent: 0;
+    text-align: center;
+    font-size: 16px !important;
+    font-weight: 700;
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main);
+    opacity: 1;
+    overflow: visible;
+}
