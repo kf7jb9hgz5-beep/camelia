@@ -5460,8 +5460,6 @@ document.addEventListener("click", (e) => {
             };
             watchInputValue(orig, refresh);
             HEART_REFRESHERS.push(refresh);
-            // 브라우저가 (뒤로가기/앱 전환 후) 숨긴 원래 칸 값을 몰래 복원하지 않도록
-            orig.autocomplete = "off";
             shown.value = toShown(orig.value);
 
             shown.addEventListener("focus", () => setTimeout(() => { try { shown.select(); } catch (e) {} }, 0));
@@ -6009,4 +6007,87 @@ async function flushHtmlBackground() {
         input.value = "";
         updateCanvas();
     });
+})();
+
+
+
+// ==========================================================================
+// 저장하고 돌아오면 비율·글자 크기가 기본값으로 돌아가던 문제
+// 아이폰 사파리는 저장(큰 그림을 만드느라 메모리를 많이 씀) 후 사진 앱 등에 갔다 돌아오면
+// 탭을 몰래 "새로고침"하는 경우가 많다. 그때 제목칸 같은 일부 입력칸만 복원되고
+// 지정 너비·글자 크기·줄간격 같은 설정은 처음 값(520 / 14 / 18…)으로 돌아가 버렸다.
+// → 화면을 떠나는 순간(그리고 저장 버튼을 누르는 순간) 지금 상태를 이 탭 전용 저장소(sessionStorage)에
+//   적어 두고, 탭이 새로 열리면 그대로 되살린다. (탭을 닫으면 지워짐)
+// ==========================================================================
+(function keepStateAcrossReload() {
+    const KEY = "quoteStudioSessionState";
+    const TEXT_IDS = ["titleInput", "creatorInput", "headingTitleInput", "headingSubtitleInput"];
+
+    function collect(level) {
+        const data = { v: 1 };
+        try { if (typeof getPresetSnapshot === "function") data.settings = getPresetSnapshot(); } catch (e) {}
+        data.texts = {};
+        TEXT_IDS.forEach((id) => { const el = document.getElementById(id); if (el) data.texts[id] = el.value; });
+        if (level >= 1 && els.editor) data.editor = els.editor.innerHTML;
+        if (level >= 2) {
+            const bg = document.getElementById("bgImageLayer");
+            if (bg && bg.style.backgroundImage) data.bgImage = bg.style.backgroundImage;
+        }
+        return data;
+    }
+
+    function save() {
+        // 용량이 넘치면 배경 사진 → 본문 순으로 빼고 다시 시도 (설정값은 항상 남김)
+        for (let level = 2; level >= 0; level--) {
+            try {
+                sessionStorage.setItem(KEY, JSON.stringify(collect(level)));
+                return;
+            } catch (e) {}
+        }
+    }
+    window.__saveSessionState = save;
+
+    function restore() {
+        let data = null;
+        try { data = JSON.parse(sessionStorage.getItem(KEY) || "null"); } catch (e) {}
+        if (!data || data.v !== 1) return;
+
+        if (data.texts) {
+            Object.keys(data.texts).forEach((id) => {
+                const el = document.getElementById(id);
+                if (el && !el.value && data.texts[id]) el.value = data.texts[id];
+            });
+        }
+        // 본문은 비어 있을 때만 되살림 (사파리가 이미 복원해 둔 경우 덮어쓰지 않음)
+        if (els.editor && typeof data.editor === "string" && !els.editor.textContent.trim() && !els.editor.querySelector("img")) {
+            els.editor.innerHTML = data.editor;
+        }
+        if (data.bgImage) {
+            const bg = document.getElementById("bgImageLayer");
+            if (bg && !bg.style.backgroundImage) {
+                bg.style.backgroundImage = data.bgImage;
+                if (typeof updateBgImageStyles === "function") { try { updateBgImageStyles(); } catch (e) {} }
+            }
+        }
+        if (data.settings && typeof applyPresetSnapshot === "function") {
+            try { applyPresetSnapshot(data.settings); } catch (e) { console.warn("설정 복원 실패:", e); }
+        }
+        // 비율 선택에 따라 보이는 칸(지정 너비 등)도 맞춤
+        try { els.ratioSelect.dispatchEvent(new Event("change", { bubbles: true })); } catch (e) {}
+        if (typeof updateCanvas === "function") updateCanvas();
+        if (typeof refreshHeartNumbers === "function") refreshHeartNumbers();
+    }
+
+    window.addEventListener("pagehide", save);
+    document.addEventListener("visibilitychange", () => { if (document.hidden) save(); });
+    // 저장/복사는 메모리를 많이 써서 그 직후 탭이 새로고침될 수 있으니, 누르는 순간에도 적어 둠
+    ["btnSave", "btnCopy"].forEach((id) => {
+        document.getElementById(id)?.addEventListener("pointerdown", save, true);
+        document.getElementById(id)?.addEventListener("click", save, true);
+    });
+
+    // 다른 초기화(첫 렌더링 등)가 다 끝난 다음에 되살린다
+    const run = () => setTimeout(restore, 0);
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
+    else run();
 })();
