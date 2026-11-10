@@ -1009,7 +1009,6 @@
                     <div class="segmented-control segmented-control-minimal" data-target="dialogueMode">
                         <button type="button" data-value="log" class="active">로그</button>
                         <button type="button" data-value="block">블록</button>
-                        <button type="button" data-value="chat">채팅</button>
                     </div>
                 </div>
 
@@ -1090,36 +1089,7 @@
                 </div>
                 <div class="control-minimal-row" id="dlgNameColumnWidthArea" style="display: none">
                     <label for="dlgNameColumnWidth">「이름 칸 너비」</label>
-                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="dlgNameColumnWidth" value="88" /><span class="heart-unit">%</span></div>
-                </div>
-
-                <div class="panel-section-title" id="dlgChatOnlyTitle" style="display: none">채팅 세부 설정</div>
-                <div class="control-minimal-row" id="dlgChatBubbleRadiusArea" style="display: none">
-                    <label for="dlgChatBubbleRadius">「말풍선 둥글기」</label>
-                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="dlgChatBubbleRadius" value="14" /><span class="heart-unit">%</span></div>
-                </div>
-                <div class="control-minimal-row" id="dlgChatBubbleWidthArea" style="display: none">
-                    <label for="dlgChatBubbleWidth">「말풍선 최대 너비」</label>
-                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="dlgChatBubbleWidth" value="72" /><span class="heart-unit">%</span></div>
-                </div>
-                <div class="control-minimal-row" id="dlgChatTailArea" style="display: none">
-                    <div class="checkbox-minimal-group">
-                        <label><input type="checkbox" id="dlgChatTail" checked /> 말풍선 꼬리</label>
-                    </div>
-                </div>
-                <div class="control-minimal-row" id="dlgChatGroupArea" style="display: none">
-                    <div class="checkbox-minimal-group">
-                        <label><input type="checkbox" id="dlgChatGroupRuns" checked /> 같은 인물 연속 대사는 이름 · 프사 생략</label>
-                    </div>
-                </div>
-                <div class="control-minimal-row" id="dlgChatShowTimeArea" style="display: none">
-                    <div class="checkbox-minimal-group">
-                        <label><input type="checkbox" id="dlgChatShowTime" checked /> 보낸 시간 표시</label>
-                    </div>
-                </div>
-                <div class="chat-insert-row" id="dlgChatInsertArea" style="display: none">
-                    <button type="button" class="btn-template" id="btnAddChatDate">+ 날짜 구분선</button>
-                    <button type="button" class="btn-template" id="btnAddChatSystem">+ 시스템 알림</button>
+                    <div class="stepper-minimal heart-num"><span class="heart-ico" aria-hidden="true"></span><input type="number" id="dlgNameColumnWidth" value="102" /><span class="heart-unit">%</span></div>
                 </div>
 
                 <div class="panel-section-title">간격</div>
@@ -1141,25 +1111,6 @@
                     <div class="control-minimal-row char-editor-color-row">
                         <label for="charEditorColor">포인트 색상</label>
                         <input type="color" id="charEditorColor" value="#171717" />
-                    </div>
-                    <div class="char-editor-chat-box" id="charEditorChatBox">
-                        <div class="char-editor-chat-title">채팅 모드 설정</div>
-                        <div class="control-minimal-row">
-                            <label>채팅 위치</label>
-                            <input type="hidden" id="charEditorAlign" value="left" />
-                            <div class="segmented-control segmented-control-minimal" data-target="charEditorAlign">
-                                <button type="button" data-value="left" class="active">← 왼쪽</button>
-                                <button type="button" data-value="right">오른쪽(나) →</button>
-                            </div>
-                        </div>
-                        <div class="control-minimal-row char-editor-color-row">
-                            <label for="charEditorBubbleBg">말풍선 색</label>
-                            <input type="color" id="charEditorBubbleBg" value="#ffffff" />
-                        </div>
-                        <div class="control-minimal-row char-editor-color-row">
-                            <label for="charEditorBubbleText">말풍선 글자색</label>
-                            <input type="color" id="charEditorBubbleText" value="#191919" />
-                        </div>
                     </div>
                     <div class="char-editor-btn-row">
                         <button type="button" class="btn-minimal-save" id="btnSaveCharacter">저장</button>
