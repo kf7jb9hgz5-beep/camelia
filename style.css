@@ -3367,3 +3367,75 @@ html {
     opacity: 1;
     overflow: visible;
 }
+
+/* ==========================================================================
+    대사 탭 · 채팅 모드 (말풍선)
+    ========================================================================== */
+.char-editor-chat-box {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px dashed var(--border-color);
+    border-radius: 14px;
+    background-color: var(--bg-card, #ffffff);
+}
+.char-editor-chat-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+.chat-insert-row {
+    display: flex;
+    gap: 8px;
+    margin: 4px 0 6px;
+}
+.chat-insert-row .btn-template {
+    flex: 1;
+}
+.dialogue-line-cell.dlc-special {
+    border-style: dashed;
+    background-color: var(--bg-main);
+}
+.dlc-special-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+.dlc-chat-extra {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+.dlc-time-input {
+    flex: 1;
+    min-width: 0;
+    box-sizing: border-box;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    background-color: #ffffff;
+    color: var(--text-main);
+}
+.dlc-photo-btn {
+    border: 1px solid var(--border-color);
+    background: #ffffff;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--text-main);
+    white-space: nowrap;
+}
+.dlc-photo-thumb {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid var(--border-color);
+    flex-shrink: 0;
+}

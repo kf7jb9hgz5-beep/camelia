@@ -67,6 +67,11 @@ function getPresetSnapshot() {
         dlgLineGap: els.dlgLineGap?.value,
         dlgContinuationGap: els.dlgContinuationGap?.value,
         dlgNameGap: els.dlgNameGap?.value,
+        dlgChatBubbleRadius: document.getElementById("dlgChatBubbleRadius")?.value,
+        dlgChatBubbleWidth: document.getElementById("dlgChatBubbleWidth")?.value,
+        dlgChatTail: document.getElementById("dlgChatTail")?.checked,
+        dlgChatGroupRuns: document.getElementById("dlgChatGroupRuns")?.checked,
+        dlgChatShowTime: document.getElementById("dlgChatShowTime")?.checked,
         alignH: els.alignH.value,
         wordBreak: els.wordBreak.value,
         fontSize: els.fontSize.value,
@@ -191,6 +196,10 @@ function applyPresetSnapshot(data) {
     if (els.dlgLineGap) els.dlgLineGap.value = data.dlgLineGap ?? els.dlgLineGap.value;
     if (els.dlgContinuationGap) els.dlgContinuationGap.value = data.dlgContinuationGap ?? els.dlgContinuationGap.value;
     if (els.dlgNameGap) els.dlgNameGap.value = data.dlgNameGap ?? els.dlgNameGap.value;
+    [["dlgChatBubbleRadius", "value"], ["dlgChatBubbleWidth", "value"], ["dlgChatTail", "checked"], ["dlgChatGroupRuns", "checked"], ["dlgChatShowTime", "checked"]].forEach(([id, prop]) => {
+        const el = document.getElementById(id);
+        if (el && data[id] !== undefined && data[id] !== null) el[prop] = data[id];
+    });
     if (typeof syncDialogueModeUI === "function") syncDialogueModeUI();
     els.wordBreak.value = data.wordBreak ?? els.wordBreak.value;
     els.fontSize.value = data.fontSize ?? els.fontSize.value;

@@ -316,6 +316,7 @@ function updateCanvasCore() {
         if (els.editor.querySelector(".dlg-marker-controls")) {
             const editorClone = els.editor.cloneNode(true);
             editorClone.querySelectorAll(".dlg-marker-controls").forEach((el) => el.remove());
+            stripEmptyLinesBetweenChatMarkers(editorClone);
             rawHTML = editorClone.innerHTML || "<div><br></div>";
         } else {
             rawHTML = els.editor.innerHTML || "<div><br></div>";
@@ -969,16 +970,153 @@ function prepareCanvasForCapture(container) {
     container.querySelectorAll(".sticker-item").forEach((el) => el.classList.remove("selected"));
     container.querySelectorAll(".no-export").forEach((el) => { el.style.display = "none"; });
 
-    const currentFont = els.fontSelect ? els.fontSelect.value : "inherit";
+    // 형광펜(배경색) 글자를 한 글자씩 쪼개서 html2canvas가 여러 줄에 걸친 배경을 네모 하나로 그리지 않게 한다.
+    // ⚠️ 예전에는 span.textContent로 통째로 다시 써서, 안에 있던 기울임(<i>)·굵게(<b>)·글꼴·글자색 태그가
+    // 전부 사라졌다 → "형광펜 칠한 기울임 글자가 저장하면 똑바로 서는" 문제. 이제는 글자(텍스트 노드)만
+    // 쪼개고 안쪽 태그 구조는 그대로 둔다. (글꼴도 강제로 전체 서체로 바꾸지 않고 물려받게 함)
     container.querySelectorAll("span").forEach((span) => {
+        if (span.classList.contains("__hl-char") || span.closest("[data-original-html]")) return;
         const bg = span.style.backgroundColor;
         if (bg && bg !== "transparent" && bg !== "initial") {
             span.setAttribute("data-original-html", span.innerHTML);
-            const chars = Array.from(span.textContent);
-            span.innerHTML = chars.map((char) => char === "\n" ? "\n" : `<span style="background-color: ${bg}; display: inline; color: inherit; font-family: ${currentFont}; font-weight: inherit;">${char}</span>`).join("");
+            const walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT);
+            const textNodes = [];
+            while (walker.nextNode()) textNodes.push(walker.currentNode);
+            textNodes.forEach((node) => {
+                const frag = document.createDocumentFragment();
+                Array.from(node.nodeValue).forEach((char) => {
+                    if (char === "\n") { frag.appendChild(document.createTextNode("\n")); return; }
+                    const s = document.createElement("span");
+                    s.className = "__hl-char";
+                    s.style.cssText = `background-color: ${bg}; display: inline; color: inherit;`;
+                    s.textContent = char;
+                    frag.appendChild(s);
+                });
+                node.parentNode.replaceChild(frag, node);
+            });
             span.style.backgroundColor = "transparent";
         }
     });
+}
+
+// ==== 저장 이미지에서 기울임(이탤릭)이 사라지는 문제 대응 ====
+// 화면에서는 브라우저가 "기울임 전용 글꼴 파일이 없는 서체"도 알아서 비스듬히 눕혀 보여 주지만,
+// html2canvas는 글자를 <canvas>에 다시 그리는데, 아이폰/맥 사파리 등 일부 브라우저의 캔버스는
+// 이 '가짜 기울임'을 해 주지 않는다 → 저장본에서만 글자가 똑바로 서 버린다.
+// 그래서 저장할 때 (복제본에서만) 이 브라우저 캔버스가 해당 서체를 실제로 기울여 그리는지 검사하고,
+// 못 그리는 경우에만 글자 조각에 skewX 변형을 걸어 직접 기울인다. 화면 쪽 DOM은 건드리지 않는다.
+const __canvasItalicCache = new Map();
+function canvasCanDrawItalic(fontFamily, fontWeight) {
+    if (window.__forceItalicFallback) return false; // 테스트용
+    const key = fontWeight + "|" + fontFamily;
+    if (__canvasItalicCache.has(key)) return __canvasItalicCache.get(key);
+    let result = true;
+    try {
+        const size = 40;
+        const c = document.createElement("canvas");
+        c.width = size * 4; c.height = size * 2;
+        const ctx = c.getContext("2d", { willReadFrequently: true });
+        const draw = (style) => {
+            ctx.clearRect(0, 0, c.width, c.height);
+            ctx.font = `${style} ${fontWeight} ${size}px ${fontFamily}`;
+            ctx.fillStyle = "#000";
+            ctx.textBaseline = "middle";
+            ctx.fillText("가Hl|", 4, size);
+            return ctx.getImageData(0, 0, c.width, c.height).data;
+        };
+        const normal = draw("normal");
+        const italic = draw("italic");
+        result = false;
+        for (let i = 3; i < normal.length; i += 4) {
+            if (normal[i] !== italic[i]) { result = true; break; }
+        }
+    } catch (e) {
+        result = true; // 검사 자체가 안 되면 브라우저에 맡긴다
+    }
+    __canvasItalicCache.set(key, result);
+    return result;
+}
+
+const ITALIC_FALLBACK_SKEW = "-12deg";
+function applyItalicFallbackForCapture(root) {
+    if (!root) return;
+    const win = root.ownerDocument.defaultView || window;
+    const walker = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const targets = [];
+    while (walker.nextNode()) {
+        const node = walker.currentNode;
+        if (!node.nodeValue || !node.nodeValue.trim()) continue;
+        const parent = node.parentElement;
+        if (!parent || parent.closest("svg, textarea, input, .no-export")) continue;
+        const cs = win.getComputedStyle(parent);
+        if (cs.fontStyle !== "italic" && !cs.fontStyle.startsWith("oblique")) continue;
+        if (canvasCanDrawItalic(cs.fontFamily, cs.fontWeight)) continue;
+        targets.push(node);
+    }
+    // 줄바꿈 위치가 화면과 달라지지 않도록: 공백 기준 단어로 묶되, 실제로 줄이 바뀐 지점에서는 단어도 끊는다.
+    // (각 글자의 실제 위치를 재서 "이미 이 브라우저가 줄을 바꾼 곳"을 그대로 따른다)
+    const splitByRenderedLines = (node) => {
+        const doc = node.ownerDocument;
+        const text = node.nodeValue;
+        const range = doc.createRange();
+        const parts = [];
+        let cur = "";
+        let curIsSpace = null;
+        let lastTop = null;
+        let offset = 0;
+        for (const ch of Array.from(text)) {
+            const isSpace = /\s/.test(ch);
+            let top = lastTop;
+            if (!isSpace) {
+                try {
+                    range.setStart(node, offset);
+                    range.setEnd(node, offset + ch.length);
+                    const r = range.getBoundingClientRect();
+                    if (r && (r.width || r.height)) top = r.top;
+                } catch (e) {}
+            }
+            const newLine = !isSpace && lastTop !== null && top !== null && Math.abs(top - lastTop) > 2;
+            if (cur && (isSpace !== curIsSpace || newLine)) { parts.push(cur); cur = ""; }
+            cur += ch;
+            curIsSpace = isSpace;
+            if (!isSpace && top !== null) lastTop = top;
+            offset += ch.length;
+        }
+        if (cur) parts.push(cur);
+        return parts;
+    };
+    // 먼저 모든 위치를 잰 다음(레이아웃이 바뀌기 전) 한꺼번에 바꾼다
+    const plans = targets.map((node) => [node, splitByRenderedLines(node)]);
+    plans.forEach(([node, parts]) => {
+        const doc = node.ownerDocument;
+        const frag = doc.createDocumentFragment();
+        parts.forEach((part) => {
+            if (/^\s+$/.test(part)) { frag.appendChild(doc.createTextNode(part)); return; }
+            const s = doc.createElement("span");
+            s.style.cssText = `display:inline-block; font-style:normal; transform:skewX(${ITALIC_FALLBACK_SKEW}); transform-origin:50% 75%; white-space:pre;`;
+            s.textContent = part;
+            frag.appendChild(s);
+        });
+        node.parentNode.replaceChild(frag, node);
+    });
+}
+
+// html2canvas 공통 옵션: 복제본(onclone)에 기울임 대체 처리를 적용한다.
+function captureOptions(el, extra) {
+    return Object.assign({
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null,
+        scale: getExportScale(el),
+        onclone: (clonedDoc) => {
+            try {
+                const target = el.id ? clonedDoc.getElementById(el.id) : clonedDoc.body;
+                applyItalicFallbackForCapture(target);
+            } catch (e) {
+                console.warn("기울임 보정 실패:", e);
+            }
+        },
+    }, extra || {});
 }
 
 function restoreCanvasAfterCapture(container) {
@@ -1591,17 +1729,35 @@ function openCharacterEditor(id) {
         avatarBox.style.backgroundImage = c.avatarData ? `url(${c.avatarData})` : "none";
         avatarBox.dataset.hasImage = c.avatarData ? "true" : "false";
         if (colorInput) colorInput.value = c.color || "#171717";
+        setCharEditorChatFields(c.align || "left", c.bubbleBg, c.bubbleText);
         deleteBtn.style.display = "block";
     } else {
         nameInput.value = "";
         avatarBox.style.backgroundImage = "none";
         avatarBox.dataset.hasImage = "false";
         if (colorInput) colorInput.value = "#171717";
+        // 첫 캐릭터는 오른쪽(나), 그다음부터는 왼쪽(상대)으로 기본 배치 — 메신저처럼
+        setCharEditorChatFields(characters.length === 0 ? "right" : "left");
         deleteBtn.style.display = "none";
     }
 
     editor.style.display = "flex";
     editor.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+// 캐릭터 편집창: 채팅 위치/말풍선 색 입력칸을 채운다. (색을 안 정했으면 위치에 맞는 기본색)
+const CHAT_DEFAULT_COLORS = {
+    right: { bg: "#fae100", text: "#371d1e" },
+    left: { bg: "#ffffff", text: "#191919" }
+};
+function setCharEditorChatFields(align, bubbleBg, bubbleText) {
+    const a = align === "right" ? "right" : "left";
+    setSegmentedValue("charEditorAlign", a);
+    const bgInput = document.getElementById("charEditorBubbleBg");
+    const textInput = document.getElementById("charEditorBubbleText");
+    if (bgInput) bgInput.value = bubbleBg || CHAT_DEFAULT_COLORS[a].bg;
+    if (textInput) textInput.value = bubbleText || CHAT_DEFAULT_COLORS[a].text;
+    if (typeof syncColorSwatches === "function") syncColorSwatches();
 }
 
 // 세그먼트 컨트롤(예: 왼쪽/오른쪽 버튼)의 활성 버튼과 숨은 input 값을 코드로 맞춰준다.
@@ -1640,7 +1796,7 @@ function getQuoteChars(style) {
 function syncDialogueModeUI() {
     let mode = document.getElementById("dialogueMode")?.value || "log";
     // 예전에 저장된 프리셋에 말풍선 모드가 남아 있으면 로그 모드로 바꿔준다
-    if (mode !== "log" && mode !== "block") {
+    if (mode !== "log" && mode !== "block" && mode !== "chat") {
         mode = "log";
         const modeHidden = document.getElementById("dialogueMode");
         if (modeHidden) modeHidden.value = "log";
@@ -1648,22 +1804,32 @@ function syncDialogueModeUI() {
     }
     const isLog = mode === "log";
     const isBlock = mode === "block";
+    const isChat = mode === "chat";
     const areaMap = {
-        dlgShowAvatarArea: isLog,
+        dlgShowAvatarArea: isLog || isChat,
         dlgQuoteStyleArea: isLog,
-        dlgTranslationArea: isLog,
-        dlgContinuationGapArea: isLog,
-        dlgLogOnlyTitle: isLog,
+        dlgTranslationArea: isLog || isChat,
+        dlgContinuationGapArea: isLog || isChat,
+        dlgLogOnlyTitle: isLog || isChat,
         dlgNameGapArea: isBlock,
         dlgBlockOnlyTitle: isBlock,
-        dlgParagraphLayoutArea: isBlock
+        dlgParagraphLayoutArea: isBlock,
+        dlgChatOnlyTitle: isChat,
+        dlgChatBubbleRadiusArea: isChat,
+        dlgChatBubbleWidthArea: isChat,
+        dlgChatTailArea: isChat,
+        dlgChatGroupArea: isChat,
+        dlgChatShowTimeArea: isChat,
+        dlgChatInsertArea: isChat
     };
     Object.keys(areaMap).forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.style.display = areaMap[id] ? "" : "none";
     });
     const lineGapLabel = document.getElementById("dlgLineGapLabel");
-    if (lineGapLabel) lineGapLabel.textContent = isLog ? "「대사(턴) 간 간격」" : "「대사 줄 사이 간격」";
+    if (lineGapLabel) lineGapLabel.textContent = (isLog || isChat) ? "「대사(턴) 간 간격」" : "「대사 줄 사이 간격」";
+    const logTitle = document.getElementById("dlgLogOnlyTitle");
+    if (logTitle) logTitle.textContent = isChat ? "번역 · 연속 대사" : "로그 세부 설정";
     syncParagraphLayoutUI();
     renderDialogueLineList();
     if (typeof updateCanvas === "function") updateCanvas();
@@ -1919,8 +2085,13 @@ function refreshFootnoteMarkerColors() {
     });
 }
 
-function addDialogueLine(charId) {
-    const line = { id: uid(), charId, text: "", translation: "", narration: "", stage: "" };
+function addDialogueLine(charId, type) {
+    const line = { id: uid(), charId: charId || null, text: "", translation: "", narration: "", stage: "" };
+    // 채팅 모드 전용 줄: 날짜 구분선 / 시스템 알림 (Chat2Img의 --날짜-- / [s] 와 같은 역할)
+    if (type === "date" || type === "system") {
+        line.type = type;
+        line.text = type === "date" ? formatChatDateKo(new Date()) : "새로운 알림이 있어요.";
+    }
     dialogueLines.push(line);
     saveDialogueLinesToStorage();
     renderDialogueLineList();
@@ -1940,8 +2111,10 @@ function addDialogueLine(charId) {
 // 캔버스 양쪽에 이 함수 하나로 항상 똑같은 모양을 그린다 (따로 관리하던 두 렌더링 경로를 통합).
 // ⚠️ #canvasTextWrapper/#textEditor에 white-space:pre-wrap이 걸려 있으므로 태그 사이 줄바꿈 없이 한 줄로 만든다.
 function buildDialogueBlockHTML(line) {
+    if (line.type === "date" || line.type === "system") return buildDialogueSpecialHTML(line);
     const c = characters.find((x) => x.id === line.charId);
     if (!c) return `<div style="font-size:12px;color:#999;">(삭제된 캐릭터)</div>`;
+    if ((document.getElementById("dialogueMode")?.value || "log") === "chat") return buildChatBubbleHTML(line, c);
 
     const mode = document.getElementById("dialogueMode")?.value || "log";
     const paragraphLayoutOn = mode === "block" && document.getElementById("dlgParagraphLayout")?.checked;
@@ -1993,6 +2166,240 @@ function buildDialogueBlockHTML(line) {
     const nameHtml = showName ? `<span style="${DLG_FONT}${nameSizeStyle}display:inline-block;font-weight:700;${nameColor}margin-right:${nameGap}px;">${escapeHtml(c.name)}</span>` : "";
     const narrationHtml = narrationText ? `<div style="${DLG_FONT}margin-top:2px;white-space:pre-wrap;">${escapeHtml(narrationText)}</div>` : "";
     return `<div style="text-align:inherit;">${nameHtml}<span style="${DLG_FONT}white-space:pre-wrap;word-break:break-word;">${escapeHtml(line.text || "")}</span></div>${narrationHtml}`;
+}
+
+// ==== 채팅 모드 (Chat2Img 메신저 테마 참고) ====
+function formatChatDateKo(d) {
+    const days = ["일", "월", "화", "수", "목", "금", "토"];
+    return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`;
+}
+
+function readDlgNumber(id, fallback) {
+    const v = parseFloat(document.getElementById(id)?.value);
+    return isNaN(v) ? fallback : v;
+}
+
+// 편집창에서 이 대사 블록 바로 위(빈 줄은 건너뜀)에 있는 대사 블록의 line을 찾는다.
+function getPrevDialogueLineInEditor(lineId) {
+    if (!els.editor) return null;
+    const marker = els.editor.querySelector(`.dlg-editor-marker[data-line-id="${lineId}"]`);
+    if (!marker) return null;
+    let prev = marker.previousElementSibling;
+    while (prev && !prev.classList.contains("dlg-editor-marker")) {
+        const isEmpty = prev.textContent.replace(/​/g, "").trim() === "" && !prev.querySelector("img, hr, .editor-image-block, .html-embed-block, .hr-divider, .template-block");
+        if (!isEmpty) return null; // 사이에 지문/다른 내용이 끼어 있으면 연속 대사가 아님
+        prev = prev.previousElementSibling;
+    }
+    if (!prev) return null;
+    return dialogueLines.find((l) => l.id === prev.dataset.lineId) || null;
+}
+
+function isChatContinuation(line) {
+    const prev = getPrevDialogueLineInEditor(line.id);
+    return !!(prev && !prev.type && prev.charId === line.charId);
+}
+
+// 채팅 모드에서 대사 블록 사이에 남는 빈 줄(대사 추가 시 자동으로 생기는 줄)은
+// 말풍선 간격을 들쭉날쭉하게 만들므로 캔버스용 복제본에서만 빼 준다.
+function stripEmptyLinesBetweenChatMarkers(root) {
+    if ((document.getElementById("dialogueMode")?.value || "log") !== "chat" || !root) return;
+    const kids = Array.from(root.children);
+    kids.forEach((el, i) => {
+        if (el.classList.contains("dlg-editor-marker")) return;
+        const isEmpty = el.textContent.replace(/​/g, "").trim() === "" && !el.querySelector("img, hr, .editor-image-block, .html-embed-block, .hr-divider, .template-block");
+        if (!isEmpty) return;
+        let p = i - 1; while (p >= 0 && !kids[p].classList.contains("dlg-editor-marker") && kids[p].textContent.trim() === "") p--;
+        let n = i + 1; while (n < kids.length && !kids[n].classList.contains("dlg-editor-marker") && kids[n].textContent.trim() === "") n++;
+        const prevIsMarker = p >= 0 && kids[p].classList.contains("dlg-editor-marker");
+        const nextIsMarker = n < kids.length && kids[n].classList.contains("dlg-editor-marker");
+        if (prevIsMarker && (nextIsMarker || n >= kids.length)) el.remove();
+    });
+}
+
+function buildDialogueSpecialHTML(line) {
+    const mode = document.getElementById("dialogueMode")?.value || "log";
+    const fontSize = readDlgNumber("fontSize", 16);
+    const capFs = Math.max(11, Math.round(fontSize * 0.72));
+    const text = escapeHtml(line.text || "");
+    if (mode === "chat") {
+        const gap = readDlgNumber("dlgLineGap", 10);
+        const bg = line.type === "date" ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.22)";
+        return `<div style="display:flex;justify-content:center;margin:${gap}px 0;white-space:normal;text-align:center;"><div style="display:inline-block;max-width:90%;background:${bg};color:#ffffff;border-radius:999px;padding:3px 13px;font-size:${capFs}px;line-height:1.55;white-space:pre-wrap;word-break:break-word;">${text}</div></div>`;
+    }
+    const body = line.type === "date" ? `— ${text} —` : text;
+    return `<div style="text-align:center;font-size:${capFs}px;line-height:1.6;opacity:0.6;white-space:pre-wrap;">${body}</div>`;
+}
+
+function buildChatBubbleHTML(line, c) {
+    const DLG_FONT = getDialogueFontStyle();
+    const fontSize = readDlgNumber("fontSize", 16);
+    const isRight = c.align === "right";
+    const groupRuns = document.getElementById("dlgChatGroupRuns")?.checked !== false;
+    const continued = groupRuns && isChatContinuation(line);
+    const showAvatar = !!document.getElementById("dlgShowAvatar")?.checked;
+    const showName = document.getElementById("dlgShowName")?.checked !== false && line.showName !== false && !continued;
+    const showTranslation = document.getElementById("dlgShowTranslation")?.checked !== false;
+    const showTime = document.getElementById("dlgChatShowTime")?.checked !== false;
+    const useTail = document.getElementById("dlgChatTail")?.checked !== false && !continued;
+    const useCharColor = document.getElementById("dlgUseCharColor")?.checked;
+    const nameSuffix = document.getElementById("dlgNameSuffix")?.value ?? "";
+    const nameFontSize = readDlgNumber("dlgNameFontSize", 16);
+    const avatarSize = readDlgNumber("dlgAvatarSize", 32);
+    const avatarRadius = document.getElementById("dlgAvatarShape")?.value === "square" ? "22%" : "50%";
+    const radius = Math.max(0, readDlgNumber("dlgChatBubbleRadius", 14));
+    const maxW = Math.min(100, Math.max(20, readDlgNumber("dlgChatBubbleWidth", 72)));
+    const gapTop = continued ? readDlgNumber("dlgContinuationGap", 4) : readDlgNumber("dlgLineGap", 10);
+    const bubbleBg = c.bubbleBg || (isRight ? "#fae100" : "#ffffff");
+    const bubbleText = c.bubbleText || (isRight ? "#371d1e" : "#191919");
+    const padY = Math.round(fontSize * 0.55);
+    const padX = Math.round(fontSize * 0.8);
+    const dir = isRight ? "row-reverse" : "row";
+    const align = isRight ? "flex-end" : "flex-start";
+
+    let avatarHtml = "";
+    if (showAvatar) {
+        avatarHtml = continued
+            ? `<div style="width:${avatarSize}px;flex-shrink:0;"></div>`
+            : `<div style="width:${avatarSize}px;height:${avatarSize}px;flex-shrink:0;border-radius:${avatarRadius};background-color:#f3f3f1;border:1px solid #eaeaea;background-size:cover;background-position:center;box-sizing:border-box;${c.avatarData ? `background-image:url(${c.avatarData});` : ""}"></div>`;
+    }
+    const nameColor = (useCharColor && c.color) ? `color:${c.color};` : "opacity:0.75;";
+    const nameHtml = showName ? `<div style="font-size:${nameFontSize}px;line-height:1.3;font-weight:700;${nameColor}margin-bottom:4px;">${escapeHtml(c.name)}${escapeHtml(nameSuffix)}</div>` : "";
+
+    const text = line.text || "";
+    const hasText = text.trim() !== "" || !line.imageData;
+    const translationHtml = (showTranslation && line.translation) ? `<div style="font-size:0.82em;opacity:0.62;margin-top:3px;white-space:pre-wrap;">${escapeHtml(line.translation)}</div>` : "";
+    const tailSide = isRight ? `right:-7px;border-left:9px solid ${bubbleBg};` : `left:-7px;border-right:9px solid ${bubbleBg};`;
+    const tailHtml = (useTail && hasText) ? `<span style="position:absolute;top:${Math.max(6, Math.round(padY + fontSize * 0.2))}px;width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;${tailSide}"></span>` : "";
+    const bubbleHtml = hasText
+        ? `<div style="position:relative;min-width:0;background:${bubbleBg};color:${bubbleText};border-radius:${radius}px;padding:${padY}px ${padX}px;border:1px solid rgba(0,0,0,0.08);white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;text-align:left;${DLG_FONT}line-height:1.45;">${tailHtml}${escapeHtml(text)}${translationHtml}</div>`
+        : "";
+    const imageHtml = line.imageData
+        ? `<img src="${line.imageData}" alt="" style="display:block;max-width:100%;max-height:${Math.round(fontSize * 18)}px;border-radius:${radius}px;${hasText ? "margin-bottom:4px;" : ""}" />`
+        : "";
+    const timeHtml = (showTime && line.time) ? `<div style="font-size:${Math.max(10, Math.round(fontSize * 0.62))}px;line-height:1.2;opacity:0.5;white-space:nowrap;flex-shrink:0;">${escapeHtml(line.time)}</div>` : "";
+    const bodyHtml = `<div style="display:flex;flex-direction:column;align-items:${align};min-width:0;">${imageHtml}${bubbleHtml}</div>`;
+    const bubbleRow = `<div style="display:flex;flex-direction:${dir};align-items:flex-end;gap:5px;max-width:${maxW}%;">${bodyHtml}${timeHtml}</div>`;
+
+    return `<div class="dlg-chat-row" style="display:flex;flex-direction:${dir};align-items:flex-start;gap:8px;margin-top:${gapTop}px;white-space:normal;text-align:left;box-sizing:border-box;">${avatarHtml}<div style="display:flex;flex-direction:column;align-items:${align};flex:1 1 auto;min-width:0;">${nameHtml}${bubbleRow}</div></div>`;
+}
+
+// 사진 말풍선용: 너무 큰 사진은 줄여서 저장(브라우저 저장공간 절약)
+function readImageFileCompressed(file, maxSide, callback) {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        const src = ev.target.result;
+        const img = new Image();
+        img.onload = () => {
+            try {
+                const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+                const w = Math.max(1, Math.round(img.width * scale));
+                const h = Math.max(1, Math.round(img.height * scale));
+                const cv = document.createElement("canvas");
+                cv.width = w; cv.height = h;
+                cv.getContext("2d").drawImage(img, 0, 0, w, h);
+                const keepAlpha = /png|gif|webp/i.test(file.type);
+                callback(keepAlpha ? cv.toDataURL("image/png") : cv.toDataURL("image/jpeg", 0.88));
+            } catch (e) {
+                callback(src);
+            }
+        };
+        img.onerror = () => callback(src);
+        img.src = src;
+    };
+    reader.readAsDataURL(file);
+}
+
+// 대사 목록 칸: 날짜 구분선 / 시스템 알림
+function buildSpecialDialogueCell(line) {
+    const cell = document.createElement("div");
+    cell.className = "dialogue-line-cell dlc-special";
+    const header = document.createElement("div");
+    header.className = "dlc-header";
+    const label = document.createElement("span");
+    label.className = "dlc-special-label";
+    label.textContent = line.type === "date" ? "📅 날짜 구분선" : "🔔 시스템 알림";
+    const delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.className = "dlc-delete";
+    delBtn.textContent = "✕";
+    delBtn.addEventListener("click", () => deleteDialogueLine(line.id));
+    header.appendChild(label);
+    header.appendChild(delBtn);
+    cell.appendChild(header);
+    const input = document.createElement("textarea");
+    input.className = "dlc-text";
+    input.placeholder = line.type === "date" ? "예: 2026년 11월 10일 화요일" : "예: ○○님이 들어왔습니다.";
+    input.value = line.text || "";
+    input.addEventListener("input", () => {
+        line.text = input.value;
+        saveDialogueLinesToStorage();
+        updateDialogueMarkerInEditor(line);
+        updateCanvas();
+    });
+    cell.appendChild(input);
+    return cell;
+}
+
+// 대사 목록 칸(채팅 모드): 보낸 시간 + 사진 말풍선
+function buildChatExtraRow(line) {
+    const row = document.createElement("div");
+    row.className = "dlc-chat-extra";
+    const timeInput = document.createElement("input");
+    timeInput.type = "text";
+    timeInput.className = "dlc-time-input";
+    timeInput.placeholder = "보낸 시간 (예: 오후 3:14)";
+    timeInput.value = line.time || "";
+    timeInput.addEventListener("input", () => {
+        line.time = timeInput.value;
+        saveDialogueLinesToStorage();
+        updateDialogueMarkerInEditor(line);
+        updateCanvas();
+    });
+    row.appendChild(timeInput);
+
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "image/*";
+    fileInput.style.display = "none";
+    const photoBtn = document.createElement("button");
+    photoBtn.type = "button";
+    photoBtn.className = "dlc-photo-btn";
+    photoBtn.textContent = line.imageData ? "사진 바꾸기" : "＋ 사진 말풍선";
+    photoBtn.addEventListener("click", () => { fileInput.value = ""; fileInput.click(); });
+    fileInput.addEventListener("change", () => {
+        const file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+        readImageFileCompressed(file, 900, (dataUrl) => {
+            line.imageData = dataUrl;
+            saveDialogueLinesToStorage();
+            renderDialogueLineList();
+            updateDialogueMarkerInEditor(line);
+            updateCanvas();
+        });
+    });
+    if (line.imageData) {
+        const thumb = document.createElement("div");
+        thumb.className = "dlc-photo-thumb";
+        thumb.style.backgroundImage = `url(${line.imageData})`;
+        row.appendChild(thumb);
+    }
+    row.appendChild(photoBtn);
+    if (line.imageData) {
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "dlc-photo-btn";
+        removeBtn.textContent = "사진 빼기";
+        removeBtn.addEventListener("click", () => {
+            delete line.imageData;
+            saveDialogueLinesToStorage();
+            renderDialogueLineList();
+            updateDialogueMarkerInEditor(line);
+            updateCanvas();
+        });
+        row.appendChild(removeBtn);
+    }
+    row.appendChild(fileInput);
+    return row;
 }
 
 // 편집창 속 대사 블록 하나의 최종 내부 HTML: 위/아래 이동 버튼 + 드래그 손잡이(캔버스에는 안 찍힘) + 실제 대사 내용.
@@ -2322,6 +2729,10 @@ function renderDialogueLineList() {
     }
 
     dialogueLines.forEach((line) => {
+        if (line.type === "date" || line.type === "system") {
+            container.appendChild(buildSpecialDialogueCell(line));
+            return;
+        }
         const c = characters.find((x) => x.id === line.charId);
         const cell = document.createElement("div");
         cell.className = "dialogue-line-cell";
@@ -2356,7 +2767,7 @@ function renderDialogueLineList() {
 
         const textArea = document.createElement("textarea");
         textArea.className = "dlc-text";
-        textArea.placeholder = mode === "log" ? "원문 대사를 입력하세요" : "대사를 입력하세요";
+        textArea.placeholder = mode === "log" ? "원문 대사를 입력하세요" : mode === "chat" ? "보낼 메시지를 입력하세요" : "대사를 입력하세요";
         textArea.value = line.text || "";
         textArea.addEventListener("input", () => {
             line.text = textArea.value;
@@ -2381,7 +2792,7 @@ function renderDialogueLineList() {
         nameToggleRow.appendChild(document.createTextNode("이 대사에 이름 표시"));
         cell.appendChild(nameToggleRow);
 
-        if (mode === "log" && document.getElementById("dlgShowTranslation")?.checked !== false) {
+        if ((mode === "log" || mode === "chat") && document.getElementById("dlgShowTranslation")?.checked !== false) {
             const transArea = document.createElement("textarea");
             transArea.className = "dlc-translation";
             transArea.placeholder = "번역 (선택)";
@@ -2406,6 +2817,8 @@ function renderDialogueLineList() {
             });
             cell.appendChild(narrationArea);
         }
+
+        if (mode === "chat") cell.appendChild(buildChatExtraRow(line));
 
         container.appendChild(cell);
     });
@@ -2445,6 +2858,21 @@ function getDialogueFontStyle() {
 }
 
 onClick("btnAddCharacter", () => openCharacterEditor(null));
+onClick("btnAddChatDate", () => addDialogueLine(null, "date"));
+onClick("btnAddChatSystem", () => addDialogueLine(null, "system"));
+
+// 채팅 위치를 바꿀 때 말풍선 색이 아직 반대편 기본색이면, 새 위치의 기본색으로 같이 바꿔 준다.
+document.querySelectorAll('.segmented-control[data-target="charEditorAlign"] button').forEach((btn) => {
+    btn.addEventListener("click", () => {
+        const a = btn.dataset.value === "right" ? "right" : "left";
+        const other = a === "right" ? "left" : "right";
+        const bgInput = document.getElementById("charEditorBubbleBg");
+        const textInput = document.getElementById("charEditorBubbleText");
+        if (bgInput && bgInput.value.toLowerCase() === CHAT_DEFAULT_COLORS[other].bg) bgInput.value = CHAT_DEFAULT_COLORS[a].bg;
+        if (textInput && textInput.value.toLowerCase() === CHAT_DEFAULT_COLORS[other].text) textInput.value = CHAT_DEFAULT_COLORS[a].text;
+        if (typeof syncColorSwatches === "function") syncColorSwatches();
+    });
+});
 onClick("btnCancelCharacterEdit", closeCharacterEditor);
 
 onClick("btnSaveCharacter", () => {
@@ -2455,14 +2883,20 @@ onClick("btnSaveCharacter", () => {
     const existing = editingCharacterId ? characters.find((x) => x.id === editingCharacterId) : null;
     const avatarData = pendingCharAvatarData !== null ? pendingCharAvatarData : (existing ? existing.avatarData : null);
     const color = document.getElementById("charEditorColor")?.value || "#171717";
+    const align = document.getElementById("charEditorAlign")?.value === "right" ? "right" : "left";
+    const bubbleBg = document.getElementById("charEditorBubbleBg")?.value || CHAT_DEFAULT_COLORS[align].bg;
+    const bubbleText = document.getElementById("charEditorBubbleText")?.value || CHAT_DEFAULT_COLORS[align].text;
 
     if (existing) {
         existing.name = name;
         existing.avatarData = avatarData;
         existing.color = color;
+        existing.align = align;
+        existing.bubbleBg = bubbleBg;
+        existing.bubbleText = bubbleText;
         updateExistingDialogueNames(existing.id);
     } else {
-        characters.push({ id: uid(), name, avatarData, color });
+        characters.push({ id: uid(), name, avatarData, color, align, bubbleBg, bubbleText });
     }
 
     renderCharacterList();
@@ -2828,6 +3262,8 @@ document.addEventListener("DOMContentLoaded", () => {
         els.dlgAvatarSize, els.dlgUseCharColor, els.dlgLineGap, els.dlgContinuationGap,
         els.dlgNameGap,
         document.getElementById("dlgParagraphIndent"), document.getElementById("dlgNameColumnWidth"),
+        document.getElementById("dlgChatBubbleRadius"), document.getElementById("dlgChatBubbleWidth"),
+        document.getElementById("dlgChatTail"), document.getElementById("dlgChatGroupRuns"), document.getElementById("dlgChatShowTime"),
         document.getElementById("footnoteColor"), document.getElementById("footnoteAlign"), document.getElementById("footnoteDividerShow"),
         document.getElementById("footnoteDividerColor"), document.getElementById("footnoteDividerWidth")
     ];
@@ -2884,7 +3320,7 @@ document.getElementById("btnCopy").addEventListener("click", async () => {
     els.captureArea.style.overflow = "visible";
     prepareCanvasForCapture(els.captureArea);
     await bakeBackgroundBlurForCapture();
-    html2canvas(els.captureArea, { useCORS: true, allowTaint: true, backgroundColor: null, scale: getExportScale(els.captureArea) })
+    html2canvas(els.captureArea, captureOptions(els.captureArea))
         .then((canvas) => {
             restoreCanvasAfterCapture(els.captureArea);
             restoreBackgroundBlurAfterCapture();
@@ -2926,7 +3362,7 @@ document.getElementById("btnSave").addEventListener("click", async () => {
     els.captureArea.style.overflow = "visible";
     prepareCanvasForCapture(els.captureArea);
     await bakeBackgroundBlurForCapture();
-    html2canvas(els.captureArea, { useCORS: true, allowTaint: true, backgroundColor: null, scale: getExportScale(els.captureArea) })
+    html2canvas(els.captureArea, captureOptions(els.captureArea))
         .then((canvas) => {
             restoreCanvasAfterCapture(els.captureArea);
             restoreBackgroundBlurAfterCapture();
@@ -5398,7 +5834,7 @@ const HEART_STEPS = {
     columnSplitIndex: 1, columnGap: 4, boxQuoteWidth: 1, dividerWidth: 0.5, fadeCount: 1, footnoteDividerWidth: 0.5,
     imgBlockSize: 10, imgBlockRadius: 2,
     dlgAvatarSize: 2, dlgNameFontSize: 1, dlgContinuationGap: 2, dlgNameGap: 2, dlgParagraphIndent: 2,
-    dlgNameColumnWidth: 4, dlgLineGap: 2
+    dlgNameColumnWidth: 4, dlgLineGap: 2, dlgChatBubbleRadius: 2, dlgChatBubbleWidth: 4
 };
 
 // 화면에 보이는 숫자칸들을 원래 값과 다시 맞추는 함수 목록
