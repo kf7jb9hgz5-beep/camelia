@@ -6,14 +6,15 @@ def uri(svg):
     return "url('data:image/svg+xml," + urllib.parse.quote(svg, safe=" =:/,.-'") .replace("'", "%27") + "')"
 
 def rose_tile(hi, lo):
-    r = "<path d='M14.1 11.3Q20.0 5.5 25.9 11.3M26.4 11.7Q33.8 15.5 30.1 22.9M29.9 23.6Q28.5 31.7 20.3 30.5M19.7 30.5Q11.5 31.7 10.1 23.6M9.9 22.9Q6.2 15.5 13.6 11.7'/><path d='M20.3 13.5Q26.7 13.3 26.5 19.7M26.5 20.3Q26.7 26.7 20.3 26.5M19.7 26.5Q13.3 26.7 13.5 20.3M13.5 19.7Q13.3 13.3 19.7 13.5'/><path d='M20 19.5c1.2-1 2.6 0 2 1.3s-2.6 1.6-3.3.2.3-3.2 2.1-3.4 3.6 1.2 3.4 3'/>"
+    r = ("<path d='M20 13c5 0 8 3 8 7s-3 8-8 8-8-3-8-7 3-6 6-6 5 2 5 5-2 4-4 4-3-1-3-3 1-2 2-2'/>"
+         "<path d='M11 17c-2 6 2 12 9 13 7-1 11-7 9-13M14 12c3-3 9-3 12 0'/>")
     return uri(f"<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'>"
-               f"<defs><g id='r' fill='none' stroke-width='1' stroke-linecap='round'>{r}</g></defs>"
+               f"<defs><g id='r' fill='none' stroke-width='1.3' stroke-linecap='round'>{r}</g></defs>"
                f"<use href='#r' stroke='{lo}' x='.8' y='.9'/><use href='#r' stroke='{hi}'/>"
-               f"<g transform='translate(38 36) scale(.6)'><use href='#r' stroke='{lo}' x='1' y='1'/><use href='#r' stroke='{hi}'/></g></svg>")
+               f"<g transform='translate(34 34) scale(.62)'><use href='#r' stroke='{lo}' x='1' y='1'/><use href='#r' stroke='{hi}'/></g></svg>")
 
-ROSE_LIGHT = rose_tile('rgba(255,255,255,.6)', 'rgba(90,60,80,.13)')
-ROSE_DARK  = rose_tile('rgba(255,255,255,.1)', 'rgba(0,0,0,.35)')
+ROSE_LIGHT = rose_tile('rgba(255,255,255,.75)', 'rgba(90,60,80,.22)')
+ROSE_DARK  = rose_tile('rgba(255,255,255,.16)', 'rgba(0,0,0,.45)')
 
 T = {
  'song':'[노래 제목]','artist':'[가수]','date':'[YYYY.MM.DD]','day':'[요일 영문 3글자 ex) MON]','ampm':'[AM/PM]','time':'[HH:MM]',
