@@ -11,7 +11,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=79" />
+        <link rel="stylesheet" href="style.css?v=80" />
     </head>
     <body class="mobile-theme">
         <header class="canvas-header">
@@ -1131,6 +1131,14 @@
                 </div>
                 <button type="button" class="btn-minimal-save" id="btnPresetUndo" style="display: none; width: 100%; margin-bottom: 10px" onclick="undoPresetApply()"></button>
                 <div class="preset-list-scroll" id="presetList"></div>
+
+                <div class="panel-section-title">백업 · 복원</div>
+                <div class="backup-row">
+                    <button type="button" class="btn-template" id="btnBackupAll">전체 백업 (파일로 저장)</button>
+                    <label class="btn-template backup-restore-label" for="restoreAllFile">전체 불러오기</label>
+                    <input type="file" id="restoreAllFile" accept=".json,application/json" style="display: none" />
+                </div>
+                <p class="backup-hint">프리셋 · 캐릭터 · 자동 치환 규칙 · 스티커 보관함을 파일 하나로 저장해요. 다른 기기로 옮기거나 브라우저 데이터가 지워질 때를 대비해 두세요. 불러올 때 기존 것은 그대로 두고 없는 것만 추가돼요.</p>
             </div>
         </section>
 
@@ -1225,8 +1233,8 @@
 
         <div class="toast" id="toast"></div>
 
-        <script src="presets.js?v=50"></script>
+        <script src="presets.js?v=51"></script>
         <script src="decor-assets.js?v=1"></script>
-        <script src="script.js?v=70"></script>
+        <script src="script.js?v=71"></script>
     </body>
 </html>
