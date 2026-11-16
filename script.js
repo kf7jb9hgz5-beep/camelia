@@ -615,6 +615,7 @@ function updateCanvasCore() {
     if (typeof syncLiveHighlights === "function") {
         try { syncLiveHighlights(); } catch (e) {}
     }
+    try { applyHighlightOpacity(); } catch (e) {}
 
     applyPreviewScale();
 }
@@ -878,6 +879,30 @@ function hexToRgb(hex) {
     return result ? `rgb(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)})` : "";
 }
 
+// 형광펜 진하기(투명도): 편집창의 형광펜 색은 그대로 두고(색 바꾸기 기능이 색 값으로 형광펜을 찾기 때문),
+// 캔버스에 그려진 형광펜 A/B/C만 설정한 진하기만큼 반투명하게 바꾼다. 저장 이미지에도 그대로 반영된다.
+function getHighlightOpacity() {
+    const v = parseFloat(document.getElementById("hlOpacity")?.value);
+    if (isNaN(v)) return 1;
+    return Math.min(100, Math.max(10, v)) / 100;
+}
+function applyHighlightOpacity() {
+    const textWrapper = document.getElementById("canvasTextWrapper");
+    if (!textWrapper) return;
+    const alpha = getHighlightOpacity();
+    const toKey = (hex) => { const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || ""); return m ? `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}` : null; };
+    const keys = new Set([els.hlColorA, els.hlColorB, els.hlColorC].map((el) => el && toKey(el.value)).filter(Boolean));
+    for (const span of textWrapper.getElementsByTagName("span")) {
+        const bg = span.style.backgroundColor;
+        if (!bg) continue;
+        const m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(bg);
+        if (!m) continue;
+        const key = `${m[1]},${m[2]},${m[3]}`;
+        if (!keys.has(key)) continue;
+        span.style.backgroundColor = alpha >= 1 ? `rgb(${m[1]}, ${m[2]}, ${m[3]})` : `rgba(${m[1]}, ${m[2]}, ${m[3]}, ${alpha})`;
+    }
+}
+
 function syncLiveHighlights(overrideColors = null) {
     const textWrapper = document.getElementById("canvasTextWrapper");
     if (!textWrapper) return;
@@ -973,28 +998,65 @@ function prepareCanvasForCapture(container) {
     // ⚠️ 예전에는 span.textContent로 통째로 다시 써서, 안에 있던 기울임(<i>)·굵게(<b>)·글꼴·글자색 태그가
     // 전부 사라졌다 → "형광펜 칠한 기울임 글자가 저장하면 똑바로 서는" 문제. 이제는 글자(텍스트 노드)만
     // 쪼개고 안쪽 태그 구조는 그대로 둔다. (글꼴도 강제로 전체 서체로 바꾸지 않고 물려받게 함)
+    // (글자 하나씩이 아니라 "화면에서 같은 줄에 있는 글자 묶음" 단위로 쪼갠다 — 글자마다 쪼개면
+    //  반투명 형광펜에서 글자 사이 이음매가 세로줄로 보인다.)
+    const hlRange = document.createRange();
+    const splitTextByLine = (node) => {
+        const parts = [];
+        let cur = "";
+        let lastTop = null;
+        let offset = 0;
+        for (const ch of Array.from(node.nodeValue)) {
+            if (ch === "\n") {
+                if (cur) parts.push(cur);
+                parts.push("\n");
+                cur = ""; lastTop = null; offset += ch.length;
+                continue;
+            }
+            let top = lastTop;
+            if (ch.trim() !== "") {
+                try {
+                    hlRange.setStart(node, offset);
+                    hlRange.setEnd(node, offset + ch.length);
+                    const r = hlRange.getBoundingClientRect();
+                    if (r && (r.width || r.height)) top = r.top;
+                } catch (e) {}
+            }
+            if (cur && lastTop !== null && top !== null && Math.abs(top - lastTop) > 2) { parts.push(cur); cur = ""; }
+            cur += ch;
+            if (top !== null) lastTop = top;
+            offset += ch.length;
+        }
+        if (cur) parts.push(cur);
+        return parts;
+    };
+    const hlPlans = [];
     container.querySelectorAll("span").forEach((span) => {
-        if (span.classList.contains("__hl-char") || span.closest("[data-original-html]")) return;
+        if (span.closest("[data-original-html]") || hlPlans.some(([s]) => s.contains(span))) return;
         const bg = span.style.backgroundColor;
         if (bg && bg !== "transparent" && bg !== "initial") {
-            span.setAttribute("data-original-html", span.innerHTML);
             const walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT);
-            const textNodes = [];
-            while (walker.nextNode()) textNodes.push(walker.currentNode);
-            textNodes.forEach((node) => {
-                const frag = document.createDocumentFragment();
-                Array.from(node.nodeValue).forEach((char) => {
-                    if (char === "\n") { frag.appendChild(document.createTextNode("\n")); return; }
-                    const s = document.createElement("span");
-                    s.className = "__hl-char";
-                    s.style.cssText = `background-color: ${bg}; display: inline; color: inherit;`;
-                    s.textContent = char;
-                    frag.appendChild(s);
-                });
-                node.parentNode.replaceChild(frag, node);
-            });
-            span.style.backgroundColor = "transparent";
+            const nodes = [];
+            while (walker.nextNode()) nodes.push([walker.currentNode, splitTextByLine(walker.currentNode)]);
+            hlPlans.push([span, bg, nodes]);
         }
+    });
+    // 위치를 전부 잰 다음(레이아웃이 바뀌기 전) 한꺼번에 바꾼다
+    hlPlans.forEach(([span, bg, nodes]) => {
+        span.setAttribute("data-original-html", span.innerHTML);
+        nodes.forEach(([node, parts]) => {
+            const frag = document.createDocumentFragment();
+            parts.forEach((part) => {
+                if (part === "\n") { frag.appendChild(document.createTextNode("\n")); return; }
+                const s = document.createElement("span");
+                s.className = "__hl-char";
+                s.style.cssText = `background-color: ${bg}; display: inline; color: inherit;`;
+                s.textContent = part;
+                frag.appendChild(s);
+            });
+            node.parentNode.replaceChild(frag, node);
+        });
+        span.style.backgroundColor = "transparent";
     });
 }
 
@@ -1134,7 +1196,7 @@ function restoreCanvasAfterCapture(container) {
 
     container.querySelectorAll("span[data-original-html]").forEach((span) => {
         const originalHTML = span.getAttribute("data-original-html");
-        const restoredBg = span.querySelector("span")?.style.backgroundColor || "transparent";
+        const restoredBg = span.querySelector(".__hl-char")?.style.backgroundColor || "transparent";
         span.innerHTML = originalHTML;
         span.style.backgroundColor = restoredBg;
         span.removeAttribute("data-original-html");
@@ -2966,7 +3028,7 @@ document.addEventListener("DOMContentLoaded", () => {
         els.headingSubtitleFont, els.headingSubtitleSize, els.headingSubtitleBold, document.getElementById("headingSubtitleColor"),
         els.dlgNameSuffix, els.dlgQuoteStyle, els.dlgShowTranslation, els.dlgShowAvatar, els.dlgShowName,
         els.dlgAvatarSize, els.dlgUseCharColor, els.dlgLineGap, els.dlgContinuationGap,
-        els.dlgNameGap, document.getElementById("dlgNameFontSize"),
+        els.dlgNameGap, document.getElementById("dlgNameFontSize"), document.getElementById("hlOpacity"),
         document.getElementById("dlgParagraphIndent"), document.getElementById("dlgNameColumnWidth"),
         document.getElementById("footnoteColor"), document.getElementById("footnoteAlign"), document.getElementById("footnoteDividerShow"),
         document.getElementById("footnoteDividerColor"), document.getElementById("footnoteDividerWidth")
@@ -5539,7 +5601,7 @@ const HEART_STEPS = {
     columnSplitIndex: 1, columnGap: 4, boxQuoteWidth: 1, dividerWidth: 0.5, fadeCount: 1, footnoteDividerWidth: 0.5,
     imgBlockSize: 10, imgBlockRadius: 2,
     dlgAvatarSize: 2, dlgNameFontSize: 1, dlgContinuationGap: 2, dlgNameGap: 2, dlgParagraphIndent: 2,
-    dlgNameColumnWidth: 4, dlgLineGap: 2
+    dlgNameColumnWidth: 4, dlgLineGap: 2, hlOpacity: 10
 };
 
 // 화면에 보이는 숫자칸들을 원래 값과 다시 맞추는 함수 목록
