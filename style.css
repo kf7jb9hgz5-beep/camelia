@@ -3435,9 +3435,39 @@ html {
     background: linear-gradient(180deg, #fffafc 0%, var(--bg-main) 100%);
     border: 1px solid var(--border-color);
     border-radius: 24px;
-    padding: 14px 14px 6px;
+    /* 위·아래·좌·우 여백을 똑같이. 칸 사이 간격은 gap 하나로 통일해서
+       마지막 칸이 무엇이든(숨겨진 칸이 있어도) 아래 여백이 달라지지 않게 한다. */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
     margin-bottom: 14px;
     box-shadow: 0 1px 0 #ffffff inset, var(--shadow-sm);
+    min-width: 0;
+}
+.panel-card > * {
+    margin-top: 0;
+    margin-bottom: 0;
+    min-width: 0;
+    max-width: 100%;
+}
+.panel-card > .field-hint {
+    padding-bottom: 0;
+}
+/* 긴 설명이 붙은 스위치: 글자가 칸 밖으로 튀어나오지 않고 줄바꿈되게 */
+.panel-card .checkbox-minimal-group {
+    min-width: 0;
+}
+.panel-card .checkbox-minimal-group label {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    line-height: 1.35;
+}
+.panel-card .control-minimal-row {
+    min-width: 0;
 }
 .panel-card:last-child {
     margin-bottom: 4px;
@@ -3454,7 +3484,7 @@ html {
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    margin: 0 0 12px;
+    margin: 0 0 2px;
     padding: 0 2px 10px;
     border-bottom: 1px dashed var(--accent-tint-strong);
 }
@@ -3468,9 +3498,6 @@ html {
     font-weight: 700;
     letter-spacing: 0.4px;
     color: var(--text-muted);
-}
-.panel-card > .field-hint:last-child {
-    padding-bottom: 8px;
 }
 
 @media (min-width: 1024px) {
@@ -3506,9 +3533,10 @@ html {
         scrollbar-width: thin;
         scrollbar-color: var(--accent-tint-strong) transparent;
     }
+    /* 맨 위에 장미 로고, 그 아래에 EDITOR · Camelia 줄 */
     .pane-brand {
         display: block;
-        padding: 14px 18px 0;
+        padding: 78px 18px 0;
     }
     .pane-brand-badge {
         display: flex;
@@ -3541,23 +3569,12 @@ html {
         font-size: 11px;
         letter-spacing: 0;
     }
-    .pane-brand-logo-space {
-        height: 56px;
-    }
-    .pane-brand-ruler {
-        height: 9px;
-        background-image:
-            repeating-linear-gradient(90deg, var(--accent-color) 0 1px, transparent 1px 40px),
-            repeating-linear-gradient(90deg, var(--accent-tint-strong) 0 1px, transparent 1px 8px);
-        background-size: 100% 9px, 100% 5px;
-        background-repeat: no-repeat;
-        background-position: left bottom, left bottom;
-        opacity: 0.8;
-    }
     .brand-logo {
         position: absolute;
-        top: 58px;
-        left: 22px;
+        top: 14px;
+        left: 20px;
+        width: 52px;
+        height: 52px;
     }
     .editor-pane {
         position: relative;
@@ -3662,23 +3679,4 @@ html {
         border-radius: var(--radius-pill);
         box-shadow: var(--shadow-sm);
     }
-}
-
-/* ==========================================================================
-    사이트 전체(화면 UI) 글꼴: 문천역 정흑 (Fonts/wqy-zenhei_0.woff2)
-    ⚠️ 캔버스(#captureArea)와 본문 입력창(#textEditor)은 "폰트" 탭에서 고른 서체를 써야 하므로
-       예전 기본 글꼴 그대로 두어 저장 결과가 달라지지 않게 한다.
-    ========================================================================== */
-:root {
-    --ui-font: "WenQuanYiZenHei", "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-    --canvas-base-font: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-}
-body.mobile-theme {
-    font-family: var(--ui-font);
-}
-body.mobile-theme :is(button, input, select, textarea):not(#captureArea *):not(#textEditor *) {
-    font-family: var(--ui-font);
-}
-#captureArea {
-    font-family: var(--canvas-base-font);
 }
