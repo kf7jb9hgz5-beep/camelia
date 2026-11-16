@@ -44,11 +44,11 @@ def _clasp():
 SIDES=['top','right','bottom','left']
 def _arc(l,t,sz_w,sz_h,clear,rot):
     tr=';'.join(f"border-{SIDES[i]}-color:transparent" for i in clear)
-    return f"<div style=\"position:absolute;left:{l:.0f}px;top:{t:.0f}px;width:{sz_w:.0f}px;height:{sz_h:.0f}px;border:1.2px solid;border-radius:50%;{tr};transform:rotate({rot}deg)\"></div>"
+    return f"<div style=\"position:absolute;left:{l:.0f}px;top:{t:.0f}px;width:{sz_w:.0f}px;height:{sz_h:.0f}px;border:1.8px solid;border-radius:50%;{tr};transform:rotate({rot}deg)\"></div>"
 def rose(x,y,S):
     return (f"<div style=\"position:absolute;left:{x}%;top:{y}px;width:{S}px;height:{S}px\">"
         + _arc(S*.12,S*.08,S*.76,S*.76,[2],15) + _arc(S*.27,S*.24,S*.46,S*.46,[3],-40) + _arc(S*.4,S*.37,S*.2,S*.2,[0],30)
-        + _arc(-S*.02,S*.3,S*.55,S*.66,[0,1],-15) + _arc(S*.47,S*.3,S*.55,S*.66,[0,3],15) + "</div>")
+        + _arc(S*.0,S*.28,S*.98,S*.72,[0],0) + "</div>")
 POS=[(2,4,26),(30,44,17),(50,0,22),(76,40,28),(16,74,18),(62,82,16),(92,8,15)]
 POS_S=[(4,6,22),(55,2,15),(70,40,20),(25,48,14)]
 def roses(c, sh, pos=POS):
