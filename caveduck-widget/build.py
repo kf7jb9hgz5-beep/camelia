@@ -17,10 +17,9 @@ ROSE_LIGHT = rose_tile('rgba(255,255,255,.75)', 'rgba(90,60,80,.22)')
 ROSE_DARK  = rose_tile('rgba(255,255,255,.16)', 'rgba(0,0,0,.45)')
 
 T = {
- 'song':'[노래 제목]','artist':'[가수]','date':'[YYYY.MM.DD]','day':'[요일 영문 3글자 ex) MON]','ampm':'[AM/PM]','time':'[HH:MM]',
- 'met':'[처음 만난 날 YYYY.MM.DD]','dday':'[D+N]','place':'[현재 장소]','pose':'[{{char}}의 현재 자세]',
- 'inner':'[{{char}}의 속마음]','msg':'[{{char}}가 {{user}}에게 보내는 메시지]','npc':'{{char}}','pc':'{{user}}',
- 'kn':'[{{char}} 카오모지]','kp':'[{{user}} 카오모지]',
+ 'song':'[a]','artist':'[b]','date':'[c]','day':'[d]','ampm':'[e]','time':'[f]',
+ 'place':'[g]','pose':'[h]','inner':'[i]','msg':'[j]','kn':'[k]','kp':'[l]',
+ 'met':'[m]','dday':'[n]','npc':'{{char}}','pc':'{{user}}',
 }
 P = {
  'song':'Lover, Come Back','artist':'Silver Rosé','date':'2026.11.16','day':'MON','ampm':'PM','time':'11:42',
@@ -59,7 +58,8 @@ def build(d):
      f"{FILIGREE}"
      f"<div style=\"display:flex;justify-content:center;align-items:baseline;gap:10px;color:#4b4957;text-shadow:0 1px 0 #fff\">"
      f"<span style=\"font:600 12px {SERIF};letter-spacing:.12em\">{d['date']}</span><span style=\"font:600 10px {SERIF};letter-spacing:.2em;color:#8a8796\">{d['day']}</span>"
-     f"<span style=\"font:600 22px/1 {SERIF};letter-spacing:.06em\"><small style=\"font-size:10px;letter-spacing:.15em;margin-right:3px\">{d['ampm']}</small>{d['time']}</span></div></div>")
+     f"<span style=\"font:600 22px/1 {SERIF};letter-spacing:.06em\"><small style=\"font-size:10px;letter-spacing:.15em;margin-right:3px\">{d['ampm']}</small>{d['time']}</span></div>"
+     f"<div style=\"text-align:center;font:600 8px {SERIF};letter-spacing:.35em;color:#9a98a5;margin-top:6px\">✦ TAP TO OPEN · CLOSE ✦</div></div>")
 
     hinge = ("<div style=\"display:flex;justify-content:center;gap:46px;height:9px;margin:2px 0\">"
              + ("<div style=\"width:30px;height:9px;border-radius:3px;background:linear-gradient(180deg,#fff,#9c9da6 50%,#e9e9ee);box-shadow:0 1px 1px rgba(0,0,0,.3)\"></div>"*2) + "</div>")
@@ -77,7 +77,7 @@ def build(d):
     bs = "background-size:64px 64px,auto,auto"
 
     inner = (f"<details style=\"margin:0\"><summary style=\"cursor:pointer;list-style:none;outline:none\">{label('♡ Inner Whisper · '+d['npc']+'의 속마음','#9a7884')}"
-             f"<div style=\"font-size:10px;color:#a68a94;letter-spacing:.1em\">▾ tap to open</div></summary>"
+             f"<div style=\"font-size:10px;color:#a68a94;letter-spacing:.1em\">▾ tap to open · close</div></summary>"
              f"<div style=\"margin-top:8px;font:italic 13px/1.65 {SERIF};color:#5a4650;text-shadow:0 1px 0 rgba(255,255,255,.7)\">“ {d['inner']} ”</div></details>")
     msg = (label('✉ To. '+d['pc'],'#5e5c73') +
            f"<div style=\"font-size:13px;line-height:1.65;color:#34323f;text-shadow:0 1px 0 rgba(255,255,255,.5)\">{d['msg']}</div>"
@@ -106,7 +106,7 @@ def build(d):
     return ("<div style=\"max-width:360px;margin:12px auto;padding:4px 2px 8px;font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;word-break:keep-all;box-sizing:border-box\">"
             + CLASP +
             f"<div style=\"border-radius:26px;padding:9px;background:{CHROME};box-shadow:0 8px 22px rgba(60,58,72,.28),0 1px 0 #fff inset,0 0 0 1px #8e8f98\">"
-            + lid + hinge + base + "</div>" + tag + "</div>")
+            + "<details open style=\"margin:0\"><summary style=\"cursor:pointer;list-style:none;outline:none;display:block\">" + lid + "</summary>" + hinge + base + "</details></div>" + tag + "</div>")
 
 open(f"{out}/rose-compact-widget.html","w").write(build(T)+"\n")
 open(f"{out}/preview.html","w").write("<!doctype html><html lang='ko'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Rose Compact</title>"
