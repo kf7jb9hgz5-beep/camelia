@@ -81,6 +81,7 @@ function getPresetSnapshot() {
         columnGap: els.columnGap?.value,
         globalTextColor: els.globalTextColor.value,
         subTextColor: els.subTextColor.value,
+        hlOpacity: document.getElementById("hlOpacity")?.value,
         hlColorA: els.hlColorA.value,
         hlColorB: els.hlColorB.value,
         hlColorC: els.hlColorC.value,
@@ -216,6 +217,7 @@ function applyPresetSnapshot(data) {
 
     els.globalTextColor.value = data.globalTextColor ?? els.globalTextColor.value;
     els.subTextColor.value = data.subTextColor ?? els.subTextColor.value;
+    { const el = document.getElementById("hlOpacity"); if (el) el.value = data.hlOpacity ?? 100; }
     els.hlColorA.value = data.hlColorA ?? els.hlColorA.value;
     els.hlColorB.value = data.hlColorB ?? els.hlColorB.value;
     els.hlColorC.value = data.hlColorC ?? els.hlColorC.value;

@@ -615,6 +615,7 @@ function updateCanvasCore() {
     if (typeof syncLiveHighlights === "function") {
         try { syncLiveHighlights(); } catch (e) {}
     }
+    try { applyHighlightOpacity(); } catch (e) {}
 
     applyPreviewScale();
 }
@@ -878,6 +879,30 @@ function hexToRgb(hex) {
     return result ? `rgb(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)})` : "";
 }
 
+// 형광펜 진하기(투명도): 편집창의 형광펜 색은 그대로 두고(색 바꾸기 기능이 색 값으로 형광펜을 찾기 때문),
+// 캔버스에 그려진 형광펜 A/B/C만 설정한 진하기만큼 반투명하게 바꾼다. 저장 이미지에도 그대로 반영된다.
+function getHighlightOpacity() {
+    const v = parseFloat(document.getElementById("hlOpacity")?.value);
+    if (isNaN(v)) return 1;
+    return Math.min(100, Math.max(10, v)) / 100;
+}
+function applyHighlightOpacity() {
+    const textWrapper = document.getElementById("canvasTextWrapper");
+    if (!textWrapper) return;
+    const alpha = getHighlightOpacity();
+    const toKey = (hex) => { const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || ""); return m ? `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}` : null; };
+    const keys = new Set([els.hlColorA, els.hlColorB, els.hlColorC].map((el) => el && toKey(el.value)).filter(Boolean));
+    for (const span of textWrapper.getElementsByTagName("span")) {
+        const bg = span.style.backgroundColor;
+        if (!bg) continue;
+        const m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(bg);
+        if (!m) continue;
+        const key = `${m[1]},${m[2]},${m[3]}`;
+        if (!keys.has(key)) continue;
+        span.style.backgroundColor = alpha >= 1 ? `rgb(${m[1]}, ${m[2]}, ${m[3]})` : `rgba(${m[1]}, ${m[2]}, ${m[3]}, ${alpha})`;
+    }
+}
+
 function syncLiveHighlights(overrideColors = null) {
     const textWrapper = document.getElementById("canvasTextWrapper");
     if (!textWrapper) return;
@@ -973,28 +998,65 @@ function prepareCanvasForCapture(container) {
     // ⚠️ 예전에는 span.textContent로 통째로 다시 써서, 안에 있던 기울임(<i>)·굵게(<b>)·글꼴·글자색 태그가
     // 전부 사라졌다 → "형광펜 칠한 기울임 글자가 저장하면 똑바로 서는" 문제. 이제는 글자(텍스트 노드)만
     // 쪼개고 안쪽 태그 구조는 그대로 둔다. (글꼴도 강제로 전체 서체로 바꾸지 않고 물려받게 함)
+    // (글자 하나씩이 아니라 "화면에서 같은 줄에 있는 글자 묶음" 단위로 쪼갠다 — 글자마다 쪼개면
+    //  반투명 형광펜에서 글자 사이 이음매가 세로줄로 보인다.)
+    const hlRange = document.createRange();
+    const splitTextByLine = (node) => {
+        const parts = [];
+        let cur = "";
+        let lastTop = null;
+        let offset = 0;
+        for (const ch of Array.from(node.nodeValue)) {
+            if (ch === "\n") {
+                if (cur) parts.push(cur);
+                parts.push("\n");
+                cur = ""; lastTop = null; offset += ch.length;
+                continue;
+            }
+            let top = lastTop;
+            if (ch.trim() !== "") {
+                try {
+                    hlRange.setStart(node, offset);
+                    hlRange.setEnd(node, offset + ch.length);
+                    const r = hlRange.getBoundingClientRect();
+                    if (r && (r.width || r.height)) top = r.top;
+                } catch (e) {}
+            }
+            if (cur && lastTop !== null && top !== null && Math.abs(top - lastTop) > 2) { parts.push(cur); cur = ""; }
+            cur += ch;
+            if (top !== null) lastTop = top;
+            offset += ch.length;
+        }
+        if (cur) parts.push(cur);
+        return parts;
+    };
+    const hlPlans = [];
     container.querySelectorAll("span").forEach((span) => {
-        if (span.classList.contains("__hl-char") || span.closest("[data-original-html]")) return;
+        if (span.closest("[data-original-html]") || hlPlans.some(([s]) => s.contains(span))) return;
         const bg = span.style.backgroundColor;
         if (bg && bg !== "transparent" && bg !== "initial") {
-            span.setAttribute("data-original-html", span.innerHTML);
             const walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT);
-            const textNodes = [];
-            while (walker.nextNode()) textNodes.push(walker.currentNode);
-            textNodes.forEach((node) => {
-                const frag = document.createDocumentFragment();
-                Array.from(node.nodeValue).forEach((char) => {
-                    if (char === "\n") { frag.appendChild(document.createTextNode("\n")); return; }
-                    const s = document.createElement("span");
-                    s.className = "__hl-char";
-                    s.style.cssText = `background-color: ${bg}; display: inline; color: inherit;`;
-                    s.textContent = char;
-                    frag.appendChild(s);
-                });
-                node.parentNode.replaceChild(frag, node);
-            });
-            span.style.backgroundColor = "transparent";
+            const nodes = [];
+            while (walker.nextNode()) nodes.push([walker.currentNode, splitTextByLine(walker.currentNode)]);
+            hlPlans.push([span, bg, nodes]);
         }
+    });
+    // 위치를 전부 잰 다음(레이아웃이 바뀌기 전) 한꺼번에 바꾼다
+    hlPlans.forEach(([span, bg, nodes]) => {
+        span.setAttribute("data-original-html", span.innerHTML);
+        nodes.forEach(([node, parts]) => {
+            const frag = document.createDocumentFragment();
+            parts.forEach((part) => {
+                if (part === "\n") { frag.appendChild(document.createTextNode("\n")); return; }
+                const s = document.createElement("span");
+                s.className = "__hl-char";
+                s.style.cssText = `background-color: ${bg}; display: inline; color: inherit;`;
+                s.textContent = part;
+                frag.appendChild(s);
+            });
+            node.parentNode.replaceChild(frag, node);
+        });
+        span.style.backgroundColor = "transparent";
     });
 }
 
@@ -1134,7 +1196,7 @@ function restoreCanvasAfterCapture(container) {
 
     container.querySelectorAll("span[data-original-html]").forEach((span) => {
         const originalHTML = span.getAttribute("data-original-html");
-        const restoredBg = span.querySelector("span")?.style.backgroundColor || "transparent";
+        const restoredBg = span.querySelector(".__hl-char")?.style.backgroundColor || "transparent";
         span.innerHTML = originalHTML;
         span.style.backgroundColor = restoredBg;
         span.removeAttribute("data-original-html");
@@ -2781,6 +2843,44 @@ function showToast(message) {
     toastTimer = setTimeout(() => toast.classList.remove("show"), 2400);
 }
 
+// ==== PC 2단 화면 (Chat2Img 참고): 넓은 화면에서는 왼쪽 편집 패널 / 오른쪽 미리보기로 나눈다 ====
+// 레이아웃 자체는 CSS(@media min-width: 1024px)가 담당하고, 여기서는 "PC에서는 설정 패널이 항상
+// 하나는 열려 있어야 한다"는 것만 맞춰 준다. (폰에서는 예전처럼 바텀시트로 열고 닫는다)
+const desktopLayoutQuery = window.matchMedia ? window.matchMedia("(min-width: 1024px)") : null;
+function isDesktopLayout() {
+    return !!(desktopLayoutQuery && desktopLayoutQuery.matches);
+}
+let lastTabPanelId = "panel-title";
+function ensureDesktopPanelOpen() {
+    if (!isDesktopLayout()) return;
+    if (!document.querySelector(".tab-panel.active")) openSheetPanel(lastTabPanelId);
+}
+
+// 설정 탭 안의 "제목 + 그 아래 설정들"을 섹션별 카드(.panel-card)로 묶는다.
+// (요소를 옮기기만 하므로 id·이벤트는 그대로 유지된다)
+function wrapPanelSectionsIntoCards() {
+    document.querySelectorAll(".tab-panel").forEach((panel) => {
+        if (panel.dataset.cardsReady) return;
+        panel.dataset.cardsReady = "1";
+        let card = null;
+        Array.from(panel.children).forEach((child) => {
+            if (child.classList.contains("panel-section-title")) {
+                card = document.createElement("div");
+                card.className = "panel-card";
+                panel.insertBefore(card, child);
+                // 제목 줄: [♡ 제목 ▼] ······ № 01 (번호는 CSS 카운터가 붙인다)
+                const head = document.createElement("div");
+                head.className = "panel-card-head";
+                card.appendChild(head);
+                head.appendChild(child);
+                return;
+            }
+            if (card) card.appendChild(child);
+        });
+    });
+}
+wrapPanelSectionsIntoCards();
+
 // ==== 바텀시트 열기/닫기 (탭 클릭, 사진 선택, 프리셋 버튼에서 공통으로 사용) ====
 function openSheetPanel(panelId) {
     const subWindow = document.querySelector(".adaptive-settings-window");
@@ -2792,9 +2892,25 @@ function openSheetPanel(panelId) {
     els.panels.forEach((p) => p.classList.toggle("active", p.id === panelId));
     subWindow.classList.add("active");
     if (overlay) overlay.classList.add("active");
+    if (document.querySelector(`.tab-btn[data-target="${panelId}"]`)) lastTabPanelId = panelId;
+    // PC: 아래로 스크롤해 둔 상태에서 탭을 바꾸면, 새 탭 내용의 맨 위부터 보이게 맞춘다
+    if (isDesktopLayout()) {
+        const pane = document.getElementById("editorPane");
+        const nav = document.querySelector(".bottom-tab-bar");
+        if (pane && nav) {
+            const top = subWindow.offsetTop - nav.offsetHeight - 22;
+            if (pane.scrollTop > top) pane.scrollTop = Math.max(0, top);
+        }
+    }
 }
 
 function closeSheetPanel() {
+    // PC 2단 화면에서는 패널을 닫지 않는다. (프리셋을 보고 있었다면 직전 탭으로 돌아감)
+    if (isDesktopLayout()) {
+        const current = document.querySelector(".tab-panel.active");
+        if (!current || current.id === "panel-presets") openSheetPanel(lastTabPanelId);
+        return;
+    }
     const subWindow = document.querySelector(".adaptive-settings-window");
     const overlay = document.getElementById("sheetOverlay");
     els.tabs.forEach((t) => t.classList.remove("active"));
@@ -2817,6 +2933,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const sheetOverlay = document.getElementById("sheetOverlay");
     if (sheetOverlay) sheetOverlay.addEventListener("click", closeSheetPanel);
+
+    ensureDesktopPanelOpen();
+    if (desktopLayoutQuery) {
+        const onLayoutChange = () => {
+            ensureDesktopPanelOpen();
+            if (typeof refitCanvasNow === "function") refitCanvasNow();
+            else if (typeof applyPreviewScale === "function") applyPreviewScale();
+        };
+        if (desktopLayoutQuery.addEventListener) desktopLayoutQuery.addEventListener("change", onLayoutChange);
+        else if (desktopLayoutQuery.addListener) desktopLayoutQuery.addListener(onLayoutChange);
+    }
 
     const btnCloseSheet = document.getElementById("btnCloseSheet");
     if (btnCloseSheet) btnCloseSheet.addEventListener("click", closeSheetPanel);
@@ -2966,7 +3093,7 @@ document.addEventListener("DOMContentLoaded", () => {
         els.headingSubtitleFont, els.headingSubtitleSize, els.headingSubtitleBold, document.getElementById("headingSubtitleColor"),
         els.dlgNameSuffix, els.dlgQuoteStyle, els.dlgShowTranslation, els.dlgShowAvatar, els.dlgShowName,
         els.dlgAvatarSize, els.dlgUseCharColor, els.dlgLineGap, els.dlgContinuationGap,
-        els.dlgNameGap, document.getElementById("dlgNameFontSize"),
+        els.dlgNameGap, document.getElementById("dlgNameFontSize"), document.getElementById("hlOpacity"),
         document.getElementById("dlgParagraphIndent"), document.getElementById("dlgNameColumnWidth"),
         document.getElementById("footnoteColor"), document.getElementById("footnoteAlign"), document.getElementById("footnoteDividerShow"),
         document.getElementById("footnoteDividerColor"), document.getElementById("footnoteDividerWidth")
@@ -5539,7 +5666,7 @@ const HEART_STEPS = {
     columnSplitIndex: 1, columnGap: 4, boxQuoteWidth: 1, dividerWidth: 0.5, fadeCount: 1, footnoteDividerWidth: 0.5,
     imgBlockSize: 10, imgBlockRadius: 2,
     dlgAvatarSize: 2, dlgNameFontSize: 1, dlgContinuationGap: 2, dlgNameGap: 2, dlgParagraphIndent: 2,
-    dlgNameColumnWidth: 4, dlgLineGap: 2
+    dlgNameColumnWidth: 4, dlgLineGap: 2, hlOpacity: 10
 };
 
 // 화면에 보이는 숫자칸들을 원래 값과 다시 맞추는 함수 목록
