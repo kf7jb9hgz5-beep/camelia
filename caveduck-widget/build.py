@@ -17,9 +17,9 @@ ROSE_LIGHT = rose_tile('rgba(255,255,255,.75)', 'rgba(90,60,80,.22)')
 ROSE_DARK  = rose_tile('rgba(255,255,255,.16)', 'rgba(0,0,0,.45)')
 
 T = {
- 'song':'[a]','artist':'[b]','date':'[c]','day':'[d]','ampm':'[e]','time':'[f]',
- 'place':'[g]','pose':'[h]','inner':'[i]','msg':'[j]','kn':'[k]','kp':'[l]',
- 'met':'[m]','dday':'[n]','npc':'{{char}}','pc':'{{user}}',
+ 'song':'{{a}}','artist':'{{b}}','date':'{{c}}','day':'{{d}}','ampm':'{{e}}','time':'{{f}}',
+ 'place':'{{g}}','pose':'{{h}}','inner':'{{i}}','msg':'{{j}}','kn':'{{k}}','kp':'{{l}}',
+ 'met':'{{m}}','dday':'{{n}}','npc':'{{char}}','pc':'{{user}}',
 }
 P = {
  'song':'Lover, Come Back','artist':'Silver Rosé','date':'2026.11.16','day':'MON','ampm':'PM','time':'11:42',
@@ -97,11 +97,17 @@ def build(d):
             + "</div></div>"
             f"<div style=\"text-align:center;margin-top:14px;font:italic 600 13px {SERIF};letter-spacing:.3em;color:#a3a4ad;text-shadow:0 1px 0 #fff,0 -1px 0 rgba(0,0,0,.18)\">Rosée</div></div>")
 
-    tag = (f"<div style=\"display:flex;justify-content:center;margin-top:-6px\"><div style=\"position:relative;z-index:2;width:16px;height:16px;border-radius:50%;background:{CHROME};box-shadow:0 1px 2px rgba(0,0,0,.35)\"></div></div>"
-           f"<div style=\"display:flex;justify-content:center\"><div style=\"margin-top:-2px;transform:rotate(-4deg);padding:8px 16px 8px 22px;border-radius:3px 10px 10px 3px;background:#fdfcfb;box-shadow:0 2px 5px rgba(0,0,0,.18);border:1px solid #e3e1e4;position:relative;text-align:center\">"
-           f"<span style=\"position:absolute;left:7px;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;box-shadow:inset 0 1px 2px rgba(0,0,0,.35);background:#eee\"></span>"
-           f"<div style=\"font:600 8px {SERIF};letter-spacing:.3em;color:#9a98a5\">SINCE {d['met']}</div>"
-           f"<div style=\"font:italic 600 17px/1.2 {SERIF};color:#4a4856;letter-spacing:.06em\">{d['dday']} <span style=\"color:#c7a2b0\">♡</span></div></div></div>")
+    link = "<div style=\"width:9px;height:13px;margin:-3px auto 0;border-radius:5px;border:2px solid #a9aab3;box-shadow:inset 0 0 0 1px #fff,0 1px 1px rgba(0,0,0,.2)\"></div>"
+    tag = (f"<div style=\"display:flex;justify-content:center;margin-top:-7px\"><div style=\"position:relative;z-index:2;width:16px;height:16px;border-radius:50%;background:{CHROME};box-shadow:0 1px 2px rgba(0,0,0,.35)\"></div></div>"
+           + link + link +
+           f"<div style=\"width:118px;height:118px;margin:-3px auto 0;border-radius:50%;padding:7px;box-sizing:border-box;background:{CHROME};box-shadow:0 6px 14px rgba(60,58,72,.28),0 0 0 1px #8e8f98\">"
+           f"<div style=\"width:100%;height:100%;border-radius:50%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;"
+           f"background:{ROSE_LIGHT},radial-gradient(circle at 32% 28%,rgba(255,255,255,.85),transparent 50%),linear-gradient(150deg,#f3e6ea,#e3cfd6 60%,#efdfe4);background-size:48px 48px,auto,auto;"
+           f"box-shadow:0 0 0 2px #2c2b33,0 0 0 3px #e9e9ee,inset 0 2px 6px rgba(0,0,0,.25)\">"
+           f"<div style=\"font:600 7px {SERIF};letter-spacing:.3em;color:#9a7884\">SINCE</div>"
+           f"<div style=\"font:600 9px {SERIF};letter-spacing:.12em;color:#7a6470;margin-top:2px\">{d['met']}</div>"
+           f"<div style=\"font:italic 600 22px/1.15 {SERIF};color:#4a3c45;letter-spacing:.03em;text-shadow:0 1px 0 rgba(255,255,255,.8)\">{d['dday']}</div>"
+           f"<div style=\"font-size:10px;color:#c08fa1;line-height:1\">♡</div></div></div>")
 
     return ("<div style=\"max-width:360px;margin:12px auto;padding:4px 2px 8px;font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;word-break:keep-all;box-sizing:border-box\">"
             + CLASP +
