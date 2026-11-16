@@ -2843,6 +2843,38 @@ function showToast(message) {
     toastTimer = setTimeout(() => toast.classList.remove("show"), 2400);
 }
 
+// ==== PC 2단 화면 (Chat2Img 참고): 넓은 화면에서는 왼쪽 편집 패널 / 오른쪽 미리보기로 나눈다 ====
+// 레이아웃 자체는 CSS(@media min-width: 1024px)가 담당하고, 여기서는 "PC에서는 설정 패널이 항상
+// 하나는 열려 있어야 한다"는 것만 맞춰 준다. (폰에서는 예전처럼 바텀시트로 열고 닫는다)
+const desktopLayoutQuery = window.matchMedia ? window.matchMedia("(min-width: 1024px)") : null;
+function isDesktopLayout() {
+    return !!(desktopLayoutQuery && desktopLayoutQuery.matches);
+}
+let lastTabPanelId = "panel-title";
+function ensureDesktopPanelOpen() {
+    if (!isDesktopLayout()) return;
+    if (!document.querySelector(".tab-panel.active")) openSheetPanel(lastTabPanelId);
+}
+
+// 설정 탭 안의 "제목 + 그 아래 설정들"을 섹션별 카드(.panel-card)로 묶는다.
+// (요소를 옮기기만 하므로 id·이벤트는 그대로 유지된다)
+function wrapPanelSectionsIntoCards() {
+    document.querySelectorAll(".tab-panel").forEach((panel) => {
+        if (panel.dataset.cardsReady) return;
+        panel.dataset.cardsReady = "1";
+        let card = null;
+        Array.from(panel.children).forEach((child) => {
+            if (child.classList.contains("panel-section-title")) {
+                card = document.createElement("div");
+                card.className = "panel-card";
+                panel.insertBefore(card, child);
+            }
+            if (card) card.appendChild(child);
+        });
+    });
+}
+wrapPanelSectionsIntoCards();
+
 // ==== 바텀시트 열기/닫기 (탭 클릭, 사진 선택, 프리셋 버튼에서 공통으로 사용) ====
 function openSheetPanel(panelId) {
     const subWindow = document.querySelector(".adaptive-settings-window");
@@ -2854,9 +2886,25 @@ function openSheetPanel(panelId) {
     els.panels.forEach((p) => p.classList.toggle("active", p.id === panelId));
     subWindow.classList.add("active");
     if (overlay) overlay.classList.add("active");
+    if (document.querySelector(`.tab-btn[data-target="${panelId}"]`)) lastTabPanelId = panelId;
+    // PC: 아래로 스크롤해 둔 상태에서 탭을 바꾸면, 새 탭 내용의 맨 위부터 보이게 맞춘다
+    if (isDesktopLayout()) {
+        const pane = document.getElementById("editorPane");
+        const nav = document.querySelector(".bottom-tab-bar");
+        if (pane && nav) {
+            const top = subWindow.offsetTop - nav.offsetHeight - 22;
+            if (pane.scrollTop > top) pane.scrollTop = Math.max(0, top);
+        }
+    }
 }
 
 function closeSheetPanel() {
+    // PC 2단 화면에서는 패널을 닫지 않는다. (프리셋을 보고 있었다면 직전 탭으로 돌아감)
+    if (isDesktopLayout()) {
+        const current = document.querySelector(".tab-panel.active");
+        if (!current || current.id === "panel-presets") openSheetPanel(lastTabPanelId);
+        return;
+    }
     const subWindow = document.querySelector(".adaptive-settings-window");
     const overlay = document.getElementById("sheetOverlay");
     els.tabs.forEach((t) => t.classList.remove("active"));
@@ -2879,6 +2927,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const sheetOverlay = document.getElementById("sheetOverlay");
     if (sheetOverlay) sheetOverlay.addEventListener("click", closeSheetPanel);
+
+    ensureDesktopPanelOpen();
+    if (desktopLayoutQuery) {
+        const onLayoutChange = () => {
+            ensureDesktopPanelOpen();
+            if (typeof refitCanvasNow === "function") refitCanvasNow();
+            else if (typeof applyPreviewScale === "function") applyPreviewScale();
+        };
+        if (desktopLayoutQuery.addEventListener) desktopLayoutQuery.addEventListener("change", onLayoutChange);
+        else if (desktopLayoutQuery.addListener) desktopLayoutQuery.addListener(onLayoutChange);
+    }
 
     const btnCloseSheet = document.getElementById("btnCloseSheet");
     if (btnCloseSheet) btnCloseSheet.addEventListener("click", closeSheetPanel);

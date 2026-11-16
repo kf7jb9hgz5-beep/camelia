@@ -3409,3 +3409,265 @@ html {
     line-height: 1.55;
     color: var(--text-muted);
 }
+
+/* ==========================================================================
+    Chat2Img 스타일 스킨 (색은 핑크 테마 그대로)
+    - 설정을 섹션별 카드로 묶고, 제목을 "✦ 제목 ······ № 01" + 점선 구분선으로
+    - PC(넓은 화면)에서는 왼쪽 편집 패널 / 오른쪽 미리보기 무대의 2단 화면
+    ========================================================================== */
+.pane-brand {
+    display: none;
+}
+/* 폰에서는 없는 것처럼 동작(자식들이 예전 그대로 배치됨), PC에서만 왼쪽 패널이 된다 */
+.editor-pane {
+    display: contents;
+}
+
+.tab-panel {
+    counter-reset: panel-sec;
+}
+.panel-card {
+    position: relative;
+    counter-increment: panel-sec;
+    width: 100%;
+    box-sizing: border-box;
+    background: linear-gradient(180deg, #fffafc 0%, var(--bg-main) 100%);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 14px 14px 6px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 0 #ffffff inset, var(--shadow-sm);
+}
+.panel-card:last-child {
+    margin-bottom: 4px;
+}
+/* 옵션에 따라 제목째 숨겨지는 섹션은 카드도 같이 숨김 */
+.panel-card:has(> .panel-section-title[style*="display: none"]),
+.panel-card:has(> .panel-section-title[style*="display:none"]) {
+    display: none;
+}
+.panel-card > .panel-section-title,
+.tab-panel > .panel-card > .panel-section-title:first-child {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 12px;
+    padding: 2px 2px 10px;
+    background: none;
+    clip-path: none;
+    border-radius: 0;
+    border-bottom: 1px dashed var(--accent-tint-strong);
+    color: var(--text-main);
+    font-size: 14px;
+    letter-spacing: -0.1px;
+}
+.panel-card > .panel-section-title::before {
+    content: "✦";
+    margin-right: 6px;
+    font-size: 13px;
+    color: var(--accent-color);
+}
+.panel-card > .panel-section-title::after {
+    content: "№ " counter(panel-sec, decimal-leading-zero);
+    margin-left: auto;
+    padding-left: 10px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    color: var(--text-muted);
+    animation: none;
+}
+.panel-card > .field-hint:last-child {
+    padding-bottom: 8px;
+}
+
+@media (min-width: 1024px) {
+    html,
+    body.mobile-theme {
+        height: 100%;
+    }
+    body.mobile-theme {
+        display: grid;
+        grid-template-columns: 460px minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr);
+        height: 100vh;
+        min-height: 0;
+        overflow: hidden;
+        padding-bottom: 0;
+    }
+
+    /* ---- 왼쪽: 편집 패널 (통째로 스크롤, 탭 줄은 위에 고정) ---- */
+    .editor-pane > * {
+        flex-shrink: 0;
+    }
+    .editor-pane > .pane-brand { order: 0; }
+    .editor-pane > .mobile-main { order: 1; }
+    .editor-pane > .bottom-tab-bar { order: 2; }
+    .editor-pane > .adaptive-settings-window { order: 3; }
+    .editor-pane {
+        display: flex;
+        flex-direction: column;
+        grid-column: 1;
+        grid-row: 1;
+        height: 100vh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+        scrollbar-color: var(--accent-tint-strong) transparent;
+    }
+    .pane-brand {
+        display: block;
+        padding: 14px 18px 0;
+    }
+    .pane-brand-badge {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 8px 7px 14px;
+        background: rgba(255, 255, 255, 0.86);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-pill);
+        box-shadow: var(--shadow-sm);
+        font-size: 10.5px;
+        font-weight: 800;
+        letter-spacing: 0.6px;
+        color: var(--text-muted);
+    }
+    .pane-brand-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent-color);
+        box-shadow: 0 0 0 3px var(--accent-tint-strong);
+        margin-right: 4px;
+    }
+    .pane-brand-ver {
+        margin-left: auto;
+        padding: 3px 10px;
+        border-radius: var(--radius-pill);
+        background: var(--accent-color);
+        color: #ffffff;
+        font-size: 11px;
+        letter-spacing: 0;
+    }
+    .pane-brand-title {
+        margin: 14px 0 10px 58px;
+        font-size: 21px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: var(--text-main);
+    }
+    .pane-brand-mark {
+        display: inline-block;
+        padding: 0 7px;
+        border-radius: 8px;
+        background: var(--accent-color);
+        color: #ffffff;
+    }
+    .pane-brand-ruler {
+        height: 9px;
+        background-image:
+            repeating-linear-gradient(90deg, var(--accent-color) 0 1px, transparent 1px 40px),
+            repeating-linear-gradient(90deg, var(--accent-tint-strong) 0 1px, transparent 1px 8px);
+        background-size: 100% 9px, 100% 5px;
+        background-repeat: no-repeat;
+        background-position: left bottom, left bottom;
+        opacity: 0.8;
+    }
+    .brand-logo {
+        position: absolute;
+        top: 62px;
+        left: 20px;
+    }
+    .editor-pane {
+        position: relative;
+    }
+
+    .mobile-main {
+        max-width: none;
+        margin: 0;
+        padding: 12px 18px 0;
+    }
+    .editor-card {
+        border-radius: 24px;
+    }
+
+    .bottom-tab-bar {
+        position: sticky;
+        top: 10px;
+        z-index: 30;
+        transform: none;
+        left: auto;
+        right: auto;
+        bottom: auto;
+        max-width: none;
+        margin: 12px 18px 0;
+        padding: 5px;
+        border-width: 1px;
+        border-radius: var(--radius-pill);
+        box-shadow: var(--shadow-sm);
+    }
+    .dock-action-group {
+        max-width: none;
+    }
+
+    .adaptive-settings-window,
+    .adaptive-settings-window.active {
+        position: static;
+        z-index: auto;
+        transform: none;
+        overflow: visible;
+        visibility: visible;
+        pointer-events: auto;
+        transition: none;
+        left: auto;
+        right: auto;
+        bottom: auto;
+        width: auto;
+        max-width: none;
+        max-height: none;
+        min-height: 0;
+        margin: 12px 0 0;
+        padding: 2px 18px 28px;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+    }
+    .sheet-header,
+    .sheet-overlay {
+        display: none !important;
+    }
+    .panel-card {
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 1px 0 #ffffff inset, var(--shadow-md);
+    }
+
+    /* ---- 오른쪽: 미리보기 무대 ---- */
+    .canvas-header {
+        grid-column: 2;
+        grid-row: 1;
+        height: 100vh;
+        overflow: auto;
+        align-items: flex-start;
+        padding: 84px 40px 60px;
+        border-left: 1.5px solid var(--border-color);
+        box-shadow: inset 8px 0 24px rgba(230, 44, 122, 0.05);
+        background-color: var(--bg-main);
+        background-image: radial-gradient(var(--accent-tint-strong) 1.1px, transparent 1.3px);
+        background-size: 16px 16px;
+    }
+    #captureAreaScaleWrapper {
+        margin: 0 auto;
+    }
+    .canvas-top-actions {
+        top: 20px;
+        right: 28px;
+        padding: 6px;
+        background: rgba(255, 255, 255, 0.86);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-pill);
+        box-shadow: var(--shadow-sm);
+    }
+}
