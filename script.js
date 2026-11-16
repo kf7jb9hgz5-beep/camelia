@@ -5359,6 +5359,7 @@ function renderFrameDecoration() {
     // 브라우저가 저장 공간을 마음대로 비우지 않도록 요청 (지원하는 브라우저에서만 동작)
     try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (err) {}
     renderStickerLibrary();
+    window.__renderStickerLibrary = renderStickerLibrary; // 전체 불러오기 후 보관함 새로고침용
 
     function selectSticker(item) {
         if (currentSticker && currentSticker !== item) currentSticker.classList.remove("selected");

@@ -601,3 +601,150 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
+
+// ==========================================================================
+// 전체 백업 / 전체 불러오기 (Chat2Img 참고)
+// 프리셋 · 캐릭터 · 자동 치환 규칙 · 스티커 보관함을 JSON 파일 하나로 내보내고 다시 불러온다.
+// 불러올 때는 기존 데이터를 지우지 않고, 없는 것만 추가한다.
+// ==========================================================================
+const CAMELIA_BACKUP_TYPE = "camelia-backup";
+
+function backupOpenStickerStore(mode) {
+    return new Promise((resolve, reject) => {
+        if (!window.indexedDB) return reject(new Error("IndexedDB 미지원"));
+        const req = indexedDB.open("camelia-stickers", 1);
+        req.onupgradeneeded = () => req.result.createObjectStore("stickers", { keyPath: "id" });
+        req.onsuccess = () => {
+            const db = req.result;
+            const tx = db.transaction("stickers", mode);
+            resolve({ store: tx.objectStore("stickers"), done: new Promise((res, rej) => { tx.oncomplete = () => { db.close(); res(); }; tx.onerror = tx.onabort = () => { db.close(); rej(tx.error); }; }) });
+        };
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function backupReadStickers() {
+    try {
+        const { store, done } = await backupOpenStickerStore("readonly");
+        const req = store.getAll();
+        await done;
+        return req.result || [];
+    } catch (e) {
+        console.warn("스티커 보관함 읽기 실패:", e);
+        return [];
+    }
+}
+
+async function backupWriteStickers(list) {
+    if (!list.length) return 0;
+    const { store, done } = await backupOpenStickerStore("readwrite");
+    const existing = await new Promise((res) => { const r = store.getAllKeys(); r.onsuccess = () => res(new Set(r.result)); r.onerror = () => res(new Set()); });
+    let added = 0;
+    list.forEach((rec) => {
+        if (!rec || !rec.id || typeof rec.dataUrl !== "string" || !rec.dataUrl.startsWith("data:image/") || existing.has(rec.id)) return;
+        store.put({ id: rec.id, dataUrl: rec.dataUrl, w: rec.w, h: rec.h, created: rec.created || Date.now() });
+        added++;
+    });
+    await done;
+    return added;
+}
+
+async function backupAllData() {
+    const presets = getPresetsFromStorage();
+    const chars = (typeof characters !== "undefined" && Array.isArray(characters)) ? characters : [];
+    const rules = (typeof replacementRules !== "undefined" && Array.isArray(replacementRules)) ? replacementRules : [];
+    const stickers = await backupReadStickers();
+    if (!presets.length && !chars.length && !stickers.length) {
+        alert("백업할 프리셋 · 캐릭터 · 스티커가 아직 없어요.");
+        return;
+    }
+    const backup = { type: CAMELIA_BACKUP_TYPE, version: 1, exportedAt: new Date().toISOString(), presets, characters: chars, replacementRules: rules, stickers };
+    const now = new Date();
+    const ymd = `${String(now.getFullYear()).slice(2)}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+    const blob = new Blob([JSON.stringify(backup)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `camelia_backup_${ymd}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    if (typeof showToast === "function") showToast(`백업 파일을 저장했어요 (프리셋 ${presets.length} · 캐릭터 ${chars.length} · 스티커 ${stickers.length})`);
+}
+
+async function restoreAllData(file) {
+    let data = null;
+    try { data = JSON.parse(await file.text()); } catch (e) { data = null; }
+    if (!data || data.type !== CAMELIA_BACKUP_TYPE) {
+        alert("Camelia 전체 백업 파일이 아니에요.");
+        return;
+    }
+    const inPresets = (Array.isArray(data.presets) ? data.presets : []).filter((p) => p && typeof p.name === "string" && p.data && typeof p.data === "object");
+    const inChars = (Array.isArray(data.characters) ? data.characters : []).filter((c) => c && c.id && typeof c.name === "string");
+    const inRules = (Array.isArray(data.replacementRules) ? data.replacementRules : []).filter((r) => r && typeof r.find === "string" && typeof r.replace === "string");
+    const inStickers = Array.isArray(data.stickers) ? data.stickers : [];
+    if (!confirm(`프리셋 ${inPresets.length}개 · 캐릭터 ${inChars.length}명 · 치환 규칙 ${inRules.length}개 · 스티커 ${inStickers.length}개가 들어 있는 백업이에요.\n기존 것은 그대로 두고, 없는 것만 추가할까요?`)) return;
+
+    // 프리셋: 이름과 설정이 완전히 같은 것은 이미 있는 것으로 보고 건너뜀
+    const list = getPresetsFromStorage();
+    const sig = (p) => `${p.name}|${JSON.stringify(p.data)}`;
+    const have = new Set(list.map(sig));
+    let addedPresets = 0;
+    let presetsFull = false;
+    for (const p of inPresets) {
+        if (have.has(sig(p))) continue;
+        list.push({ name: p.name, data: p.data, thumb: typeof p.thumb === "string" ? p.thumb : null });
+        if (!savePresetsToStorage(list)) {
+            list[list.length - 1].thumb = null; // 공간이 모자라면 미리보기 없이
+            if (!savePresetsToStorage(list)) { list.pop(); savePresetsToStorage(list); presetsFull = true; break; }
+        }
+        have.add(sig(p));
+        addedPresets++;
+    }
+    renderPresets();
+
+    let addedChars = 0;
+    if (typeof characters !== "undefined") {
+        inChars.forEach((c) => {
+            if (characters.some((x) => x.id === c.id)) return;
+            characters.push({ id: c.id, name: c.name, avatarData: typeof c.avatarData === "string" ? c.avatarData : null, color: c.color || "#171717" });
+            addedChars++;
+        });
+        if (addedChars) { saveCharactersToStorage(); renderCharacterList(); }
+    }
+
+    let addedRules = 0;
+    if (typeof replacementRules !== "undefined") {
+        inRules.forEach((r) => {
+            if (replacementRules.some((x) => x.find === r.find && x.replace === r.replace)) return;
+            replacementRules.push({ id: uid(), find: r.find, replace: r.replace, desc: typeof r.desc === "string" ? r.desc : "", enabled: r.enabled !== false });
+            addedRules++;
+        });
+        if (addedRules) { saveReplacementRulesToStorage(); renderReplacementRuleList(); }
+    }
+
+    let addedStickers = 0;
+    try {
+        addedStickers = await backupWriteStickers(inStickers);
+        if (addedStickers && typeof window.__renderStickerLibrary === "function") window.__renderStickerLibrary();
+    } catch (e) {
+        console.warn("스티커 복원 실패:", e);
+    }
+
+    if (typeof updateCanvas === "function") updateCanvas();
+    const msg = `불러왔어요: 프리셋 ${addedPresets} · 캐릭터 ${addedChars} · 치환 규칙 ${addedRules} · 스티커 ${addedStickers} 추가`;
+    if (presetsFull) alert(`${msg}\n\n저장 공간이 부족해서 일부 프리셋은 불러오지 못했어요.`);
+    else if (typeof showToast === "function") showToast(msg);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const backupBtn = document.getElementById("btnBackupAll");
+    if (backupBtn) backupBtn.addEventListener("click", () => backupAllData().catch((e) => { console.error(e); alert("백업 중 오류가 발생했어요."); }));
+    const restoreInput = document.getElementById("restoreAllFile");
+    if (restoreInput) restoreInput.addEventListener("change", (e) => {
+        const file = e.target.files && e.target.files[0];
+        e.target.value = "";
+        if (file) restoreAllData(file).catch((err) => { console.error(err); alert("불러오는 중 오류가 발생했어요."); });
+    });
+});

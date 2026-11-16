@@ -3384,3 +3384,28 @@ html {
     opacity: 1;
     overflow: visible;
 }
+
+/* ==========================================================================
+    프리셋 탭 · 전체 백업 / 불러오기
+    ========================================================================== */
+.backup-row {
+    display: flex;
+    gap: 8px;
+}
+.backup-row .btn-template {
+    flex: 1;
+    min-width: 0;
+    padding: 0 8px;
+}
+.backup-restore-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+.backup-hint {
+    margin: 8px 2px 0;
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--text-muted);
+}
