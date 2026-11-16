@@ -2868,6 +2868,12 @@ function wrapPanelSectionsIntoCards() {
                 card = document.createElement("div");
                 card.className = "panel-card";
                 panel.insertBefore(card, child);
+                // 제목 줄: [♡ 제목 ▼] ······ № 01 (번호는 CSS 카운터가 붙인다)
+                const head = document.createElement("div");
+                head.className = "panel-card-head";
+                card.appendChild(head);
+                head.appendChild(child);
+                return;
             }
             if (card) card.appendChild(child);
         });
