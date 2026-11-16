@@ -73,6 +73,14 @@
     font-display: swap;
 }
 
+/* 부크크고딕: 기본 글자는 한 단계 얇은 Light, 굵게(B)를 누른 글자만 Bold */
+@font-face {
+    font-family: 'BookkGothic';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302@1.0/BookkGothic-Lt.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+}
+
 @font-face {
     font-family: 'BookkGothic';
     src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302@1.0/BookkGothic-Bd.woff2') format('woff2');
@@ -303,6 +311,15 @@
 @font-face {
     font-family: 'DX고딕';
     src: url('./Fonts/dx-godic.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    /* Fonts 폴더에 추가해주신 wqy-zenhei_0.woff2 (문천역 정흑) */
+    font-family: 'WenQuanYiZenHei';
+    src: url('./Fonts/wqy-zenhei_0.woff2') format('woff2');
     font-weight: normal;
     font-style: normal;
     font-display: swap;
