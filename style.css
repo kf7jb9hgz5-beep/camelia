@@ -3717,3 +3717,19 @@ html {
         box-shadow: var(--shadow-sm);
     }
 }
+
+/* ==========================================================================
+    페이지 배경: 새로 그린 하트 + 물방울 무늬 (이음매 없는 SVG 타일)
+    - 큰 하트 2개 + 테두리만 있는 작은 하트 2개가 120px 타일 안에 온전히 들어 있어 끊기지 않는다.
+    - 아래에 12px 간격 물방울 무늬를 겹쳐서(120 = 12 × 10) 두 무늬가 어긋나지 않는다.
+    ========================================================================== */
+html,
+body.mobile-theme {
+    background-color: var(--bg-main);
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22 viewBox=%220 0 120 120%22%3E%3Cg fill=%22%23ffcfe2%22%3E%3Cpath transform=%22translate(30 31) rotate(-10) scale(1.3)%22 d=%22M0 -6.5 C -3.2 -13 -13 -12 -13 -3.6 C -13 3 -6 8.2 0 13 C 6 8.2 13 3 13 -3.6 C 13 -12 3.2 -13 0 -6.5 Z%22/%3E%3Cpath transform=%22translate(90 91) rotate(10) scale(1.3)%22 d=%22M0 -6.5 C -3.2 -13 -13 -12 -13 -3.6 C -13 3 -6 8.2 0 13 C 6 8.2 13 3 13 -3.6 C 13 -12 3.2 -13 0 -6.5 Z%22/%3E%3C/g%3E%3Cg fill=%22%23ffffff%22 opacity=%22.7%22%3E%3Cellipse cx=%2223.5%22 cy=%2223.5%22 rx=%223.4%22 ry=%222%22 transform=%22rotate(-35 23.5 23.5)%22/%3E%3Cellipse cx=%2285%22 cy=%2283%22 rx=%223.4%22 ry=%222%22 transform=%22rotate(-15 85 83)%22/%3E%3C/g%3E%3Cg fill=%22none%22 stroke=%22%23ffc3dd%22 stroke-width=%221.6%22 stroke-linejoin=%22round%22%3E%3Cpath transform=%22translate(90 30) rotate(12) scale(.62)%22 d=%22M0 -6.5 C -3.2 -13 -13 -12 -13 -3.6 C -13 3 -6 8.2 0 13 C 6 8.2 13 3 13 -3.6 C 13 -12 3.2 -13 0 -6.5 Z%22/%3E%3Cpath transform=%22translate(30 90) rotate(-12) scale(.62)%22 d=%22M0 -6.5 C -3.2 -13 -13 -12 -13 -3.6 C -13 3 -6 8.2 0 13 C 6 8.2 13 3 13 -3.6 C 13 -12 3.2 -13 0 -6.5 Z%22/%3E%3C/g%3E%3C/svg%3E"),
+        radial-gradient(#ffdcea 1.4px, transparent 1.6px);
+    background-repeat: repeat, repeat;
+    background-size: 120px 120px, 12px 12px;
+    background-position: 0 0, 0 0;
+}
