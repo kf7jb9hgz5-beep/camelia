@@ -3744,11 +3744,10 @@ body.mobile-theme {
     background-size: 14px 14px;
 }
 @media (min-width: 1024px) {
-    /* PC: 오른쪽(미리보기 + 입력창) 전체가 예전처럼 하나의 도트 배경.
-       바탕색만 하트 도트 쪽(왼쪽 패널)과 구분되게 조금 더 진한 핑크로 둔다. */
+    /* PC: 오른쪽(미리보기 + 입력창) 전체가 예전처럼 하나의 도트 배경 (바탕색도 예전 그대로) */
     .stage-pane {
-        background-color: var(--preview-bg);
-        background-image: radial-gradient(var(--preview-dot) 1.1px, transparent 1.3px);
+        background-color: var(--bg-main);
+        background-image: radial-gradient(var(--accent-tint-strong) 1.1px, transparent 1.3px);
         background-size: 16px 16px;
     }
     .canvas-header {
