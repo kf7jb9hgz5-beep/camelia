@@ -4844,6 +4844,16 @@ wrapColorInputs();
                 setClass(row, "corner-heart-tl", firsts.has(row));
                 setClass(row, "corner-heart-br", lasts.has(row));
             });
+
+            // 섹션 제목 오른쪽의 하트 게이지: 보이는 섹션 중 몇 번째인지만큼 채운다 (5칸)
+            const heads = Array.from(panel.querySelectorAll(".panel-card-head")).filter(isVisible);
+            heads.forEach((head, i) => {
+                const filled = Math.max(1, Math.min(5, Math.ceil(((i + 1) / heads.length) * 5)));
+                const on = "♥".repeat(filled);
+                const off = "♥".repeat(5 - filled);
+                if (head.getAttribute("data-gauge-on") !== on) head.setAttribute("data-gauge-on", on);
+                if (head.getAttribute("data-gauge-off") !== off) head.setAttribute("data-gauge-off", off);
+            });
         });
     };
     const schedule = () => {
