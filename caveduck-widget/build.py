@@ -20,12 +20,12 @@ ROSE_DARK  = rose_tile('rgba(255,255,255,.16)', 'rgba(0,0,0,.45)')
 T = {
  'song':'{{a}}','artist':'{{b}}','date':'{{c}}','day':'{{d}}','ampm':'{{e}}','time':'{{f}}',
  'place':'{{g}}','pose':'{{h}}','inner':'{{i}}','msg':'{{j}}','kn':'{{k}}','kp':'{{l}}',
- 'met':'{{m}}','dday':'{{n}}','npc':'{{char}}','pc':'{{user}}',
+ 'met':'{{m}}','dday':'{{n}}','npc':'Pride','pc':'Banshee',
 }
 P = {
  'song':'Lover, Come Back','artist':'Silver Rosé','date':'2026.11.16','day':'MON','ampm':'PM','time':'11:42',
  'met':'2026.03.14','dday':'D+247','place':'창가 쪽 화장대 앞, 은은한 스탠드 불빛 아래','pose':'거울 너머로 너를 보며 턱을 괸 채, 다리를 꼬고 앉아 있음',
- 'inner':'오늘따라 왜 이렇게 예뻐 보이지… 들키면 안 되는데. 조금만 더 이렇게 보고 있고 싶어.','msg':'늦었는데 아직 안 자? 잠깐 얼굴 보고 싶어서. 금방 갈게, 문 열어둬.','npc':'세린','pc':'유저',
+ 'inner':'오늘따라 왜 이렇게 예뻐 보이지… 들키면 안 되는데. 조금만 더 이렇게 보고 있고 싶어.','msg':'늦었는데 아직 안 자? 잠깐 얼굴 보고 싶어서. 금방 갈게, 문 열어둬.','npc':'Pride','pc':'Banshee',
  'kn':'(˶ˆ꒳ˆ˵) ♡','kp':'( ˘͈ ᵕ ˘͈ ♡)',
 }
 
@@ -50,7 +50,7 @@ def label(t, c):
     return f"<div style=\"font:600 9px/1 {SERIF};letter-spacing:.32em;text-transform:uppercase;color:{c};margin-bottom:6px\">{t}</div>"
 
 def build(d):
-    lid = (
+    lid = ("<!--@ 거울 뚜껑 (탭하면 아래가 여닫힘) : 노래 a · 가수 b · 날짜 c · 요일 d · AM/PM e · 시각 f -->"
      f"<div style=\"border-radius:18px;padding:16px 16px 12px;background:linear-gradient(160deg,#eceef2 0%,#cdd0d8 30%,#f9f9fb 48%,#c2c5cd 68%,#e4e6ea 100%);box-shadow:inset 0 2px 8px rgba(0,0,0,.22),inset 0 0 0 1px rgba(255,255,255,.8);text-align:center\">"
      f"<div style=\"font:600 9px/1 {SERIF};letter-spacing:.4em;color:#7c7a88\">✦ NOW PLAYING ✦</div>"
      f"<div style=\"font:italic 600 19px/1.25 {SERIF};color:#3e3c49;margin-top:8px;text-shadow:0 1px 0 rgba(255,255,255,.9)\">♪ {d['song']}</div>"
@@ -62,7 +62,7 @@ def build(d):
      f"<span style=\"font:600 22px/1 {SERIF};letter-spacing:.06em\"><small style=\"font-size:10px;letter-spacing:.15em;margin-right:3px\">{d['ampm']}</small>{d['time']}</span></div>"
      f"<div style=\"text-align:center;font:600 8px {SERIF};letter-spacing:.35em;color:#9a98a5;margin-top:6px\">✦ TAP TO OPEN · CLOSE ✦</div></div>")
 
-    hinge = ("<div style=\"display:flex;justify-content:center;gap:46px;height:9px;margin:2px 0\">"
+    hinge = ("<!--@ 경첩 --><div style=\"display:flex;justify-content:center;gap:46px;height:9px;margin:2px 0\">"
              + ("<div style=\"width:30px;height:9px;border-radius:3px;background:linear-gradient(180deg,#fff,#9c9da6 50%,#e9e9ee);box-shadow:0 1px 1px rgba(0,0,0,.3)\"></div>"*2) + "</div>")
 
     def slot(k, v):
@@ -87,29 +87,54 @@ def build(d):
         return (f"<div style=\"font:600 9px {SERIF};letter-spacing:.25em;color:{c1};text-align:center\">{name}</div>"
                 f"<div style=\"font-size:15px;line-height:1.6;text-align:center;color:{c2};margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis\">{k}</div>")
 
-    base = (f"<div style=\"border-radius:18px;padding:12px 12px 16px;background:linear-gradient(160deg,#f4f4f7,#d6d7de 45%,#f0f0f3);box-shadow:inset 0 2px 7px rgba(0,0,0,.2),inset 0 0 0 1px rgba(255,255,255,.8)\">"
-            f"<div style=\"display:grid;gap:7px;margin-bottom:16px\">{slot('PLACE',d['place'])}{slot('POSE',d['pose'])}</div>"
+    base = (f"<!--@ 아래 트레이 --><div style=\"border-radius:18px;padding:12px 12px 16px;background:linear-gradient(160deg,#f4f4f7,#d6d7de 45%,#f0f0f3);box-shadow:inset 0 2px 7px rgba(0,0,0,.2),inset 0 0 0 1px rgba(255,255,255,.8)\">"
+            f"<div style=\"display:grid;gap:7px;margin-bottom:16px\"><!--@ 브러시 홈 : 장소 g / 자세 h -->{slot('PLACE',d['place'])}{slot('POSE',d['pose'])}</div>"
             f"<div style=\"display:grid;gap:14px;padding:0 5px\">"
-            + pan(pink,'#5a4650',inner,bs)
-            + pan(lav,'#34323f',msg,bs)
-            + "<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:14px\">"
+            + "<!--@ 핑크 팬 : Pride의 속마음 i (탭해서 여닫기) -->" + pan(pink,'#5a4650',inner,bs)
+            + "<!--@ 라벤더 팬 : Pride → Banshee 메시지 j -->" + pan(lav,'#34323f',msg,bs)
+            + "<!--@ 카오모지 : 차콜 팬 Pride k / 펄 팬 Banshee l -->" + "<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:14px\">"
             + pan(char,'#eeeaf3',kao(d['npc'],d['kn'],'#b9b5c6','#f3eff8'),bs+';padding:10px 8px')
             + pan(pearl,'#4b4957',kao(d['pc'],d['kp'],'#8b8898','#4b4957'),bs+';padding:10px 8px')
             + "</div></div>"
-            f"<div style=\"text-align:center;margin-top:14px;font:italic 600 13px {SERIF};letter-spacing:.3em;color:#a3a4ad;text-shadow:0 1px 0 #fff,0 -1px 0 rgba(0,0,0,.18)\">Rosée</div></div>")
+            f"<!--@ 바닥 각인 글씨 --><div style=\"text-align:center;margin-top:14px;font:italic 600 13px {SERIF};letter-spacing:.3em;color:#a3a4ad;text-shadow:0 1px 0 #fff,0 -1px 0 rgba(0,0,0,.18)\">Rosée</div></div>")
 
-    tag = (f"<div style=\"display:flex;justify-content:center;margin-top:-8px;position:relative;z-index:1\"><div style=\"padding:4px;border-radius:50%/50%;background:{CHROME};box-shadow:0 5px 12px rgba(60,58,72,.25),0 0 0 1px #8e8f98\">"
+    tag = (f"<!--@ 은판 : 처음 만난 날 m / 디데이 n --><div style=\"display:flex;justify-content:center;margin-top:-8px;position:relative;z-index:1\"><div style=\"padding:4px;border-radius:50%/50%;background:{CHROME};box-shadow:0 5px 12px rgba(60,58,72,.25),0 0 0 1px #8e8f98\">"
            f"<div style=\"padding:10px 32px 8px;border-radius:50%/50%;text-align:center;background:{ROSE_FAINT},linear-gradient(160deg,#eceef2,#cdd0d8 35%,#f9f9fb 52%,#c7cad2);background-size:36px 36px,auto;background-position:6px 4px,0 0;box-shadow:inset 0 2px 5px rgba(0,0,0,.22)\">"
            f"<div style=\"font:600 7px {SERIF};letter-spacing:.35em;color:#8a8796\">— SINCE {d['met']} —</div>"
            f"<div style=\"font:italic 600 21px/1.15 {SERIF};color:#4b4957;letter-spacing:.05em;text-shadow:0 1px 0 #fff,0 -1px 0 rgba(0,0,0,.15)\">{d['dday']}</div>"
            f"{FILIGREE.replace('150','110').replace('margin:6px auto 4px','margin:0 auto')}</div></div></div>")
 
     return ("<div style=\"max-width:360px;margin:12px auto;padding:4px 2px 8px;font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;word-break:keep-all;box-sizing:border-box\">"
-            + CLASP +
-            f"<div style=\"border-radius:26px;padding:9px;background:{CHROME};box-shadow:0 8px 22px rgba(60,58,72,.28),0 1px 0 #fff inset,0 0 0 1px #8e8f98\">"
+            + "<!--@ 장미 잠금쇠 -->" + CLASP +
+            f"<!--@ 은색 케이스 --><div style=\"border-radius:26px;padding:9px;background:{CHROME};box-shadow:0 8px 22px rgba(60,58,72,.28),0 1px 0 #fff inset,0 0 0 1px #8e8f98\">"
             + "<details open style=\"margin:0\"><summary style=\"cursor:pointer;list-style:none;outline:none;display:block\">" + lid + "</summary>" + hinge + base + "</details></div>" + tag + "</div>")
 
-open(f"{out}/rose-compact-widget.html","w").write(build(T)+"\n")
+
+def pretty(h):
+    import re
+    toks=re.findall(r'<!--.*?-->|<svg.*?</svg>|</?[a-z]+[^>]*>|[^<]+',h,flags=re.S)
+    BLOCK=('div','details','summary')
+    out=[];depth=0;stack=[]
+    def nl(): out.append('\n'+'  '*depth)
+    for t in toks:
+        m=re.match(r'<(/?)([a-z]+)',t)
+        if t.startswith('<!--@'):
+            nl(); out.append('<!-- '+t[5:-3].strip()+' -->')
+        elif t.startswith('<svg'):
+            nl(); out.append(t)
+            if stack: stack[-1]=True
+        elif m and m.group(2) in BLOCK and not m.group(1):
+            if stack: stack[-1]=True
+            nl(); out.append(t); depth+=1; stack.append(False)
+        elif m and m.group(2) in BLOCK:
+            depth-=1; had=stack.pop()
+            if had: nl()
+            out.append(t)
+        else:
+            out.append(t)
+    return ''.join(out).strip()+'\n'
+
+open(f"{out}/rose-compact-widget.html","w").write(pretty(build(T)))
 open(f"{out}/preview.html","w").write("<!doctype html><html lang='ko'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Rose Compact</title>"
   "<link href='https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,600&display=swap' rel='stylesheet'></head>"
-  "<body style='margin:0;padding:16px;background:#f3efe9'>"+build(P)+"</body></html>\n")
+  "<body style='margin:0;padding:16px;background:#f3efe9'>"+pretty(build(P))+"</body></html>\n")
