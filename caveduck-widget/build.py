@@ -32,18 +32,20 @@ P = {
 SERIF = "'Cormorant Garamond','Playfair Display','Nanum Myeongjo','Noto Serif KR',serif"
 CHROME = "linear-gradient(145deg,#ffffff 0%,#c4c5cc 18%,#f3f3f6 36%,#9fa0a9 55%,#eeeef2 74%,#b3b4bc 100%)"
 
-FILIGREE = ("<svg width='150' height='14' viewBox='0 0 150 14' style='display:block;margin:6px auto 4px'><g fill='none' stroke='#8d8b98' stroke-width='.9' stroke-linecap='round'>"
- "<path d='M75 7c-4-6-10-6-12-2s3 6 5 3-1-4-3-2M75 7c4-6 10-6 12-2s-3 6-5 3 1-4 3-2'/>"
- "<path d='M62 7H20c-6 0-8-5-4-6s4 4 1 4M88 7h42c6 0 8-5 4-6s-4 4-1 4'/><circle cx='75' cy='7' r='1.6' fill='#8d8b98'/></g></svg>")
+FILIGREE = "<div style=\"text-align:center;margin:7px 0 5px;font-size:12px;line-height:1;letter-spacing:.15em;color:#8d8b98;text-shadow:0 1px 0 #fff\">⊱ ─── ❦ ─── ⊰</div>"
+FILIGREE_S = "<div style=\"text-align:center;margin-top:2px;font-size:10px;line-height:1;letter-spacing:.12em;color:#8d8b98;text-shadow:0 1px 0 #fff\">⊱ ── ❦ ── ⊰</div>"
 
-CLASP = ("<svg width='46' height='40' viewBox='0 0 46 40' style='display:block;margin:0 auto -12px;position:relative;z-index:2;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))'>"
- "<defs><linearGradient id='cg' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#ffffff'/><stop offset='.45' stop-color='#a9aab3'/><stop offset='.7' stop-color='#f4f4f7'/><stop offset='1' stop-color='#8e8f98'/></linearGradient></defs>"
- "<rect x='17' y='28' width='12' height='10' rx='2' fill='url(#cg)' stroke='#7d7e88' stroke-width='.6'/>"
- "<g fill='url(#cg)' stroke='#6f707a' stroke-width='.8'><path d='M23 4c7-3 14 3 12 11s-9 13-12 13-10-4-12-12 5-15 12-12z'/>"
- "<path d='M23 9c5-1 8 3 7 7s-4 7-7 7-7-3-7-7 3-7 7-7z' fill='none'/><path d='M23 13c3 0 4 2 3 4s-3 2-4 1-1-3 1-3' fill='none'/>"
- "<path d='M12 10c3 2 5 2 7 0M34 10c-3 2-5 2-7 0' fill='none'/></g></svg>")
+CLASP = ("<div style=\"display:flex;flex-direction:column;align-items:center;margin-bottom:-12px;position:relative;z-index:2\">"
+ f"<div style=\"width:34px;height:34px;border-radius:50% 50% 46% 46%;background:{CHROME};box-shadow:0 2px 3px rgba(0,0,0,.3),0 0 0 1px #7d7e88,inset 0 0 0 3px rgba(255,255,255,.4);text-align:center;font-size:22px;line-height:34px;color:#9fa0aa;text-shadow:0 1px 0 #fff,0 -1px 0 rgba(0,0,0,.25)\">❀</div>"
+ f"<div style=\"width:12px;height:9px;margin-top:-1px;border-radius:0 0 2px 2px;background:{CHROME};box-shadow:0 0 0 1px #7d7e88\"></div></div>")
 
-def pan(bg, fg, inner, extra=''):
+POS=[(3,6,22),(27,52,14),(50,4,18),(74,46,24),(90,0,13),(12,68,16),(62,76,12),(38,22,11)]
+def roses(c, sh, scale=1.0):
+    sp=''.join(f"<span style=\"position:absolute;left:{x}%;top:{y}%;font-size:{round(z*scale)}px\">❀</span>" for x,y,z in POS)
+    return f"<div style=\"position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;border-radius:inherit;line-height:1;color:{c};text-shadow:1px 1px 0 {sh}\">{sp}</div>"
+
+def pan(bg, fg, inner, extra='', rose=('rgba(255,255,255,.55)','rgba(90,60,80,.18)')):
+    inner = roses(*rose) + "<div style=\"position:relative\">" + inner + "</div>"
     return f"<div style=\"position:relative;border-radius:7px;padding:12px 14px;color:{fg};background:{bg};box-shadow:0 0 0 2px #2c2b33,0 0 0 4px #e9e9ee,0 0 0 5px #9a9aa3,inset 0 1px 6px rgba(0,0,0,.28),inset 0 0 0 1px rgba(255,255,255,.35);{extra}\">{inner}</div>"
 
 def label(t, c):
@@ -71,16 +73,16 @@ def build(d):
                 f"<span style=\"flex:none;font:600 9px {SERIF};letter-spacing:.25em;color:#7a7886\">{k}</span>"
                 f"<span style=\"font-size:12px;line-height:1.45;color:#3e3c49\">{v}</span></div>")
 
-    pink = f"{ROSE_LIGHT},radial-gradient(circle at 30% 20%,rgba(255,255,255,.7),transparent 45%),linear-gradient(150deg,#f3e6ea,#e6d2d9 55%,#efdfe4)"
-    lav  = f"{ROSE_LIGHT},radial-gradient(circle at 75% 25%,rgba(255,255,255,.55),transparent 45%),linear-gradient(150deg,#cfcfdc,#b5b4c6 55%,#c9c8d6)"
-    char = f"{ROSE_DARK},linear-gradient(150deg,#56545f,#3f3d48 60%,#4b4954)"
-    pearl= f"{ROSE_LIGHT},radial-gradient(circle at 30% 30%,#fff,transparent 55%),linear-gradient(150deg,#f6f6f8,#dfe0e6)"
-    bs = "background-size:64px 64px,auto,auto"
+    pink = f"radial-gradient(circle at 30% 20%,rgba(255,255,255,.7),transparent 45%),linear-gradient(150deg,#f3e6ea,#e6d2d9 55%,#efdfe4)"
+    lav  = f"radial-gradient(circle at 75% 25%,rgba(255,255,255,.55),transparent 45%),linear-gradient(150deg,#cfcfdc,#b5b4c6 55%,#c9c8d6)"
+    char = f"linear-gradient(150deg,#56545f,#3f3d48 60%,#4b4954)"
+    pearl= f"radial-gradient(circle at 30% 30%,#fff,transparent 55%),linear-gradient(150deg,#f6f6f8,#dfe0e6)"
+    bs = ""
 
     inner = (f"<details style=\"margin:0\"><summary style=\"cursor:pointer;list-style:none;outline:none\">{label('♡ Inner Whisper · '+d['npc']+'의 속마음','#9a7884')}"
              f"<div style=\"font-size:10px;color:#a68a94;letter-spacing:.1em\">▾ tap to open · close</div></summary>"
              f"<div style=\"margin-top:8px;font:italic 13px/1.65 {SERIF};color:#5a4650;text-shadow:0 1px 0 rgba(255,255,255,.7)\">“ {d['inner']} ”</div></details>")
-    msg = (label('✉ To. '+d['pc'],'#5e5c73') +
+    msg = (label('✧ To. '+d['pc'],'#5e5c73') +
            f"<div style=\"font-size:13px;line-height:1.65;color:#34323f;text-shadow:0 1px 0 rgba(255,255,255,.5)\">{d['msg']}</div>"
            f"<div style=\"text-align:right;font:italic 11px {SERIF};color:#5e5c73;margin-top:4px\">— from. {d['npc']}</div>")
     def kao(name, k, c1, c2):
@@ -93,16 +95,16 @@ def build(d):
             + "<!--@ 핑크 팬 : Pride의 속마음 i (탭해서 여닫기) -->" + pan(pink,'#5a4650',inner,bs)
             + "<!--@ 라벤더 팬 : Pride → Banshee 메시지 j -->" + pan(lav,'#34323f',msg,bs)
             + "<!--@ 카오모지 : 차콜 팬 Pride k / 펄 팬 Banshee l -->" + "<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:14px\">"
-            + pan(char,'#eeeaf3',kao(d['npc'],d['kn'],'#b9b5c6','#f3eff8'),bs+';padding:10px 8px')
+            + pan(char,'#eeeaf3',kao(d['npc'],d['kn'],'#b9b5c6','#f3eff8'),bs+';padding:10px 8px',('rgba(255,255,255,.07)','rgba(0,0,0,.35)'))
             + pan(pearl,'#4b4957',kao(d['pc'],d['kp'],'#8b8898','#4b4957'),bs+';padding:10px 8px')
             + "</div></div>"
             f"<!--@ 바닥 각인 글씨 --><div style=\"text-align:center;margin-top:14px;font:italic 600 13px {SERIF};letter-spacing:.3em;color:#a3a4ad;text-shadow:0 1px 0 #fff,0 -1px 0 rgba(0,0,0,.18)\">Rosée</div></div>")
 
     tag = (f"<!--@ 은판 : 처음 만난 날 m / 디데이 n --><div style=\"display:flex;justify-content:center;margin-top:-8px;position:relative;z-index:1\"><div style=\"padding:4px;border-radius:50%/50%;background:{CHROME};box-shadow:0 5px 12px rgba(60,58,72,.25),0 0 0 1px #8e8f98\">"
-           f"<div style=\"padding:10px 32px 8px;border-radius:50%/50%;text-align:center;background:{ROSE_FAINT},linear-gradient(160deg,#eceef2,#cdd0d8 35%,#f9f9fb 52%,#c7cad2);background-size:36px 36px,auto;background-position:6px 4px,0 0;box-shadow:inset 0 2px 5px rgba(0,0,0,.22)\">"
-           f"<div style=\"font:600 7px {SERIF};letter-spacing:.35em;color:#8a8796\">— SINCE {d['met']} —</div>"
+           f"<div style=\"padding:10px 32px 8px;border-radius:50%/50%;text-align:center;position:relative;background:linear-gradient(160deg,#eceef2,#cdd0d8 35%,#f9f9fb 52%,#c7cad2);box-shadow:inset 0 2px 5px rgba(0,0,0,.22)\">"
+           f"{roses('rgba(255,255,255,.6)','rgba(70,70,95,.12)',.7)}<div style=\"position:relative\"><div style=\"font:600 7px {SERIF};letter-spacing:.35em;color:#8a8796\">— SINCE {d['met']} —</div>"
            f"<div style=\"font:italic 600 21px/1.15 {SERIF};color:#4b4957;letter-spacing:.05em;text-shadow:0 1px 0 #fff,0 -1px 0 rgba(0,0,0,.15)\">{d['dday']}</div>"
-           f"{FILIGREE.replace('150','110').replace('margin:6px auto 4px','margin:0 auto')}</div></div></div>")
+           f"{FILIGREE_S}</div></div></div></div>")
 
     return ("<div style=\"max-width:360px;margin:12px auto;padding:4px 2px 8px;font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;word-break:keep-all;box-sizing:border-box\">"
             + "<!--@ 장미 잠금쇠 -->" + CLASP +
