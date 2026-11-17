@@ -1,6 +1,7 @@
 # Artbook-page style Caveduck widget (black & white manga concept-art page)
 import re, sys
 out = sys.argv[1] if len(sys.argv) > 1 else '.'
+STYLE_ARG = sys.argv[2] if len(sys.argv) > 2 else None
 
 INK = '#1f1d20'; PAPER = '#faf8f2'
 SERIF = "'Nanum Myeongjo','Noto Serif KR','Times New Roman',serif"
@@ -43,12 +44,32 @@ DOTS = "radial-gradient(circle,#d9d9de 0 .9px,transparent 1.3px) 0 0/9px 9px,#ff
 GAP = 10   # one spacing unit used everywhere
 
 BAR = '#55535b'
+if STYLE_ARG: pass
 def sp(c):
     z = '8px' if c == '✚' else '1em'
     return f"<span style=\"font-size:{z};line-height:1\">{c}</span>"
+BAR_STYLE = STYLE_ARG or '1'   # 1 기본 · 2 이중선 · 4 인덱스 탭 · 5 레이스 띠 · 7 양옆 선+알약 · 9 라벨
 def bar(t, sym='✚'):
-    return (f"<div style=\"background:{BAR};color:#fff;text-align:center;font:700 10px/1 {SERIF};letter-spacing:.06em;"
-            f"height:20px;padding:0 6px;display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:{GAP-3}px\">{sp(sym)}<span>{t}</span>{sp(sym)}</div>")
+    T = f"font:700 10px/1 {SERIF};letter-spacing:.06em"
+    C = "display:flex;align-items:center;justify-content:center;gap:5px"
+    txt = f"{sp(sym)}<span>{t}</span>{sp(sym)}"
+    mb = f"margin-bottom:{GAP-3}px"
+    if BAR_STYLE == '2':
+        return f"<div style=\"{C};height:18px;border-top:3px double {BAR};border-bottom:3px double {BAR};color:{BAR};{T};{mb}\">{txt}</div>"
+    if BAR_STYLE == '4':
+        return (f"<div style=\"display:flex;border-bottom:2px solid {BAR};{mb}\"><div style=\"{C};height:20px;padding:0 10px;"
+                f"background:{BAR};color:#fff;border-radius:5px 5px 0 0;{T}\">{txt}</div></div>")
+    if BAR_STYLE == '5':
+        sc = lambda y: f"<div style=\"height:4px;background:radial-gradient(circle at 4px {y},{BAR} 0 3.2px,transparent 3.6px) 0 0/8px 4px repeat-x\"></div>"
+        return (f"<div style=\"{mb}\">" + sc('4px') + f"<div style=\"{C};height:16px;background:{BAR};color:#fff;{T}\">{txt}</div>" + sc('0') + "</div>")
+    if BAR_STYLE == '7':
+        ln = f"<div style=\"flex:1;height:1px;background:{BAR}\"></div>"
+        return (f"<div style=\"display:flex;align-items:center;gap:5px;{mb}\">{ln}<div style=\"{C};height:20px;padding:0 10px;border-radius:10px;"
+                f"background:{BAR};color:#fff;white-space:nowrap;{T}\">{txt}</div>{ln}</div>")
+    if BAR_STYLE == '9':
+        return (f"<div style=\"display:flex;align-items:center;gap:5px;height:20px;border-left:4px solid {BAR};background:#e9e8ec;"
+                f"padding-left:7px;color:{BAR};{T};{mb}\">{txt}</div>")
+    return f"<div style=\"{C};height:20px;padding:0 6px;background:{BAR};color:#fff;{T};{mb}\">{txt}</div>"
 
 def frame(k, h, fs):
     return (f"<div style=\"height:{h}px;box-sizing:border-box;border:3px double {INK};background:#fff;display:flex;align-items:center;"
