@@ -94,8 +94,8 @@ def label(t):
 def body(t, size=8.5):
     return f"<div style=\"font:{size}px/1.27 {SANS};color:#3a373c\">{t}</div>"
 
-def bold(t, size=9.5):
-    return f"<div style=\"font:800 {size}px/1.23 {SERIF};color:{INK}\">{t}</div>"
+def bold(t, size=9.5, color=None):
+    return f"<div style=\"font:800 {size}px/1.23 {SERIF};color:{color or INK}\">{t}</div>"
 
 def block(*parts, top=GAP):
     return f"<div style=\"margin-top:{top}px\">" + ''.join(parts) + "</div>"
@@ -104,7 +104,7 @@ def build(d):
     pride = ("<!--@ Pride 카드 : 카오모지 k · 옷차림 o · 속마음 i --><div>" + bar(d['npc'], '♝', 'npc')
              + f"<div style=\"display:grid;grid-template-columns:72px 1fr;gap:{GAP}px;align-items:start\">"
              + frame(d['kn'], 54, 13) + "<div>" + label('OUTFIT') + body(d['o']) + "</div></div>"
-             + block(label('INNER WHISPER'), bold('“ ' + d['inner'] + ' ”')) + "</div>")
+             + block(label('INNER WHISPER'), bold('“ ' + d['inner'] + ' ”', color=BAR)) + "</div>")
     # Banshee / Place / Pose share one grid so the kaomoji frame ends level with the Pose bar
     nomb = lambda h: h.replace(f"margin-bottom:{GAP-3}px", "margin-bottom:0")
     kframe = (f"<div style=\"min-height:38px;height:100%;box-sizing:border-box;border:3px double {INK};background:{KDOTS};display:flex;"
@@ -121,7 +121,7 @@ def build(d):
     tail = (f"<div style=\"position:absolute;left:14px;top:-9px;width:0;height:0;border-left:6px solid transparent;"
             f"border-right:6px solid transparent;border-bottom:7px solid {BAR}\"></div>")
     bubble = (f"<div style=\"position:relative;margin-top:{GAP+2}px;border-left:4px solid {BAR};border-top:3px double {BAR};"
-              f"border-bottom:3px double {BAR};background:#e9e8ec;padding:7px 9px 6px\">" + tail + bold(d['msg'], 9)
+              f"border-bottom:3px double {BAR};background:#e9e8ec;padding:7px 9px 6px\">" + tail + bold(d['msg'], 9, BAR)
               + f"<div style=\"text-align:right;font:italic 8px {SERIF};color:#55515a;margin-top:3px\">— from. {d['npc']}</div></div>")
     msg = ("<!--@ 메시지 j : 말풍선 --><div>" + bar('To. ' + d['pc'], '†', 'msg').replace(f"margin-bottom:{GAP-3}px", "margin-bottom:0") + bubble + "</div>")
     main = (f"<div style=\"flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:{GAP+4}px\">" + pride
@@ -129,7 +129,7 @@ def build(d):
 
     corner = lambda pos: (f"<span style=\"position:absolute;{pos};font-size:11px;line-height:1;color:{BAR};background:#fff;padding:0 1px;font-size:9px\">✚</span>")
     side_open = ("<!--@ 오른쪽 점선 칸 : 노래 a · 가수 b · 날짜 c · 요일 d · AM/PM e · 시각 f · 처음 만난 날 m -->"
-            f"<div style=\"flex:0 0 36%;position:relative;border:2px dotted {BAR};padding:{GAP+6}px {GAP-2}px;box-sizing:border-box;"
+            f"<div style=\"flex:0 0 36%;position:relative;border:2px dotted #8e8c95;padding:{GAP+6}px {GAP-2}px;box-sizing:border-box;"
             f"display:flex;flex-direction:column;justify-content:space-between;align-items:center;text-align:center;gap:{GAP+4}px\">"
             + corner('top:-8px;left:-7px') + corner('top:-8px;right:-7px') + corner('bottom:-8px;left:-7px') + corner('bottom:-8px;right:-7px')
             )
