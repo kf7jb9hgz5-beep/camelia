@@ -23,75 +23,93 @@ def rose(S, B=1.4):
     return kids, (cx-Ra, t1, cx+Ra, cy+Ra)
 
 def emblem():
-    # rose centred inside a dotted circle (like the artbook's centre ornament)
-    C = 26; S = 30
-    kids, (x0, y0, x1, y1) = rose(S)
-    L = C-(x0+x1)/2; T = C-(y0+y1)/2
-    return (f"<!--@ 장미 엠블럼 --><div style=\"position:relative;width:{2*C}px;height:{2*C}px;margin:10px auto;border-radius:50%;"
-            f"border:1.5px dotted {INK};color:{INK};box-sizing:border-box\">"
-            f"<div style=\"position:absolute;left:{f(L-1.5)}px;top:{f(T-1.5)}px;width:{S}px;height:{S}px\">{kids}</div></div>")
+    # ornate budded cross inside a dotted circle
+    W = 56
+    def dot(x, y, r):
+        return f"<div style=\"position:absolute;left:{f(x-r)}px;top:{f(y-r)}px;width:{f(2*r)}px;height:{f(2*r)}px;border-radius:50%;background:{INK}\"></div>"
+    cx, cy = W/2, W/2
+    v = f"<div style=\"position:absolute;left:{f(cx-1.5)}px;top:11px;width:3px;height:34px;background:{INK}\"></div>"
+    h = f"<div style=\"position:absolute;left:{f(cx-11)}px;top:{f(cy-5.5)}px;width:22px;height:3px;background:{INK}\"></div>"
+    ends = dot(cx, 10, 2.6) + dot(cx, 46, 2.6) + dot(cx-12, cy-4, 2.6) + dot(cx+12, cy-4, 2.6)
+    mid = (f"<div style=\"position:absolute;left:{f(cx-4.5)}px;top:{f(cy-8.5)}px;width:9px;height:9px;box-sizing:border-box;"
+           f"border:1.5px solid {INK};background:#fff;transform:rotate(45deg)\"></div>")
+    return (f"<!--@ 십자가 엠블럼 --><div style=\"position:relative;width:{W}px;height:{W}px;margin:0 auto;border-radius:50%;"
+            f"border:1.5px dotted {INK};box-sizing:border-box;background:#fff\">{v}{h}{ends}{mid}</div>")
 
-def strip():
-    unit = '☙ ✥ ❧ ✥ '
-    return (f"<div style=\"text-align:center;white-space:nowrap;overflow:hidden;font-size:13px;line-height:1;letter-spacing:.06em;color:{INK};"
-            f"padding:3px 0;border-top:1px solid {INK};border-bottom:1px solid {INK}\">{unit*8}</div>")
+LACE = '#e7e6eb'; LACE_LINE = '#b8b6be'
+def lace(top=True):
+    eyelets = (f"<div style=\"height:9px;background:radial-gradient(circle,#fff 0 1.7px,transparent 2.1px) 0 0/12px 9px repeat-x,radial-gradient(circle,#fff 0 .9px,transparent 1.2px) 6px 0/12px 9px repeat-x,{LACE};"
+               f"border-top:1px solid {LACE_LINE};border-bottom:1px solid {LACE_LINE}\"></div>")
+    at = '0' if top else '100%'
+    scallop = (f"<div style=\"height:8px;background:radial-gradient(circle at 6px {'2px' if top else '6px'},#fff 0 1.2px,transparent 1.6px) 0 0/12px 8px repeat-x,"
+               f"radial-gradient(circle at 6px {at},{LACE} 0 5.6px,{LACE_LINE} 6px 6.7px,transparent 7.1px) 0 0/12px 8px repeat-x\"></div>")
+    picots = (f"<div style=\"height:3px;background:radial-gradient(circle,{LACE_LINE} 0 1px,transparent 1.4px) 0 0/12px 3px repeat-x\"></div>")
+    parts = [eyelets, scallop, picots] if top else [picots, scallop, eyelets]
+    return "<div>" + ''.join(parts) + "</div>"
 
-def bar(t, size=11):
-    return (f"<div style=\"background:{INK};color:#fff;text-align:center;font:700 {size}px/1 {SERIF};letter-spacing:.06em;"
-            f"padding:5px 6px 4px;margin-bottom:6px\">✤ {t} ✤</div>")
+DOTS = "radial-gradient(circle,#d9d9de 0 .9px,transparent 1.3px) 0 0/9px 9px,#fff"
+GAP = 10   # one spacing unit used everywhere
 
-def portrait(k, w='64px', h='52px', fs=13):
-    return (f"<div style=\"flex:none;width:{w};height:{h};border:3px double {INK};background:#fff;display:flex;align-items:center;"
+def bar(t):
+    return (f"<div style=\"background:{INK};color:#fff;text-align:center;font:700 10.5px/1 {SERIF};letter-spacing:.06em;"
+            f"padding:5px 6px 4px;margin-bottom:{GAP-3}px\">† {t} †</div>")
+
+def frame(k, h, fs):
+    return (f"<div style=\"height:{h}px;box-sizing:border-box;border:3px double {INK};background:#fff;display:flex;align-items:center;"
             f"justify-content:center;font-size:{fs}px;line-height:1;white-space:nowrap;overflow:hidden\">{k}</div>")
 
-def head(t, size=10.5):
-    return f"<div style=\"font:800 {size}px/1.25 {SERIF};color:{INK};margin-top:6px\">{t}</div>"
-
-def small(t, size=9.5):
-    return f"<div style=\"font:{size}px/1.35 {SANS};color:#3a373c;margin-top:2px\">{t}</div>"
-
 def label(t):
-    return f"<div style=\"font:700 7.5px/1 {SERIF};letter-spacing:.18em;color:#77737a\">{t}</div>"
+    return f"<div style=\"font:700 7.5px/1 {SERIF};letter-spacing:.16em;color:#77737a;margin-bottom:3px\">† {t}</div>"
+
+def body(t, size=9.5):
+    return f"<div style=\"font:{size}px/1.38 {SANS};color:#3a373c\">{t}</div>"
+
+def bold(t, size=10.5):
+    return f"<div style=\"font:800 {size}px/1.32 {SERIF};color:{INK}\">{t}</div>"
+
+def block(*parts, top=GAP):
+    return f"<div style=\"margin-top:{top}px\">" + ''.join(parts) + "</div>"
 
 def build(d):
-    pride = ("<!--@ Pride 카드 : 카오모지 k · 옷차림 o · 속마음 i --><div>" + bar(d['npc'], 12)
-             + "<div style=\"display:flex;gap:7px;align-items:flex-start\">" + portrait(d['kn'], '70px', '58px', 14)
-             + f"<div style=\"flex:1;min-width:0\">{label('OUTFIT')}{small(d['o'])}</div></div>"
-             + f"<div style=\"margin-top:7px\">{label('INNER WHISPER')}</div>"
-             + head('“ ' + d['inner'] + ' ”', 10.5) + "</div>")
-    banshee = ("<!--@ Banshee 카드 : 카오모지 l · 옷차림 p --><div>" + bar(d['pc'], 10)
-               + portrait(d['kp'], '100%', '40px', 12)
-               + f"<div style=\"margin-top:6px\">{label('OUTFIT')}</div>{small(d['p'], 9)}</div>")
-    place = ("<!--@ 장소 g / 자세 h --><div>" + bar('Place', 10) + small(d['place'], 9)
-             + "<div style=\"margin-top:8px\"></div>" + bar('Pose', 10) + small(d['pose'], 9) + "</div>")
-    msg = ("<!--@ 메시지 j --><div>" + bar('To. ' + d['pc'], 11)
-           + head(d['msg'], 10) + f"<div style=\"text-align:right;font:italic 9px {SERIF};color:#55515a;margin-top:3px\">— from. {d['npc']}</div></div>")
-    main = ("<div style=\"flex:1 1 0;min-width:0;display:grid;gap:10px\">" + pride
-            + "<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:8px\">" + banshee + place + "</div>" + msg + "</div>")
+    pride = ("<!--@ Pride 카드 : 카오모지 k · 옷차림 o · 속마음 i --><div>" + bar(d['npc'])
+             + f"<div style=\"display:grid;grid-template-columns:72px 1fr;gap:{GAP}px;align-items:start\">"
+             + frame(d['kn'], 58, 14) + "<div>" + label('OUTFIT') + body(d['o']) + "</div></div>"
+             + block(label('INNER WHISPER'), bold('“ ' + d['inner'] + ' ”')) + "</div>")
+    banshee = ("<!--@ Banshee 카드 : 카오모지 l · 옷차림 p --><div>" + bar(d['pc']) + frame(d['kp'], 40, 12)
+               + block(label('OUTFIT'), body(d['p'], 9)) + "</div>")
+    place = ("<!--@ 장소 g / 자세 h --><div>" + bar('Place') + body(d['place'], 9)
+             + f"<div style=\"margin-top:{GAP}px\">" + bar('Pose') + body(d['pose'], 9) + "</div></div>")
+    msg = ("<!--@ 메시지 j --><div>" + bar('To. ' + d['pc']) + bold(d['msg'], 10)
+           + f"<div style=\"text-align:right;font:italic 9px {SERIF};color:#55515a;margin-top:4px\">— from. {d['npc']}</div></div>")
+    main = (f"<div style=\"flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:{GAP+4}px\">" + pride
+            + f"<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:{GAP}px\">" + banshee + place + "</div>" + msg + "</div>")
 
-    corner = lambda pos, rot: (f"<span style=\"position:absolute;{pos};font-size:12px;line-height:1;color:{INK};background:{PAPER};"
-                               f"padding:1px;transform:rotate({rot}deg)\">❦</span>")
-    side = (f"<!--@ 오른쪽 점선 칸 : 노래 a · 가수 b · 날짜 c · 요일 d · AM/PM e · 시각 f · 처음 만난 날 m -->"
-            f"<div style=\"flex:0 0 36%;position:relative;border:2px dotted {INK};padding:14px 8px 12px;box-sizing:border-box;text-align:center\">"
-            + corner('top:-8px;left:-8px', 0) + corner('top:-8px;right:-8px', 90) + corner('bottom:-8px;left:-8px', -90) + corner('bottom:-8px;right:-8px', 180)
-            + f"<div style=\"font:11px/1.3 {SANS};color:#3a373c\">Which song<br>plays in<br>this scene?</div>"
-            + f"<div style=\"font:800 15px/1.2 {SERIF};color:{INK};margin-top:12px;word-break:keep-all\">{d['song']}</div>"
-            + f"<div style=\"font:9.5px/1.3 {SANS};color:#55515a;margin-top:4px\">— {d['artist']} —</div>"
+    corner = lambda pos: (f"<span style=\"position:absolute;{pos};font-size:12px;line-height:1;color:{INK};background:#fff;padding:0 1px\">✠</span>")
+    side = ("<!--@ 오른쪽 점선 칸 : 노래 a · 가수 b · 날짜 c · 요일 d · AM/PM e · 시각 f · 처음 만난 날 m -->"
+            f"<div style=\"flex:0 0 36%;position:relative;border:2px dotted {INK};padding:{GAP+6}px {GAP-2}px;box-sizing:border-box;"
+            f"display:flex;flex-direction:column;justify-content:space-between;align-items:center;text-align:center;gap:{GAP+4}px\">"
+            + corner('top:-8px;left:-7px') + corner('top:-8px;right:-7px') + corner('bottom:-8px;left:-7px') + corner('bottom:-8px;right:-7px')
+            + "<div>"
+            + f"<div style=\"font:10px/1.35 {SANS};color:#3a373c\">Which song<br>plays in<br>this scene?</div>"
+            + f"<div style=\"font:800 15px/1.2 {SERIF};color:{INK};margin-top:{GAP}px\">{d['song']}</div>"
+            + f"<div style=\"font:9px/1.3 {SANS};color:#55515a;margin-top:4px\">— {d['artist']} —</div></div>"
             + emblem()
+            + "<div>"
             + f"<div style=\"font:800 12px/1.2 {SERIF};color:{INK}\">{d['date']}</div>"
-            + f"<div style=\"font:700 8px/1 {SERIF};letter-spacing:.2em;color:#77737a;margin-top:3px\">{d['day']}</div>"
-            + f"<div style=\"font:800 22px/1 {SERIF};color:{INK};margin-top:6px\"><span style=\"font-size:9px;letter-spacing:.1em;margin-right:2px\">{d['ampm']}</span>{d['time']}</div>"
-            + f"<div style=\"font:9.5px/1.4 {SANS};color:#3a373c;margin-top:14px;text-align:left\">The day they first met — <b style=\"font-family:{SERIF}\">{d['met']}</b>. Every day since then is counted on this page.</div>"
+            + f"<div style=\"font:700 8px/1 {SERIF};letter-spacing:.2em;color:#77737a;margin-top:4px\">{d['day']}</div>"
+            + f"<div style=\"font:800 22px/1 {SERIF};color:{INK};margin-top:6px\"><span style=\"font-size:9px;letter-spacing:.1em;margin-right:2px\">{d['ampm']}</span>{d['time']}</div></div>"
+            + f"<div style=\"font:9px/1.45 {SANS};color:#3a373c\">The day they first met<br><b style=\"font:800 11px/1.6 {SERIF};color:{INK}\">{d['met']}</b><br>every day since then<br>is counted on this page.</div>"
             + "</div>")
 
-    foot = (f"<!--@ 쪽번호 : 디데이 n --><div style=\"display:flex;justify-content:flex-end;margin-top:6px;padding-right:4px\">"
-            f"<div style=\"background:{PAPER};border:1.5px solid {INK};border-radius:12px;padding:3px 9px;font:800 10px/1 {SERIF};color:{INK}\">{d['dday']}</div></div>")
+    foot = ("<!--@ 쪽번호 : 디데이 n -->"
+            f"<div style=\"text-align:center;margin-top:{GAP}px\"><span style=\"display:inline-block;background:#fff;border:1.5px solid {INK};border-radius:12px;"
+            f"padding:4px 12px 3px;font:800 10px/1 {SERIF};color:{INK}\">‡ {d['dday']} ‡</span></div>")
 
-    return (f"<div style=\"max-width:360px;margin:12px auto;padding:10px 10px 12px;background:{PAPER};color:{INK};box-sizing:border-box;"
-            f"font-family:{SANS};word-break:keep-all;box-shadow:0 2px 10px rgba(0,0,0,.12)\">"
-            + "<!--@ 위 문양 띠 -->" + strip()
-            + "<div style=\"display:flex;gap:9px;margin:12px 2px 14px\">" + main + side + "</div>"
-            + "<!--@ 아래 문양 띠 -->" + strip() + foot + "</div>")
+    return (f"<div style=\"max-width:360px;margin:12px auto;background:{DOTS};color:{INK};box-sizing:border-box;"
+            f"font-family:{SANS};word-break:keep-all;box-shadow:0 2px 10px rgba(0,0,0,.12);\">"
+            + "<!--@ 위 레이스 -->" + lace(True)
+            + f"<div style=\"display:flex;gap:{GAP+2}px;padding:{GAP+6}px {GAP+4}px {GAP+2}px\">" + main + side + "</div>"
+            + foot + "<div style=\"margin-top:" + str(GAP) + "px\"></div><!--@ 아래 레이스 -->" + lace(False) + "</div>")
 
 def pretty(h):
     toks = re.findall(r'<!--.*?-->|</?[a-z]+[^>]*>|[^<]+', h, flags=re.S)
