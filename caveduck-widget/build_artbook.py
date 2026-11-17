@@ -50,7 +50,7 @@ def sp(c):
     z = '8px' if c == '✚' else '1em'
     return f"<span style=\"font-size:{z};line-height:1\">{c}</span>"
 BAR_STYLE = STYLE_ARG or '2'   # 1 기본 · 2 이중선 · 4 인덱스 탭 · 5 레이스 띠 · 7 양옆 선+알약 · 9 라벨
-ROLE_STYLE = dict(x.split('=') for x in (ROLE_ARG or 'place=9,pose=9,msg=D').split(',') if x)
+ROLE_STYLE = dict(x.split('=') for x in (ROLE_ARG or 'place=9,pose=9').split(',') if x)
 def bar(t, sym='✚', role=''):
     st = ROLE_STYLE.get(role, BAR_STYLE)
     T = f"font:700 10px/1 {SERIF};letter-spacing:.06em"
@@ -107,8 +107,12 @@ def build(d):
                + block(label('OUTFIT'), body(d['p'], 8)) + "</div>")
     place = ("<!--@ 장소 g / 자세 h --><div>" + bar('Place', role='place') + body(d['place'], 8)
              + f"<div style=\"margin-top:{GAP}px\">" + bar('Pose', role='pose') + body(d['pose'], 8) + "</div></div>")
-    msg = ("<!--@ 메시지 j --><div>" + bar('To. ' + d['pc'], '†', 'msg') + bold(d['msg'], 9)
-           + f"<div style=\"text-align:right;font:italic 8px {SERIF};color:#55515a;margin-top:4px\">— from. {d['npc']}</div></div>")
+    tail = (f"<div style=\"position:absolute;left:14px;top:-9px;width:0;height:0;border-left:6px solid transparent;"
+            f"border-right:6px solid transparent;border-bottom:7px solid {BAR}\"></div>")
+    bubble = (f"<div style=\"position:relative;margin-top:{GAP+2}px;border-left:4px solid {BAR};border-top:3px double {BAR};"
+              f"border-bottom:3px double {BAR};background:#e9e8ec;padding:7px 9px 6px\">" + tail + bold(d['msg'], 9)
+              + f"<div style=\"text-align:right;font:italic 8px {SERIF};color:#55515a;margin-top:3px\">— from. {d['npc']}</div></div>")
+    msg = ("<!--@ 메시지 j : 말풍선 --><div>" + bar('To. ' + d['pc'], '†', 'msg').replace(f"margin-bottom:{GAP-3}px", "margin-bottom:0") + bubble + "</div>")
     main = (f"<div style=\"flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:{GAP+4}px\">" + pride
             + f"<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:{GAP}px\">" + banshee + place + "</div>" + msg + "</div>")
 
