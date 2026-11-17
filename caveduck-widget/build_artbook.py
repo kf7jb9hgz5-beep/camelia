@@ -23,20 +23,12 @@ def rose(S, B=1.4):
     return kids, (cx-Ra, t1, cx+Ra, cy+Ra)
 
 def emblem():
-    # ornate budded cross inside a dotted circle
     W = 56
-    def dot(x, y, r):
-        return f"<div style=\"position:absolute;left:{f(x-r)}px;top:{f(y-r)}px;width:{f(2*r)}px;height:{f(2*r)}px;border-radius:50%;background:{INK}\"></div>"
-    cx = cy = (W-3)/2  # inner (padding-box) centre
-    v = f"<div style=\"position:absolute;left:{f(cx-1.5)}px;top:{f(cy-17)}px;width:3px;height:34px;background:{INK}\"></div>"
-    h = f"<div style=\"position:absolute;left:{f(cx-11)}px;top:{f(cy-5.5)}px;width:22px;height:3px;background:{INK}\"></div>"
-    ends = dot(cx, cy-18, 2.6) + dot(cx, cy+18, 2.6) + dot(cx-12, cy-4, 2.6) + dot(cx+12, cy-4, 2.6)
-    mid = (f"<div style=\"position:absolute;left:{f(cx-4.5)}px;top:{f(cy-8.5)}px;width:9px;height:9px;box-sizing:border-box;"
-           f"border:1.5px solid {INK};background:#fff;transform:rotate(45deg)\"></div>")
-    return (f"<!--@ 십자가 엠블럼 --><div style=\"position:relative;width:{W}px;height:{W}px;margin:0 auto;border-radius:50%;"
-            f"border:1.5px dotted {INK};box-sizing:border-box;background:#fff\">{v}{h}{ends}{mid}</div>")
+    return (f"<!--@ 십자가 엠블럼 --><div style=\"width:{W}px;height:{W}px;margin:0 auto;border-radius:50%;border:1.5px dotted {BAR};"
+            f"box-sizing:border-box;background:#fff;display:flex;align-items:center;justify-content:center;"
+            f"font-size:28px;line-height:1;color:{BAR}\">𖢒</div>")
 
-LACE = '#e7e6eb'; LACE_LINE = '#b8b6be'
+LACE = '#d9d8de'; LACE_LINE = '#9d9ba5'
 def lace(top=True):
     eyelets = (f"<div style=\"height:9px;background:radial-gradient(circle,#fff 0 1.7px,transparent 2.1px) 0 0/12px 9px repeat-x,radial-gradient(circle,#fff 0 .9px,transparent 1.2px) 6px 0/12px 9px repeat-x,{LACE};"
                f"border-top:1px solid {LACE_LINE};border-bottom:1px solid {LACE_LINE}\"></div>")
@@ -53,10 +45,10 @@ GAP = 10   # one spacing unit used everywhere
 BAR = '#55535b'
 def sp(c):
     z = '8px' if c == '✚' else '1em'
-    return f"<span style=\"font-size:{z};vertical-align:1px\">{c}</span>"
+    return f"<span style=\"font-size:{z};line-height:1\">{c}</span>"
 def bar(t, sym='✚'):
     return (f"<div style=\"background:{BAR};color:#fff;text-align:center;font:700 10.5px/1 {SERIF};letter-spacing:.06em;"
-            f"padding:5px 6px 4px;margin-bottom:{GAP-3}px\">{sp(sym)} {t} {sp(sym)}</div>")
+            f"height:20px;padding:0 6px;display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:{GAP-3}px\">{sp(sym)}<span>{t}</span>{sp(sym)}</div>")
 
 def frame(k, h, fs):
     return (f"<div style=\"height:{h}px;box-sizing:border-box;border:3px double {INK};background:#fff;display:flex;align-items:center;"
@@ -88,22 +80,22 @@ def build(d):
     main = (f"<div style=\"flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:{GAP+4}px\">" + pride
             + f"<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:{GAP}px\">" + banshee + place + "</div>" + msg + "</div>")
 
-    corner = lambda pos: (f"<span style=\"position:absolute;{pos};font-size:12px;line-height:1;color:{INK};background:#fff;padding:0 1px;font-size:10px\">✚</span>")
+    corner = lambda pos: (f"<span style=\"position:absolute;{pos};font-size:12px;line-height:1;color:{BAR};background:#fff;padding:0 1px;font-size:10px\">✚</span>")
     side = ("<!--@ 오른쪽 점선 칸 : 노래 a · 가수 b · 날짜 c · 요일 d · AM/PM e · 시각 f · 처음 만난 날 m -->"
-            f"<div style=\"flex:0 0 36%;position:relative;border:2px dotted {INK};padding:{GAP+6}px {GAP-2}px;box-sizing:border-box;"
+            f"<div style=\"flex:0 0 36%;position:relative;border:2px dotted {BAR};padding:{GAP+6}px {GAP-2}px;box-sizing:border-box;"
             f"display:flex;flex-direction:column;justify-content:space-between;align-items:center;text-align:center;gap:{GAP+4}px\">"
             + corner('top:-8px;left:-7px') + corner('top:-8px;right:-7px') + corner('bottom:-8px;left:-7px') + corner('bottom:-8px;right:-7px')
             + "<div>"
-            + f"<div style=\"font-size:16px;line-height:1;color:{INK};margin-bottom:6px\">𝄡</div>"
-            + f"<div style=\"font:10px/1.35 {SANS};color:#3a373c\">Which song<br>plays in<br>this scene?</div>"
-            + f"<div style=\"font:800 15px/1.2 {SERIF};color:{INK};margin-top:{GAP}px\">{d['song']}</div>"
-            + f"<div style=\"font:9px/1.3 {SANS};color:#55515a;margin-top:4px\">— {d['artist']} —</div></div>"
+            + f"<div style=\"font-size:16px;line-height:1;color:{BAR};margin-bottom:6px\">𝄡</div>"
+            + f"<div style=\"font:10px/1.35 {SANS};color:{BAR}\">Which song<br>plays in<br>this scene?</div>"
+            + f"<div style=\"font:800 15px/1.2 {SERIF};color:{BAR};margin-top:{GAP}px\">{d['song']}</div>"
+            + f"<div style=\"font:9px/1.3 {SANS};color:#77737a;margin-top:4px\">— {d['artist']} —</div></div>"
             + emblem()
             + "<div>"
-            + f"<div style=\"font:800 12px/1.2 {SERIF};color:{INK}\">{d['date']}</div>"
+            + f"<div style=\"font:800 12px/1.2 {SERIF};color:{BAR}\">{d['date']}</div>"
             + f"<div style=\"font:700 8px/1 {SERIF};letter-spacing:.2em;color:#77737a;margin-top:4px\">{d['day']}</div>"
-            + f"<div style=\"font:800 22px/1 {SERIF};color:{INK};margin-top:6px\"><span style=\"font-size:9px;letter-spacing:.1em;margin-right:2px\">{d['ampm']}</span>{d['time']}</div></div>"
-            + f"<div style=\"font:9px/1.45 {SANS};color:#3a373c\">The day they first met<br><b style=\"font:800 11px/1.6 {SERIF};color:{INK}\">{d['met']}</b><br>every day since then<br>is counted on this page.</div>"
+            + f"<div style=\"font:800 22px/1 {SERIF};color:{BAR};margin-top:6px\"><span style=\"font-size:9px;letter-spacing:.1em;margin-right:2px\">{d['ampm']}</span>{d['time']}</div></div>"
+            + f"<div style=\"font:9px/1.45 {SANS};color:{BAR}\">The day they first met<br><b style=\"font:800 11px/1.6 {SERIF};color:{BAR}\">{d['met']}</b><br>every day since then<br>is counted on this page.</div>"
             + "</div>")
 
     foot = ("<!--@ 쪽번호 : 디데이 n -->"
