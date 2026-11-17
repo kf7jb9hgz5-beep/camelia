@@ -191,7 +191,7 @@
                 </div>
                 <div class="control-minimal-row" id="infoPositionYArea">
                     <label for="infoPositionYSlider">세로 위치</label>
-                    <input type="range" id="infoPositionYSlider" min="0" max="160" value="90" oninput="syncRangeToNumber('infoPositionYSlider','infoPositionY')" />
+                    <input type="range" id="infoPositionYSlider" min="0" max="100" value="90" oninput="syncRangeToNumber('infoPositionYSlider','infoPositionY')" />
                     <input type="hidden" id="infoPositionY" value="90" />
                 </div>
                 <div class="control-minimal-row" id="infoPositionXArea">
@@ -199,7 +199,7 @@
                     <input type="range" id="infoPositionXSlider" min="0" max="100" value="100" oninput="syncRangeToNumber('infoPositionXSlider','infoPositionX')" />
                     <input type="hidden" id="infoPositionX" value="100" />
                 </div>
-                <div class="field-hint" id="infoPositionYHint">슬라이더로 옮기거나, 미리보기 화면에서 작품명·제작자 글자를 직접 눌러 드래그해서 옮길 수 있어요. 본문이 있는 폭 안에서만 움직여요(양 끝까지 딱 붙지 않아요).</div>
+                <div class="field-hint" id="infoPositionYHint">슬라이더로 옮기거나, 미리보기 화면에서 작품명·제작자 글자를 직접 눌러 드래그해서 옮길 수 있어요. 캔버스 끝까지 움직일 수 있어요 — 가로 100이면 오른쪽 끝, 세로 100이면 맨 아래예요.</div>
 
                 <div class="panel-section-title">제목 서식</div>
                 <div class="control-minimal-row">
@@ -1246,6 +1246,6 @@
 
         <script src="presets.js?v=52"></script>
         <script src="decor-assets.js?v=1"></script>
-        <script src="script.js?v=75"></script>
+        <script src="script.js?v=76"></script>
     </body>
 </html>

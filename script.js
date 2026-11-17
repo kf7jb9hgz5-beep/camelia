@@ -534,27 +534,21 @@ function updateCanvasCore() {
 
         if (infoPosV === "drag") {
             // 직접 지정: 본문 흐름에서 빼서 캔버스 안에 절대 위치로 띄운다.
-            // ⚠️ absolute 자식은 부모의 padding을 무시하고 테두리까지 붙을 수 있다(흐름 안의 요소만
-            // padding 안쪽으로 밀려남) — 그래서 0%/100%가 진짜 캔버스 맨 끝까지 붙어버렸었다.
-            // 그래서 캔버스 자체의 위/아래/좌/우 여백(padding) 값만큼을 직접 계산해서 안쪽으로 들여놓고,
-            // 그 안에서만 0~100%가 움직이게 만들었다 — 이러면 본문이 있는 폭 안에서만 움직인다.
+            // 위치 기준은 "캔버스 전체"다 — 가로 0 = 왼쪽 끝, 100 = 오른쪽 끝 / 세로 0 = 맨 위, 100 = 맨 아래.
+            // (예전엔 캔버스 여백 안쪽에서만 움직여서 오른쪽 끝·맨 아래까지 못 갔다)
+            // translate(-x%, -y%)로 글자 묶음 자신의 크기만큼 되돌려서, 끝으로 보내도 캔버스 밖으로 잘리지 않는다.
             if (els.captureArea && infoContainer.parentNode !== els.captureArea) {
                 els.captureArea.appendChild(infoContainer);
             }
-            const padT = parseFloat(els.paddingTop?.value) || 0;
-            const padB = parseFloat(els.paddingBottom?.value) || 0;
-            const padL = parseFloat(els.paddingLeft?.value) || 0;
-            const padR = parseFloat(els.paddingRight?.value) || 0;
             const yPercentRaw = parseFloat(document.getElementById("infoPositionY")?.value);
-            // 세로 위치를 100을 넘겨 더 아래까지 내릴 수 있게 상한을 160으로 넓혔다.
-            const yPercent = isNaN(yPercentRaw) ? 90 : Math.min(160, Math.max(0, yPercentRaw));
+            const yPercent = isNaN(yPercentRaw) ? 90 : Math.min(100, Math.max(0, yPercentRaw));
             infoContainer.style.position = "absolute";
-            infoContainer.style.left = `calc(${padL}px + (100% - ${padL + padR}px) * ${xPercent / 100})`;
+            infoContainer.style.left = `${xPercent}%`;
             infoContainer.style.right = "auto";
-            infoContainer.style.top = `calc(${padT}px + (100% - ${padT + padB}px) * ${yPercent / 100})`;
-            infoContainer.style.transform = `translate(-${xPercent}%, -50%)`;
+            infoContainer.style.top = `${yPercent}%`;
+            infoContainer.style.transform = `translate(-${xPercent}%, -${yPercent}%)`;
             infoContainer.style.width = "max-content";
-            infoContainer.style.maxWidth = `calc(100% - ${padL + padR}px)`;
+            infoContainer.style.maxWidth = "100%";
             infoContainer.style.marginTop = "0";
             infoContainer.style.marginBottom = "0";
             infoContainer.style.padding = "0";
@@ -962,6 +956,19 @@ function syncLiveHighlights(overrideColors = null) {
     if (els.subTextColor) lastSubTextColor = els.subTextColor.value;
 }
 
+// 글자 하나(range)가 화면에서 실제로 놓인 줄의 위쪽 좌표.
+// ⚠️ 사파리는 줄이 바뀐 직후 첫 글자의 getBoundingClientRect()가 "윗줄 끝 + 그 글자"를 합친 상자를
+// 돌려줘서 윗줄에 있는 것처럼 보이는 경우가 있다. 그래서 getClientRects() 중 폭이 있는 마지막 상자
+// (= 글자가 실제로 그려진 자리)를 쓴다.
+function getRangeLineTop(range) {
+    const rects = range.getClientRects();
+    for (let i = rects.length - 1; i >= 0; i--) {
+        if (rects[i].width > 0.5 && rects[i].height > 0) return rects[i].top;
+    }
+    const r = range.getBoundingClientRect();
+    return r && (r.width || r.height) ? r.top : null;
+}
+
 function prepareCanvasForCapture(container) {
     // HTML 배경을 저장용 그림으로 못 바꾼 브라우저에서는, 그 배경 때문에 저장 전체가 실패하지 않도록 잠깐 빼고 저장
     {
@@ -1018,8 +1025,8 @@ function prepareCanvasForCapture(container) {
                 try {
                     hlRange.setStart(node, offset);
                     hlRange.setEnd(node, offset + ch.length);
-                    const r = hlRange.getBoundingClientRect();
-                    if (r && (r.width || r.height)) top = r.top;
+                    const t = getRangeLineTop(hlRange);
+                    if (t !== null) top = t;
                 } catch (e) {}
             }
             if (cur && lastTop !== null && top !== null && Math.abs(top - lastTop) > 2) { parts.push(cur); cur = ""; }
@@ -1057,6 +1064,21 @@ function prepareCanvasForCapture(container) {
             node.parentNode.replaceChild(frag, node);
         });
         span.style.backgroundColor = "transparent";
+    });
+    // 안전장치: 그래도 두 줄에 걸친 조각이 남아 있으면(브라우저 측정 오차 등) 한 글자씩 다시 쪼갠다.
+    // html2canvas는 여러 줄에 걸친 글자 조각의 배경을 "두 줄을 다 덮는 네모"로 그려서 옆 글자를 덮어 버린다.
+    container.querySelectorAll(".__hl-char").forEach((chunk) => {
+        if (chunk.getClientRects().length <= 1) return;
+        const bg = chunk.style.backgroundColor;
+        const frag = document.createDocumentFragment();
+        Array.from(chunk.textContent).forEach((ch) => {
+            const s = document.createElement("span");
+            s.className = "__hl-char";
+            s.style.cssText = `background-color: ${bg}; display: inline; color: inherit;`;
+            s.textContent = ch;
+            frag.appendChild(s);
+        });
+        chunk.replaceWith(frag);
     });
 }
 
@@ -1132,8 +1154,8 @@ function applyItalicFallbackForCapture(root) {
                 try {
                     range.setStart(node, offset);
                     range.setEnd(node, offset + ch.length);
-                    const r = range.getBoundingClientRect();
-                    if (r && (r.width || r.height)) top = r.top;
+                    const t = getRangeLineTop(range);
+                    if (t !== null) top = t;
                 } catch (e) {}
             }
             const newLine = !isSpace && lastTop !== null && top !== null && Math.abs(top - lastTop) > 2;
@@ -2290,19 +2312,13 @@ window.__infoBadgeInteracting = false;
     let pointerId = null;
 
     function clientToPercent(clientX, clientY) {
+        // 캔버스 전체 기준 백분율 (미리보기가 축소돼 있어도 비율이라 그대로 맞는다)
         const rect = els.captureArea.getBoundingClientRect();
-        const padT = parseFloat(els.paddingTop?.value) || 0;
-        const padB = parseFloat(els.paddingBottom?.value) || 0;
-        const padL = parseFloat(els.paddingLeft?.value) || 0;
-        const padR = parseFloat(els.paddingRight?.value) || 0;
-        const usableW = Math.max(1, rect.width - padL - padR);
-        const usableH = Math.max(1, rect.height - padT - padB);
-        const xPct = ((clientX - rect.left - padL) / usableW) * 100;
-        const yPct = ((clientY - rect.top - padT) / usableH) * 100;
+        const xPct = ((clientX - rect.left) / Math.max(1, rect.width)) * 100;
+        const yPct = ((clientY - rect.top) / Math.max(1, rect.height)) * 100;
         return {
             x: Math.min(100, Math.max(0, xPct)),
-            // 세로는 화면 맨 아래까지 손가락/마우스를 끌고 가면 100을 넘어 더 내려갈 수 있게 한다.
-            y: Math.min(160, Math.max(0, yPct))
+            y: Math.min(100, Math.max(0, yPct))
         };
     }
 
@@ -2320,13 +2336,9 @@ window.__infoBadgeInteracting = false;
         if (ySlider) ySlider.value = String(Math.round(y));
         const infoContainer = document.getElementById("canvasInfo");
         if (infoContainer) {
-            const padT = parseFloat(els.paddingTop?.value) || 0;
-            const padB = parseFloat(els.paddingBottom?.value) || 0;
-            const padL = parseFloat(els.paddingLeft?.value) || 0;
-            const padR = parseFloat(els.paddingRight?.value) || 0;
-            infoContainer.style.left = `calc(${padL}px + (100% - ${padL + padR}px) * ${x / 100})`;
-            infoContainer.style.top = `calc(${padT}px + (100% - ${padT + padB}px) * ${y / 100})`;
-            infoContainer.style.transform = `translate(-${x}%, -50%)`;
+            infoContainer.style.left = `${x}%`;
+            infoContainer.style.top = `${y}%`;
+            infoContainer.style.transform = `translate(-${x}%, -${y}%)`;
         }
     }
 
