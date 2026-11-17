@@ -49,8 +49,8 @@ if STYLE_ARG: pass
 def sp(c):
     z = '8px' if c == '✚' else '1em'
     return f"<span style=\"font-size:{z};line-height:1\">{c}</span>"
-BAR_STYLE = STYLE_ARG or '1'   # 1 기본 · 2 이중선 · 4 인덱스 탭 · 5 레이스 띠 · 7 양옆 선+알약 · 9 라벨
-ROLE_STYLE = dict(x.split('=') for x in ROLE_ARG.split(',') if x)
+BAR_STYLE = STYLE_ARG or '2'   # 1 기본 · 2 이중선 · 4 인덱스 탭 · 5 레이스 띠 · 7 양옆 선+알약 · 9 라벨
+ROLE_STYLE = dict(x.split('=') for x in (ROLE_ARG or 'place=9,pose=9,msg=D').split(',') if x)
 def bar(t, sym='✚', role=''):
     st = ROLE_STYLE.get(role, BAR_STYLE)
     T = f"font:700 10px/1 {SERIF};letter-spacing:.06em"
