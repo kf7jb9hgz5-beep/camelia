@@ -201,13 +201,19 @@ def build(d):
 
     return (f"<div style=\"max-width:360px;margin:12px auto;background:{DOTS};color:{INK};box-sizing:border-box;"
             f"font-family:{SANS};word-break:keep-all;box-shadow:0 2px 10px rgba(0,0,0,.12);\">"
-            + "<!--@ 위 레이스 -->" + lace(True)
+            + "<details open style=\"margin:0\"><summary style=\"display:block;list-style:none;cursor:pointer;outline:none\">"
+            + "<!--@ 위 레이스 + 제목 (탭하면 여닫힘) -->" + lace(True)
+            + f"<div style=\"text-align:center;padding:{GAP}px 0 2px\">"
+            + f"<div style=\"font:700 10px/1 {SERIF};letter-spacing:.12em;color:{BAR}\">{sp('♝')} {d['npc']} · {d['pc']} {sp('♘')}</div>"
+            + f"<div style=\"font:700 6.5px/1 {SERIF};letter-spacing:.3em;color:#9a98a2;margin-top:5px\">✚ TAP TO OPEN · CLOSE ✚</div></div>"
+            + "</summary>"
             + f"<div style=\"display:flex;gap:{GAP+2}px;padding:{GAP+6}px {GAP+4}px {GAP+2}px\">" + main + side + "</div>"
-            + foot + "<div style=\"margin-top:" + str(GAP) + "px\"></div><!--@ 아래 레이스 -->" + lace(False) + "</div>")
+            + foot + "</details>"
+            + "<div style=\"margin-top:" + str(GAP) + "px\"></div><!--@ 아래 레이스 -->" + lace(False) + "</div>")
 
 def pretty(h):
     toks = re.findall(r'<!--.*?-->|</?[a-z]+[^>]*>|[^<]+', h, flags=re.S)
-    BLOCK = ('div',); outp = []; depth = 0; stack = []
+    BLOCK = ('div','details','summary'); outp = []; depth = 0; stack = []
     def nl(): outp.append('\n'+'  '*depth)
     for t in toks:
         m = re.match(r'<(/?)([a-z]+)', t)
