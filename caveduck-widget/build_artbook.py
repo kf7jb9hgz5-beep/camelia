@@ -91,8 +91,13 @@ def frame(k, h, fs):
 def label(t):
     return f"<div style=\"font:700 7px/1.0 {SERIF};letter-spacing:.16em;color:#77737a;margin-bottom:3px\">꩜ {t}</div>"
 
+def hl(t):
+    # plain white highlighter, no edge line
+    return (f"<span style=\"background:linear-gradient(transparent 38%,rgba(255,255,255,.92) 38%);"
+            f"-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:0 2px\">{t}</span>")
+
 def body(t, size=8.5):
-    return f"<div style=\"font:{size}px/1.27 {SANS};color:#3a373c\">{t}</div>"
+    return f"<div style=\"font:{size}px/1.27 {SANS};color:#3a373c\">{hl(t)}</div>"
 
 def bold(t, size=9.5, color=None):
     return f"<div style=\"font:400 {size}px/1.23 {SANS};color:{color or INK}\">{t}</div>"
@@ -121,7 +126,7 @@ def build(d):
     tail = (f"<div style=\"position:absolute;left:14px;top:-9px;width:0;height:0;border-left:6px solid transparent;"
             f"border-right:6px solid transparent;border-bottom:7px solid {BAR}\"></div>")
     bubble = (f"<div style=\"position:relative;margin-top:{GAP+2}px;border-left:4px solid {BAR};border-top:3px double {BAR};"
-              f"border-bottom:3px double {BAR};background:#e9e8ec;padding:7px 9px 6px\">" + tail + bold(d['msg'], 9, BAR)
+              f"border-bottom:3px double {BAR};background:#e9e8ec;padding:7px 9px 6px\">" + tail + bold(hl(d['msg']), 9, BAR)
               + f"<div style=\"text-align:right;font:italic 8px {SERIF};color:#55515a;margin-top:3px\">— from. {d['npc']}</div></div>")
     msg = ("<!--@ 메시지 j : 말풍선 --><div>" + bar('To. ' + d['pc'], '†', 'msg').replace(f"margin-bottom:{GAP-3}px", "margin-bottom:0") + bubble + "</div>")
     main = (f"<div style=\"flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:{GAP+4}px\">" + pride
@@ -184,15 +189,15 @@ def build(d):
     else:
         content = ("<div>"
             + f"<div style=\"font-size:14.5px;line-height:1;color:{BAR};margin-bottom:6px\">𝄡</div>"
-            + f"<div style=\"font:9px/1.25 {SANS};color:{BAR}\">Which song<br>plays in<br>this scene?</div>"
+            + f"<div style=\"font:9px/1.25 {SANS};color:{BAR}\">{hl('Which song<br>plays in<br>this scene?')}</div>"
             + f"<div style=\"font:800 13.5px/1.14 {SANS};color:{BAR};margin-top:{GAP}px\">{d['song']}</div>"
-            + f"<div style=\"font:8px/1.22 {SANS};color:#77737a;margin-top:4px\">— {d['artist']} —</div></div>"
+            + f"<div style=\"font:8px/1.22 {SANS};color:#77737a;margin-top:4px\">{hl('— ' + d['artist'] + ' —')}</div></div>"
             + emblem()
             + "<div>"
             + f"<div style=\"font:800 11px/1.14 {SANS};color:{BAR}\">{d['date']}</div>"
             + f"<div style=\"font:700 7px/1.0 {SANS};letter-spacing:.2em;color:#77737a;margin-top:4px\">{d['day']}</div>"
             + f"<div style=\"font:800 20px/1.0 {SANS};color:{BAR};margin-top:6px\"><span style=\"font-size:8px;letter-spacing:.1em;margin-right:2px\">{d['ampm']}</span>{d['time']}</div></div>"
-            + f"<div style=\"font:8px/1.32 {SANS};color:{BAR}\">The day they first met<br><b style=\"font:800 10px/1.43 {SANS};color:{BAR}\">{d['met']}</b><br>every day since then<br>is counted on this page.</div>")
+            + f"<div style=\"font:8px/1.32 {SANS};color:{BAR}\">{hl('The day they first met')}<br><b style=\"font:800 10px/1.43 {SANS};color:{BAR}\">{hl(d['met'])}</b><br>{hl('every day since then')}<br>{hl('is counted on this page.')}</div>")
     side = side_open + content + "</div>"
 
     foot = ("<!--@ 쪽번호 : 디데이 n -->"
