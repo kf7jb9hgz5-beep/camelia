@@ -4385,6 +4385,32 @@ function buildSideLayout(row, core, imageBox, items) {
     row.appendChild(cur);
 }
 
+// 요소 안에서 글자·사진이 실제로 그려진 세로 범위 {top, bottom} (화면 좌표). 없으면 null.
+// 글자는 줄마다 글자 영역(형광펜·반전 배경이 칠해지는 높이)으로 재고, 빈 줄·문단 여백은 빼고 잰다.
+function getRenderedContentExtent(root) {
+    let top = Infinity, bottom = -Infinity;
+    const take = (r) => {
+        if (!r || r.width <= 0.5 || r.height <= 0) return;
+        if (r.top < top) top = r.top;
+        if (r.bottom > bottom) bottom = r.bottom;
+    };
+    const range = document.createRange();
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+        const node = walker.currentNode;
+        if (!node.nodeValue || !node.nodeValue.trim()) continue;
+        const parent = node.parentElement;
+        if (!parent || parent.closest(".no-export, .dlg-marker-controls")) continue;
+        range.selectNodeContents(node);
+        Array.from(range.getClientRects()).forEach(take);
+    }
+    root.querySelectorAll("img, svg, canvas, .editor-image-block, .hr-divider, hr, .html-embed-block").forEach((el) => {
+        if (el.closest(".no-export")) return;
+        take(el.getBoundingClientRect());
+    });
+    return top < bottom ? { top, bottom } : null;
+}
+
 function applySideImage() {
     const row = document.getElementById("sideImageRow");
     const box = SIDE_IMAGE_BOX;
@@ -4446,11 +4472,15 @@ function applySideImage() {
             box.style.height = "";
             box.style.marginTop = "";
             const scale = (textContainer.offsetHeight ? textContainer.getBoundingClientRect().height / textContainer.offsetHeight : 1) || 1;
-            const wrapTop = wrapper.getBoundingClientRect().top;
             const boxTop = box.getBoundingClientRect().top;
-            const textH = Math.max(1, wrapper.offsetHeight);
-            box.style.marginTop = `${Math.max(0, (wrapTop - boxTop) / scale)}px`;
-            box.style.height = `${textH}px`;
+            // 본문 "상자"가 아니라 실제로 글자가 그려진 범위(맨 윗줄 글자 윗단 ~ 맨 아랫줄 글자 아랫단)에 맞춘다.
+            // (상자 높이에는 첫 줄 위 줄간격 여백과 마지막 문단 아래 여백까지 들어가서 사진이 위아래로 삐져나왔다)
+            const extent = getRenderedContentExtent(wrapper);
+            const wrapRect = wrapper.getBoundingClientRect();
+            const top = extent ? extent.top : wrapRect.top;
+            const bottom = extent ? extent.bottom : wrapRect.top + wrapper.offsetHeight * scale;
+            box.style.marginTop = `${Math.max(0, (top - boxTop) / scale)}px`;
+            box.style.height = `${Math.max(1, (bottom - top) / scale)}px`;
         } else {
             box.style.alignSelf = "";
             box.style.marginTop = "";
