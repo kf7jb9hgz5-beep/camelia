@@ -95,7 +95,7 @@ def body(t, size=8.5):
     return f"<div style=\"font:{size}px/1.27 {SANS};color:#3a373c\">{t}</div>"
 
 def bold(t, size=9.5, color=None):
-    return f"<div style=\"font:800 {size}px/1.23 {SERIF};color:{color or INK}\">{t}</div>"
+    return f"<div style=\"font:400 {size}px/1.23 {SERIF};color:{color or INK}\">{t}</div>"
 
 def block(*parts, top=GAP):
     return f"<div style=\"margin-top:{top}px\">" + ''.join(parts) + "</div>"
