@@ -4557,6 +4557,7 @@ function applySideImage() {
         syncColorRows();
         if (typeof syncColorSwatches === "function") syncColorSwatches();
     }
+    window.__reloadSideTextControls = loadControls; // 작업 복원 후 설정칸을 다시 채울 때 사용
 
     const onChange = () => { readControls(); syncColorRows(); updateCanvas(); };
     ["sideTextContent", "sideTextSize", "sideTextHeight", "sideTextFontSize", "sideTextColor",
@@ -5589,6 +5590,9 @@ function renderFrameDecoration() {
         selectSticker(item);
         return item;
     }
+    // 작업 복원(자동 저장)에서 스티커를 다시 만들 때 쓴다
+    window.__createSticker = createSticker;
+    window.__selectSticker = selectSticker;
 
     function attachStickerInteractions(item, resizeHandle, delHandle, ratio) {
         // ---- 본체를 누르면 선택 + 드래그로 이동 ----
@@ -6408,6 +6412,225 @@ async function flushHtmlBackground() {
 
     // 다른 초기화(첫 렌더링 등)가 다 끝난 다음에 되살린다
     const run = () => setTimeout(restore, 0);
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
+    else run();
+})();
+
+
+// ==========================================================================
+// 작업 자동 저장 + 다시 열면 "이어서 할까요?" (Chat2Img 참고)
+// - 본문 · 제목/제작자 · 모든 설정 · 배경 사진 · 옆 사진/옆 글자 · 캔버스 스티커를 브라우저(IndexedDB)에 계속 저장한다.
+//   (탭을 닫거나 다음 날 다시 열어도 남아 있다. 사진이 많아도 되도록 localStorage 대신 IndexedDB 사용)
+// - 다음에 열면 복원 안내 창을 띄워 "이어서 하기 / 새로 시작"을 고르게 한다.
+// - 고르기 전에는 저장하지 않는다(빈 화면이 저장돼서 이전 작업을 덮어쓰지 않게).
+// - 같은 탭에서 새로고침된 경우(아이폰 사파리가 몰래 새로고침하는 경우 포함)는 기존 탭 저장으로
+//   이미 되살아나므로 묻지 않고 바로 이어서 저장한다.
+// ==========================================================================
+(function setupWorkAutosave() {
+    const DB_NAME = "camelia-autosave";
+    const STORE = "work";
+    const KEY = "current";
+    const TEXT_IDS = ["titleInput", "creatorInput", "headingTitleInput", "headingSubtitleInput"];
+    let enabled = false;
+    let timer = null;
+    let dbPromise = null;
+
+    function openDB() {
+        if (dbPromise) return dbPromise;
+        dbPromise = new Promise((resolve, reject) => {
+            if (!window.indexedDB) return reject(new Error("IndexedDB 미지원"));
+            const req = indexedDB.open(DB_NAME, 1);
+            req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => { dbPromise = null; reject(req.error); };
+        });
+        return dbPromise;
+    }
+    async function dbDo(mode, fn) {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE, mode);
+            const req = fn(tx.objectStore(STORE));
+            tx.oncomplete = () => resolve(req ? req.result : undefined);
+            tx.onerror = tx.onabort = () => reject(tx.error);
+        });
+    }
+    const readWork = () => dbDo("readonly", (st) => st.get(KEY));
+    const writeWork = (data) => dbDo("readwrite", (st) => st.put(data, KEY));
+    const clearWork = () => dbDo("readwrite", (st) => st.delete(KEY));
+
+    function collect() {
+        const data = { v: 1, savedAt: Date.now() };
+        try { if (typeof getPresetSnapshot === "function") data.settings = getPresetSnapshot(); } catch (e) {}
+        data.texts = {};
+        TEXT_IDS.forEach((id) => { const el = document.getElementById(id); if (el) data.texts[id] = el.value; });
+        if (els.editor) data.editor = els.editor.innerHTML;
+        const bg = document.getElementById("bgImageLayer");
+        data.bgImage = bg ? bg.style.backgroundImage || "" : "";
+        try { data.sideImg = { ...sideImg }; } catch (e) {}
+        try { data.sideTexts = JSON.parse(JSON.stringify(sideTexts)); } catch (e) {}
+        data.stickers = Array.from(document.querySelectorAll("#stickerLayer .sticker-item")).map((item) => {
+            const img = item.querySelector("img");
+            return {
+                src: img ? img.src : "",
+                nw: img ? img.naturalWidth : 0,
+                nh: img ? img.naturalHeight : 0,
+                left: item.style.left, top: item.style.top, width: item.style.width, height: item.style.height,
+            };
+        }).filter((st) => st.src);
+        return data;
+    }
+
+    function hasContent(d) {
+        if (!d) return false;
+        const box = document.createElement("div");
+        box.innerHTML = d.editor || "";
+        if (box.textContent.trim() || box.querySelector("img, .dlg-editor-marker, .editor-image-block")) return true;
+        if (d.texts && Object.values(d.texts).some((v) => v && v.trim())) return true;
+        return !!(d.bgImage || (d.sideImg && d.sideImg.src) || (d.stickers && d.stickers.length));
+    }
+
+    async function saveNow() {
+        if (!enabled) return;
+        clearTimeout(timer);
+        timer = null;
+        try { await writeWork(collect()); } catch (e) { console.warn("작업 자동 저장 실패:", e); }
+    }
+    function schedule() {
+        if (!enabled) return;
+        clearTimeout(timer);
+        timer = setTimeout(saveNow, 700);
+    }
+    window.__saveWorkNow = saveNow;
+
+    // 같은 탭 새로고침용: 탭 저장(sessionStorage)이 담지 못하는 사진류(옆 사진 · 옆 글자 · 스티커 · 배경 사진)만 채운다
+    function restoreExtras(d) {
+        let changed = false;
+        if (d.sideImg && d.sideImg.src && !sideImg.src) { try { Object.assign(sideImg, d.sideImg); changed = true; } catch (e) {} }
+        if (d.sideTexts) {
+            try {
+                Object.keys(d.sideTexts).forEach((dir) => {
+                    if (sideTexts[dir] && !sideTexts[dir].text && d.sideTexts[dir] && d.sideTexts[dir].text) { Object.assign(sideTexts[dir], d.sideTexts[dir]); changed = true; }
+                });
+            } catch (e) {}
+            if (changed && typeof window.__reloadSideTextControls === "function") { try { window.__reloadSideTextControls(); } catch (e) {} }
+        }
+        const bg = document.getElementById("bgImageLayer");
+        if (bg && d.bgImage && !bg.style.backgroundImage) {
+            bg.style.backgroundImage = d.bgImage;
+            if (typeof updateBgImageStyles === "function") { try { updateBgImageStyles(); } catch (e) {} }
+            changed = true;
+        }
+        if (Array.isArray(d.stickers) && d.stickers.length && !document.querySelector("#stickerLayer .sticker-item") && typeof window.__createSticker === "function") {
+            d.stickers.forEach((st) => {
+                const item = window.__createSticker(st.src, st.nw, st.nh);
+                if (item) ["left", "top", "width", "height"].forEach((k) => { if (st[k]) item.style[k] = st[k]; });
+            });
+            if (typeof window.__selectSticker === "function") window.__selectSticker(null);
+            changed = true;
+        }
+        if (changed && typeof updateCanvas === "function") updateCanvas();
+    }
+
+    function restore(d) {
+        if (d.texts) TEXT_IDS.forEach((id) => { const el = document.getElementById(id); if (el && typeof d.texts[id] === "string") el.value = d.texts[id]; });
+        if (els.editor && typeof d.editor === "string") els.editor.innerHTML = d.editor;
+        const bg = document.getElementById("bgImageLayer");
+        if (bg) bg.style.backgroundImage = d.bgImage || "";
+        if (d.sideImg) { try { Object.assign(sideImg, d.sideImg); } catch (e) {} }
+        if (d.sideTexts) {
+            try { Object.keys(d.sideTexts).forEach((dir) => { if (sideTexts[dir]) Object.assign(sideTexts[dir], d.sideTexts[dir]); }); } catch (e) {}
+            if (typeof window.__reloadSideTextControls === "function") { try { window.__reloadSideTextControls(); } catch (e) {} }
+        }
+        if (d.settings && typeof applyPresetSnapshot === "function") {
+            try { applyPresetSnapshot(d.settings); } catch (e) { console.warn("설정 복원 실패:", e); }
+        }
+        try { els.ratioSelect.dispatchEvent(new Event("change", { bubbles: true })); } catch (e) {}
+        if (bg && bg.style.backgroundImage && typeof updateBgImageStyles === "function") { try { updateBgImageStyles(); } catch (e) {} }
+        if (Array.isArray(d.stickers) && d.stickers.length && typeof window.__createSticker === "function") {
+            document.querySelectorAll("#stickerLayer .sticker-item").forEach((el) => el.remove());
+            d.stickers.forEach((st) => {
+                const item = window.__createSticker(st.src, st.nw, st.nh);
+                if (!item) return;
+                ["left", "top", "width", "height"].forEach((k) => { if (st[k]) item.style[k] = st[k]; });
+            });
+            if (typeof window.__selectSticker === "function") window.__selectSticker(null);
+        }
+        if (typeof updateCanvas === "function") updateCanvas();
+        if (typeof refreshHeartNumbers === "function") refreshHeartNumbers();
+        if (typeof pushHistory === "function") { try { pushHistory(true); } catch (e) {} }
+    }
+
+    function formatTime(ts) {
+        try {
+            const d = new Date(ts);
+            const h = d.getHours();
+            return `${d.getMonth() + 1}월 ${d.getDate()}일 ${h < 12 ? "오전" : "오후"} ${h % 12 || 12}:${String(d.getMinutes()).padStart(2, "0")}`;
+        } catch (e) { return ""; }
+    }
+
+    function askRestore(d) {
+        return new Promise((resolve) => {
+            const overlay = document.createElement("div");
+            overlay.className = "restore-modal";
+            overlay.setAttribute("role", "dialog");
+            overlay.setAttribute("aria-modal", "true");
+            overlay.innerHTML =
+                '<div class="restore-card">' +
+                '<div class="restore-heart" aria-hidden="true">♥</div>' +
+                '<div class="restore-title">작업 복원 안내</div>' +
+                '<div class="restore-desc">이전에 편집하던 내용이 남아 있어요.<br>이어서 작업할까요?</div>' +
+                (d.savedAt ? `<div class="restore-time">마지막 저장 · ${formatTime(d.savedAt)}</div>` : "") +
+                '<div class="restore-btns">' +
+                '<button type="button" class="restore-btn restore-new">새로 시작</button>' +
+                '<button type="button" class="restore-btn restore-go">이어서 하기 ♡</button>' +
+                "</div></div>";
+            document.body.appendChild(overlay);
+            const done = (yes) => { overlay.remove(); resolve(yes); };
+            overlay.querySelector(".restore-go").addEventListener("click", () => done(true));
+            overlay.querySelector(".restore-new").addEventListener("click", () => {
+                if (window.confirm("저장해 둔 이전 작업을 지우고 새로 시작할까요?")) done(false);
+            });
+        });
+    }
+
+    async function start() {
+        // 같은 탭 새로고침이면 탭 저장분이 이미 되살아나므로 묻지 않는다
+        let sameTab = false;
+        try { sameTab = !!sessionStorage.getItem("quoteStudioSessionState"); } catch (e) {}
+        let saved = null;
+        try { saved = await readWork(); } catch (e) {}
+        if (sameTab) {
+            if (saved && saved.v === 1) { try { restoreExtras(saved); } catch (e) { console.warn("사진 복원 실패:", e); } }
+        } else {
+            if (saved && saved.v === 1 && hasContent(saved)) {
+                const yes = await askRestore(saved);
+                if (yes) {
+                    try { restore(saved); } catch (e) { console.warn("작업 복원 실패:", e); }
+                    if (typeof showToast === "function") showToast("이전 작업을 불러왔어요");
+                } else {
+                    try { await clearWork(); } catch (e) {}
+                }
+            }
+        }
+        enabled = true;
+        schedule();
+    }
+
+    // 무엇이 바뀌든 결국 캔버스를 다시 그리므로, updateCanvas가 불릴 때마다 (모아서) 저장한다
+    if (typeof window.updateCanvas === "function") {
+        const origUpdate = window.updateCanvas;
+        window.updateCanvas = function () {
+            const r = origUpdate.apply(this, arguments);
+            schedule();
+            return r;
+        };
+    }
+    ["input", "change", "pointerup"].forEach((evt) => document.addEventListener(evt, schedule, true));
+    window.addEventListener("pagehide", () => { saveNow(); });
+    document.addEventListener("visibilitychange", () => { if (document.hidden) saveNow(); });
+
+    const run = () => setTimeout(start, 50); // 탭 저장 복원(setTimeout 0)이 먼저 끝난 다음
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
     else run();
 })();
