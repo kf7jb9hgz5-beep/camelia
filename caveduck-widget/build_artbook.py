@@ -104,7 +104,7 @@ def build(d):
     pride = ("<!--@ Pride 카드 : 카오모지 k · 옷차림 o · 속마음 i --><div>" + bar(d['npc'], '♝', 'npc')
              + f"<div style=\"display:grid;grid-template-columns:72px 1fr;gap:{GAP}px;align-items:start\">"
              + frame(d['kn'], 54, 13) + "<div>" + label('OUTFIT') + body(d['o']) + "</div></div>"
-             + block(label('INNER WHISPER'), bold('“ ' + d['inner'] + ' ”', color=BAR)) + "</div>")
+             + block(label('INNER WHISPER'), bold('<span style="background:linear-gradient(transparent 38%,rgba(255,255,255,.92) 38%,rgba(255,255,255,.92) 90%,rgba(85,83,91,.10) 90%);-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:0 2px">“ ' + d['inner'] + ' ”</span>', color=BAR)) + "</div>")
     # Banshee / Place / Pose share one grid so the kaomoji frame ends level with the Pose bar
     nomb = lambda h: h.replace(f"margin-bottom:{GAP-3}px", "margin-bottom:0")
     kframe = (f"<div style=\"min-height:38px;height:100%;box-sizing:border-box;border:3px double {INK};background:{KDOTS};display:flex;"
@@ -200,7 +200,7 @@ def build(d):
             f"padding:4px 12px 3px;font:800 9px/1.0 {SERIF};color:{INK}\">† {d['dday']} †</span></div>")
 
     return (f"<div style=\"max-width:360px;margin:12px auto;background:{DOTS};color:{INK};box-sizing:border-box;"
-            f"font-family:{SANS};word-break:keep-all;box-shadow:0 2px 10px rgba(0,0,0,.12);\">"
+            f"font-family:{SANS};word-break:normal;box-shadow:0 2px 10px rgba(0,0,0,.12);\">"
             + "<details open style=\"margin:0\"><summary style=\"display:block;list-style:none;cursor:pointer;outline:none\">"
             + "<!--@ 위 레이스 + 제목 (탭하면 여닫힘) -->" + lace(True)
             + f"<div style=\"text-align:center;padding:{GAP}px 0 2px\">"
