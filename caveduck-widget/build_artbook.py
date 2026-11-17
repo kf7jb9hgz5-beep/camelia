@@ -7,7 +7,7 @@ SIDE_STYLE = sys.argv[4] if len(sys.argv) > 4 else '0'
 
 INK = '#1f1d20'; PAPER = '#faf8f2'
 SERIF = "'Nanum Myeongjo','Noto Serif KR','Times New Roman',serif"
-SANS = "'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif"
+SANS = "'Pretendard','Pretendard Variable','Apple SD Gothic Neo','Noto Sans KR',sans-serif"
 
 def f(x): return ('%.2f' % x).rstrip('0').rstrip('.')
 
@@ -95,7 +95,7 @@ def body(t, size=8.5):
     return f"<div style=\"font:{size}px/1.27 {SANS};color:#3a373c\">{t}</div>"
 
 def bold(t, size=9.5, color=None):
-    return f"<div style=\"font:400 {size}px/1.23 {SERIF};color:{color or INK}\">{t}</div>"
+    return f"<div style=\"font:400 {size}px/1.23 {SANS};color:{color or INK}\">{t}</div>"
 
 def block(*parts, top=GAP):
     return f"<div style=\"margin-top:{top}px\">" + ''.join(parts) + "</div>"
