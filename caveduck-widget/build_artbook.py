@@ -41,6 +41,7 @@ def lace(top=True):
     parts = [eyelets, scallop, picots] if top else [picots, scallop, eyelets]
     return "<div>" + ''.join(parts) + "</div>"
 
+KDOTS = "radial-gradient(circle,#c2c1c8 0 1.4px,transparent 1.8px) 0 0/8px 8px,radial-gradient(circle,#c2c1c8 0 1.4px,transparent 1.8px) 4px 4px/8px 8px,#fff"
 DOTS = "radial-gradient(circle,#d9d9de 0 .9px,transparent 1.3px) 0 0/9px 9px,#fff"
 GAP = 10   # one spacing unit used everywhere
 
@@ -83,7 +84,7 @@ def bar(t, sym='✚', role=''):
     return f"<div style=\"{C};height:20px;padding:0 6px;background:{BAR};color:#fff;{T};{mb}\">{txt}</div>"
 
 def frame(k, h, fs):
-    return (f"<div style=\"height:{h}px;box-sizing:border-box;border:3px double {INK};background:#fff;display:flex;align-items:center;"
+    return (f"<div style=\"height:{h}px;box-sizing:border-box;border:3px double {INK};background:{KDOTS};display:flex;align-items:center;"
             f"justify-content:center;font-size:{fs}px;line-height:1;white-space:nowrap;overflow:hidden\">{k}</div>")
 
 def label(t):
@@ -105,7 +106,7 @@ def build(d):
              + block(label('INNER WHISPER'), bold('“ ' + d['inner'] + ' ”')) + "</div>")
     # Banshee / Place / Pose share one grid so the kaomoji frame ends level with the Pose bar
     nomb = lambda h: h.replace(f"margin-bottom:{GAP-3}px", "margin-bottom:0")
-    kframe = (f"<div style=\"min-height:38px;height:100%;box-sizing:border-box;border:3px double {INK};background:#fff;display:flex;"
+    kframe = (f"<div style=\"min-height:38px;height:100%;box-sizing:border-box;border:3px double {INK};background:{KDOTS};display:flex;"
               f"align-items:center;justify-content:center;font-size:11px;line-height:1;white-space:nowrap;overflow:hidden\">{d['kp']}</div>")
     duo = (f"<!--@ Banshee 카오모지 l · 옷차림 p / 장소 g · 자세 h -->"
            f"<div style=\"display:grid;grid-template-columns:1fr 1fr;column-gap:{GAP}px;row-gap:{GAP-3}px\">"
