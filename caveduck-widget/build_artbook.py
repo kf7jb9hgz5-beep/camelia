@@ -47,7 +47,7 @@ def sp(c):
     z = '8px' if c == '✚' else '1em'
     return f"<span style=\"font-size:{z};line-height:1\">{c}</span>"
 def bar(t, sym='✚'):
-    return (f"<div style=\"background:{BAR};color:#fff;text-align:center;font:700 10.5px/1 {SERIF};letter-spacing:.06em;"
+    return (f"<div style=\"background:{BAR};color:#fff;text-align:center;font:700 10px/1 {SERIF};letter-spacing:.06em;"
             f"height:20px;padding:0 6px;display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:{GAP-3}px\">{sp(sym)}<span>{t}</span>{sp(sym)}</div>")
 
 def frame(k, h, fs):
@@ -55,13 +55,13 @@ def frame(k, h, fs):
             f"justify-content:center;font-size:{fs}px;line-height:1;white-space:nowrap;overflow:hidden\">{k}</div>")
 
 def label(t):
-    return f"<div style=\"font:700 7.5px/1 {SERIF};letter-spacing:.16em;color:#77737a;margin-bottom:3px\">꩜ {t}</div>"
+    return f"<div style=\"font:700 7px/1.0 {SERIF};letter-spacing:.16em;color:#77737a;margin-bottom:3px\">꩜ {t}</div>"
 
-def body(t, size=9.5):
-    return f"<div style=\"font:{size}px/1.38 {SANS};color:#3a373c\">{t}</div>"
+def body(t, size=8.5):
+    return f"<div style=\"font:{size}px/1.27 {SANS};color:#3a373c\">{t}</div>"
 
-def bold(t, size=10.5):
-    return f"<div style=\"font:800 {size}px/1.32 {SERIF};color:{INK}\">{t}</div>"
+def bold(t, size=9.5):
+    return f"<div style=\"font:800 {size}px/1.23 {SERIF};color:{INK}\">{t}</div>"
 
 def block(*parts, top=GAP):
     return f"<div style=\"margin-top:{top}px\">" + ''.join(parts) + "</div>"
@@ -69,38 +69,38 @@ def block(*parts, top=GAP):
 def build(d):
     pride = ("<!--@ Pride 카드 : 카오모지 k · 옷차림 o · 속마음 i --><div>" + bar(d['npc'], '♝')
              + f"<div style=\"display:grid;grid-template-columns:72px 1fr;gap:{GAP}px;align-items:start\">"
-             + frame(d['kn'], 58, 14) + "<div>" + label('OUTFIT') + body(d['o']) + "</div></div>"
+             + frame(d['kn'], 54, 13) + "<div>" + label('OUTFIT') + body(d['o']) + "</div></div>"
              + block(label('INNER WHISPER'), bold('“ ' + d['inner'] + ' ”')) + "</div>")
-    banshee = ("<!--@ Banshee 카드 : 카오모지 l · 옷차림 p --><div>" + bar(d['pc'], '♘') + frame(d['kp'], 40, 12)
-               + block(label('OUTFIT'), body(d['p'], 9)) + "</div>")
-    place = ("<!--@ 장소 g / 자세 h --><div>" + bar('Place') + body(d['place'], 9)
-             + f"<div style=\"margin-top:{GAP}px\">" + bar('Pose') + body(d['pose'], 9) + "</div></div>")
-    msg = ("<!--@ 메시지 j --><div>" + bar('To. ' + d['pc'], '†') + bold(d['msg'], 10)
-           + f"<div style=\"text-align:right;font:italic 9px {SERIF};color:#55515a;margin-top:4px\">— from. {d['npc']}</div></div>")
+    banshee = ("<!--@ Banshee 카드 : 카오모지 l · 옷차림 p --><div>" + bar(d['pc'], '♘') + frame(d['kp'], 38, 11)
+               + block(label('OUTFIT'), body(d['p'], 8)) + "</div>")
+    place = ("<!--@ 장소 g / 자세 h --><div>" + bar('Place') + body(d['place'], 8)
+             + f"<div style=\"margin-top:{GAP}px\">" + bar('Pose') + body(d['pose'], 8) + "</div></div>")
+    msg = ("<!--@ 메시지 j --><div>" + bar('To. ' + d['pc'], '†') + bold(d['msg'], 9)
+           + f"<div style=\"text-align:right;font:italic 8px {SERIF};color:#55515a;margin-top:4px\">— from. {d['npc']}</div></div>")
     main = (f"<div style=\"flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:{GAP+4}px\">" + pride
             + f"<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:{GAP}px\">" + banshee + place + "</div>" + msg + "</div>")
 
-    corner = lambda pos: (f"<span style=\"position:absolute;{pos};font-size:12px;line-height:1;color:{BAR};background:#fff;padding:0 1px;font-size:10px\">✚</span>")
+    corner = lambda pos: (f"<span style=\"position:absolute;{pos};font-size:11px;line-height:1;color:{BAR};background:#fff;padding:0 1px;font-size:9px\">✚</span>")
     side = ("<!--@ 오른쪽 점선 칸 : 노래 a · 가수 b · 날짜 c · 요일 d · AM/PM e · 시각 f · 처음 만난 날 m -->"
             f"<div style=\"flex:0 0 36%;position:relative;border:2px dotted {BAR};padding:{GAP+6}px {GAP-2}px;box-sizing:border-box;"
             f"display:flex;flex-direction:column;justify-content:space-between;align-items:center;text-align:center;gap:{GAP+4}px\">"
             + corner('top:-8px;left:-7px') + corner('top:-8px;right:-7px') + corner('bottom:-8px;left:-7px') + corner('bottom:-8px;right:-7px')
             + "<div>"
-            + f"<div style=\"font-size:16px;line-height:1;color:{BAR};margin-bottom:6px\">𝄡</div>"
-            + f"<div style=\"font:10px/1.35 {SANS};color:{BAR}\">Which song<br>plays in<br>this scene?</div>"
-            + f"<div style=\"font:800 15px/1.2 {SERIF};color:{BAR};margin-top:{GAP}px\">{d['song']}</div>"
-            + f"<div style=\"font:9px/1.3 {SANS};color:#77737a;margin-top:4px\">— {d['artist']} —</div></div>"
+            + f"<div style=\"font-size:14.5px;line-height:1;color:{BAR};margin-bottom:6px\">𝄡</div>"
+            + f"<div style=\"font:9px/1.25 {SANS};color:{BAR}\">Which song<br>plays in<br>this scene?</div>"
+            + f"<div style=\"font:800 13.5px/1.14 {SERIF};color:{BAR};margin-top:{GAP}px\">{d['song']}</div>"
+            + f"<div style=\"font:8px/1.22 {SANS};color:#77737a;margin-top:4px\">— {d['artist']} —</div></div>"
             + emblem()
             + "<div>"
-            + f"<div style=\"font:800 12px/1.2 {SERIF};color:{BAR}\">{d['date']}</div>"
-            + f"<div style=\"font:700 8px/1 {SERIF};letter-spacing:.2em;color:#77737a;margin-top:4px\">{d['day']}</div>"
-            + f"<div style=\"font:800 22px/1 {SERIF};color:{BAR};margin-top:6px\"><span style=\"font-size:9px;letter-spacing:.1em;margin-right:2px\">{d['ampm']}</span>{d['time']}</div></div>"
-            + f"<div style=\"font:9px/1.45 {SANS};color:{BAR}\">The day they first met<br><b style=\"font:800 11px/1.6 {SERIF};color:{BAR}\">{d['met']}</b><br>every day since then<br>is counted on this page.</div>"
+            + f"<div style=\"font:800 11px/1.14 {SERIF};color:{BAR}\">{d['date']}</div>"
+            + f"<div style=\"font:700 7px/1.0 {SERIF};letter-spacing:.2em;color:#77737a;margin-top:4px\">{d['day']}</div>"
+            + f"<div style=\"font:800 20px/1.0 {SERIF};color:{BAR};margin-top:6px\"><span style=\"font-size:8px;letter-spacing:.1em;margin-right:2px\">{d['ampm']}</span>{d['time']}</div></div>"
+            + f"<div style=\"font:8px/1.32 {SANS};color:{BAR}\">The day they first met<br><b style=\"font:800 10px/1.43 {SERIF};color:{BAR}\">{d['met']}</b><br>every day since then<br>is counted on this page.</div>"
             + "</div>")
 
     foot = ("<!--@ 쪽번호 : 디데이 n -->"
             f"<div style=\"text-align:center;margin-top:{GAP}px\"><span style=\"display:inline-block;background:#fff;border:1.5px solid {INK};border-radius:12px;"
-            f"padding:4px 12px 3px;font:800 10px/1 {SERIF};color:{INK}\">† {d['dday']} †</span></div>")
+            f"padding:4px 12px 3px;font:800 9px/1.0 {SERIF};color:{INK}\">† {d['dday']} †</span></div>")
 
     return (f"<div style=\"max-width:360px;margin:12px auto;background:{DOTS};color:{INK};box-sizing:border-box;"
             f"font-family:{SANS};word-break:keep-all;box-shadow:0 2px 10px rgba(0,0,0,.12);\">"
