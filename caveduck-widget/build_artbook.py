@@ -3,6 +3,7 @@ import re, sys
 out = sys.argv[1] if len(sys.argv) > 1 else '.'
 STYLE_ARG = sys.argv[2] if len(sys.argv) > 2 else None
 ROLE_ARG = sys.argv[3] if len(sys.argv) > 3 else ''
+SIDE_STYLE = sys.argv[4] if len(sys.argv) > 4 else '0'
 
 INK = '#1f1d20'; PAPER = '#faf8f2'
 SERIF = "'Nanum Myeongjo','Noto Serif KR','Times New Roman',serif"
@@ -41,7 +42,7 @@ def lace(top=True):
     parts = [eyelets, scallop, picots] if top else [picots, scallop, eyelets]
     return "<div>" + ''.join(parts) + "</div>"
 
-KDOTS = "radial-gradient(circle,#d0cfd5 0 1.4px,transparent 1.8px) 0 0/8px 8px,radial-gradient(circle,#d0cfd5 0 1.4px,transparent 1.8px) 4px 4px/8px 8px,#fff"
+KDOTS = "radial-gradient(circle,#e6e5ea 0 1.4px,transparent 1.8px) 0 0/8px 8px,radial-gradient(circle,#e6e5ea 0 1.4px,transparent 1.8px) 4px 4px/8px 8px,#fff"
 DOTS = "radial-gradient(circle,#d9d9de 0 .9px,transparent 1.3px) 0 0/9px 9px,#fff"
 GAP = 10   # one spacing unit used everywhere
 
@@ -127,11 +128,61 @@ def build(d):
             + duo + msg + "</div>")
 
     corner = lambda pos: (f"<span style=\"position:absolute;{pos};font-size:11px;line-height:1;color:{BAR};background:#fff;padding:0 1px;font-size:9px\">✚</span>")
-    side = ("<!--@ 오른쪽 점선 칸 : 노래 a · 가수 b · 날짜 c · 요일 d · AM/PM e · 시각 f · 처음 만난 날 m -->"
+    side_open = ("<!--@ 오른쪽 점선 칸 : 노래 a · 가수 b · 날짜 c · 요일 d · AM/PM e · 시각 f · 처음 만난 날 m -->"
             f"<div style=\"flex:0 0 36%;position:relative;border:2px dotted {BAR};padding:{GAP+6}px {GAP-2}px;box-sizing:border-box;"
             f"display:flex;flex-direction:column;justify-content:space-between;align-items:center;text-align:center;gap:{GAP+4}px\">"
             + corner('top:-8px;left:-7px') + corner('top:-8px;right:-7px') + corner('bottom:-8px;left:-7px') + corner('bottom:-8px;right:-7px')
-            + "<div>"
+            )
+    G2 = '#77737a'
+    dbl = f"border-top:3px double {BAR};border-bottom:3px double {BAR}"
+    if SIDE_STYLE == '1':   # 트랙리스트
+        content = (f"<div style=\"width:100%\"><div style=\"font:700 7px/1 {SERIF};letter-spacing:.25em;color:{G2}\">𝄡 TRACK 01</div>"
+            f"<div style=\"font:800 13.5px/1.14 {SERIF};color:{BAR};margin-top:8px\">{d['song']}</div>"
+            f"<div style=\"font:8px/1.22 {SANS};color:{G2};margin-top:4px\">{d['artist']}</div>"
+            f"<div style=\"display:flex;align-items:center;gap:4px;margin-top:9px;font-size:7px;color:{BAR}\"><span>◁◁</span>"
+            f"<div style=\"flex:1;height:2px;background:linear-gradient(90deg,{BAR} 0 45%,#d9d8de 45%);position:relative\">"
+            f"<span style=\"position:absolute;left:45%;top:-4px;margin-left:-4px;font-size:9px;line-height:1\">✚</span></div><span>▷▷</span></div></div>"
+            + emblem()
+            + f"<div style=\"width:100%;{dbl};padding:7px 0\"><div style=\"font:700 7px/1 {SERIF};letter-spacing:.2em;color:{G2}\">{d['day']} · {d['date']}</div>"
+            f"<div style=\"font:800 20px/1 {SERIF};color:{BAR};margin-top:6px\"><span style=\"font-size:8px;letter-spacing:.1em;margin-right:2px\">{d['ampm']}</span>{d['time']}</div></div>"
+            f"<div><div style=\"font:700 7px/1 {SERIF};letter-spacing:.25em;color:{G2}\">† SINCE †</div>"
+            f"<div style=\"font:800 11px/1 {SERIF};color:{BAR};margin-top:5px\">{d['met']}</div></div>")
+    elif SIDE_STYLE == '2':   # 달력 한 장
+        content = (f"<div style=\"width:100%;border:1.5px solid {BAR};background:#fff\">"
+            f"<div style=\"background:{BAR};color:#fff;font:700 8px/1 {SERIF};letter-spacing:.3em;padding:5px 0 4px\">{d['day']}</div>"
+            f"<div style=\"height:4px;background:radial-gradient(circle,{BAR} 0 1.2px,transparent 1.6px) 0 0/8px 4px repeat-x;margin-top:3px\"></div>"
+            f"<div style=\"font:800 13px/1.1 {SERIF};color:{BAR};padding:8px 2px 4px\">{d['date']}</div>"
+            f"<div style=\"font:800 20px/1 {SERIF};color:{BAR};padding:2px 0 9px\"><span style=\"font-size:8px;letter-spacing:.1em;margin-right:2px\">{d['ampm']}</span>{d['time']}</div></div>"
+            + emblem()
+            + f"<div style=\"width:100%\"><div style=\"font:700 7px/1 {SERIF};letter-spacing:.25em;color:{G2}\">𝄡 NOW PLAYING</div>"
+            f"<div style=\"font:800 13.5px/1.14 {SERIF};color:{BAR};margin-top:7px\">{d['song']}</div>"
+            f"<div style=\"font:8px/1.22 {SANS};color:{G2};margin-top:4px\">— {d['artist']} —</div></div>"
+            f"<div style=\"font:8px/1.32 {SANS};color:{BAR}\">first met on<br><b style=\"font:800 10px/1.43 {SERIF}\">{d['met']}</b></div>")
+    elif SIDE_STYLE == '3':   # 장부(레저)
+        row = lambda k, v, big=False: (f"<div style=\"display:flex;justify-content:space-between;align-items:baseline;gap:6px;padding:6px 0;border-bottom:1px dotted {BAR}\">"
+            f"<span style=\"flex:none;font:700 7px/1 {SERIF};letter-spacing:.18em;color:{G2}\">{k}</span>"
+            f"<span style=\"font:800 {'12px' if big else '9.5px'}/1.2 {SERIF};color:{BAR};text-align:right\">{v}</span></div>")
+        content = (emblem()
+            + f"<div style=\"width:100%;border-top:3px double {BAR}\">"
+            + row('SONG', d['song']) + row('BY', f"<span style=\"font:8px/1.2 {SANS}\">{d['artist']}</span>")
+            + row('DATE', d['date']) + row('DAY', d['day']) + row('TIME', f"<span style=\"font-size:7px;margin-right:2px\">{d['ampm']}</span>{d['time']}", True)
+            + row('SINCE', d['met']) + "</div>"
+            + f"<div style=\"font:italic 8px/1.3 {SERIF};color:{G2}\">every day since then<br>is counted on this page.</div>")
+    elif SIDE_STYLE == '4':   # 티켓
+        notch = lambda y: f"radial-gradient(circle at 0 {y},transparent 0 5px,#fff 5.5px) left/51% 100% no-repeat,radial-gradient(circle at 100% {y},transparent 0 5px,#fff 5.5px) right/51% 100% no-repeat"
+        content = (f"<div style=\"width:100%;box-sizing:border-box;background:{notch('50%')};border-top:1.5px solid {BAR};border-bottom:1.5px solid {BAR};padding:9px 6px\">"
+            f"<div style=\"font:700 7px/1 {SERIF};letter-spacing:.25em;color:{G2}\">𝄡 ADMIT ONE</div>"
+            f"<div style=\"font:800 13.5px/1.14 {SERIF};color:{BAR};margin-top:7px\">{d['song']}</div>"
+            f"<div style=\"font:8px/1.22 {SANS};color:{G2};margin-top:4px\">{d['artist']}</div>"
+            f"<div style=\"border-top:1.5px dashed {BAR};margin:9px -6px 7px\"></div>"
+            f"<div style=\"font:700 7px/1 {SERIF};letter-spacing:.2em;color:{G2}\">{d['date']} · {d['day']}</div>"
+            f"<div style=\"font:800 18px/1 {SERIF};color:{BAR};margin-top:5px\"><span style=\"font-size:7.5px;letter-spacing:.1em;margin-right:2px\">{d['ampm']}</span>{d['time']}</div></div>"
+            + emblem()
+            + f"<div style=\"width:100%;box-sizing:border-box;border-left:4px solid {BAR};{dbl};background:#e9e8ec;padding:6px 4px\">"
+            f"<div style=\"font:700 7px/1 {SERIF};letter-spacing:.2em;color:{G2}\">FIRST MET</div>"
+            f"<div style=\"font:800 10.5px/1 {SERIF};color:{BAR};margin-top:4px\">{d['met']}</div></div>")
+    else:
+        content = ("<div>"
             + f"<div style=\"font-size:14.5px;line-height:1;color:{BAR};margin-bottom:6px\">𝄡</div>"
             + f"<div style=\"font:9px/1.25 {SANS};color:{BAR}\">Which song<br>plays in<br>this scene?</div>"
             + f"<div style=\"font:800 13.5px/1.14 {SERIF};color:{BAR};margin-top:{GAP}px\">{d['song']}</div>"
@@ -141,8 +192,8 @@ def build(d):
             + f"<div style=\"font:800 11px/1.14 {SERIF};color:{BAR}\">{d['date']}</div>"
             + f"<div style=\"font:700 7px/1.0 {SERIF};letter-spacing:.2em;color:#77737a;margin-top:4px\">{d['day']}</div>"
             + f"<div style=\"font:800 20px/1.0 {SERIF};color:{BAR};margin-top:6px\"><span style=\"font-size:8px;letter-spacing:.1em;margin-right:2px\">{d['ampm']}</span>{d['time']}</div></div>"
-            + f"<div style=\"font:8px/1.32 {SANS};color:{BAR}\">The day they first met<br><b style=\"font:800 10px/1.43 {SERIF};color:{BAR}\">{d['met']}</b><br>every day since then<br>is counted on this page.</div>"
-            + "</div>")
+            + f"<div style=\"font:8px/1.32 {SANS};color:{BAR}\">The day they first met<br><b style=\"font:800 10px/1.43 {SERIF};color:{BAR}\">{d['met']}</b><br>every day since then<br>is counted on this page.</div>")
+    side = side_open + content + "</div>"
 
     foot = ("<!--@ 쪽번호 : 디데이 n -->"
             f"<div style=\"text-align:center;margin-top:{GAP}px\"><span style=\"display:inline-block;background:#fff;border:1.5px solid {INK};border-radius:12px;"
