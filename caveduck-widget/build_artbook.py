@@ -185,14 +185,14 @@ def build(d):
         content = ("<div>"
             + f"<div style=\"font-size:14.5px;line-height:1;color:{BAR};margin-bottom:6px\">𝄡</div>"
             + f"<div style=\"font:9px/1.25 {SANS};color:{BAR}\">Which song<br>plays in<br>this scene?</div>"
-            + f"<div style=\"font:800 13.5px/1.14 {SERIF};color:{BAR};margin-top:{GAP}px\">{d['song']}</div>"
+            + f"<div style=\"font:800 13.5px/1.14 {SANS};color:{BAR};margin-top:{GAP}px\">{d['song']}</div>"
             + f"<div style=\"font:8px/1.22 {SANS};color:#77737a;margin-top:4px\">— {d['artist']} —</div></div>"
             + emblem()
             + "<div>"
-            + f"<div style=\"font:800 11px/1.14 {SERIF};color:{BAR}\">{d['date']}</div>"
-            + f"<div style=\"font:700 7px/1.0 {SERIF};letter-spacing:.2em;color:#77737a;margin-top:4px\">{d['day']}</div>"
-            + f"<div style=\"font:800 20px/1.0 {SERIF};color:{BAR};margin-top:6px\"><span style=\"font-size:8px;letter-spacing:.1em;margin-right:2px\">{d['ampm']}</span>{d['time']}</div></div>"
-            + f"<div style=\"font:8px/1.32 {SANS};color:{BAR}\">The day they first met<br><b style=\"font:800 10px/1.43 {SERIF};color:{BAR}\">{d['met']}</b><br>every day since then<br>is counted on this page.</div>")
+            + f"<div style=\"font:800 11px/1.14 {SANS};color:{BAR}\">{d['date']}</div>"
+            + f"<div style=\"font:700 7px/1.0 {SANS};letter-spacing:.2em;color:#77737a;margin-top:4px\">{d['day']}</div>"
+            + f"<div style=\"font:800 20px/1.0 {SANS};color:{BAR};margin-top:6px\"><span style=\"font-size:8px;letter-spacing:.1em;margin-right:2px\">{d['ampm']}</span>{d['time']}</div></div>"
+            + f"<div style=\"font:8px/1.32 {SANS};color:{BAR}\">The day they first met<br><b style=\"font:800 10px/1.43 {SANS};color:{BAR}\">{d['met']}</b><br>every day since then<br>is counted on this page.</div>")
     side = side_open + content + "</div>"
 
     foot = ("<!--@ 쪽번호 : 디데이 n -->"
