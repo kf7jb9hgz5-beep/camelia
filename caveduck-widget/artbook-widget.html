@@ -22,24 +22,31 @@
           <div style="font:800 9.5px/1.23 'Nanum Myeongjo','Noto Serif KR','Times New Roman',serif;color:#1f1d20">“ {{i}} ”</div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <!-- Banshee 카드 : 카오모지 l · 옷차림 p -->
-        <div>
-          <div style="display:flex;align-items:center;justify-content:center;gap:5px;height:18px;border-top:3px double #55535b;border-bottom:3px double #55535b;color:#55535b;font:700 10px/1 'Nanum Myeongjo','Noto Serif KR','Times New Roman',serif;letter-spacing:.06em;margin-bottom:7px"><span style="font-size:1em;line-height:1">♘</span><span>Banshee</span><span style="font-size:1em;line-height:1">♘</span></div>
-          <div style="height:38px;box-sizing:border-box;border:3px double #1f1d20;background:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;white-space:nowrap;overflow:hidden">{{l}}</div>
-          <div style="margin-top:10px">
-            <div style="font:700 7px/1.0 'Nanum Myeongjo','Noto Serif KR','Times New Roman',serif;letter-spacing:.16em;color:#77737a;margin-bottom:3px">꩜ OUTFIT</div>
-            <div style="font:8px/1.27 'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:#3a373c">{{p}}</div>
+      <!-- Banshee 카오모지 l · 옷차림 p / 장소 g · 자세 h -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:10px;row-gap:7px">
+        <div style="display:flex;align-items:flex-end">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;justify-content:center;gap:5px;height:18px;border-top:3px double #55535b;border-bottom:3px double #55535b;color:#55535b;font:700 10px/1 'Nanum Myeongjo','Noto Serif KR','Times New Roman',serif;letter-spacing:.06em;margin-bottom:0"><span style="font-size:1em;line-height:1">♘</span><span>Banshee</span><span style="font-size:1em;line-height:1">♘</span></div>
           </div>
         </div>
-        <!-- 장소 g / 자세 h -->
+        <div style="display:flex;align-items:flex-end">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:5px;height:20px;border-left:4px solid #55535b;background:#e9e8ec;padding-left:7px;color:#55535b;font:700 10px/1 'Nanum Myeongjo','Noto Serif KR','Times New Roman',serif;letter-spacing:.06em;margin-bottom:0"><span style="font-size:8px;line-height:1">✚</span><span>Place</span><span style="font-size:8px;line-height:1">✚</span></div>
+          </div>
+        </div>
+        <div style="min-height:38px;height:100%;box-sizing:border-box;border:3px double #1f1d20;background:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;white-space:nowrap;overflow:hidden">{{l}}</div>
         <div>
-          <div style="display:flex;align-items:center;gap:5px;height:20px;border-left:4px solid #55535b;background:#e9e8ec;padding-left:7px;color:#55535b;font:700 10px/1 'Nanum Myeongjo','Noto Serif KR','Times New Roman',serif;letter-spacing:.06em;margin-bottom:7px"><span style="font-size:8px;line-height:1">✚</span><span>Place</span><span style="font-size:8px;line-height:1">✚</span></div>
           <div style="font:8px/1.27 'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:#3a373c">{{g}}</div>
           <div style="margin-top:10px">
-            <div style="display:flex;align-items:center;gap:5px;height:20px;border-left:4px solid #55535b;background:#e9e8ec;padding-left:7px;color:#55535b;font:700 10px/1 'Nanum Myeongjo','Noto Serif KR','Times New Roman',serif;letter-spacing:.06em;margin-bottom:7px"><span style="font-size:8px;line-height:1">✚</span><span>Pose</span><span style="font-size:8px;line-height:1">✚</span></div>
-            <div style="font:8px/1.27 'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:#3a373c">{{h}}</div>
+            <div style="display:flex;align-items:center;gap:5px;height:20px;border-left:4px solid #55535b;background:#e9e8ec;padding-left:7px;color:#55535b;font:700 10px/1 'Nanum Myeongjo','Noto Serif KR','Times New Roman',serif;letter-spacing:.06em;margin-bottom:0"><span style="font-size:8px;line-height:1">✚</span><span>Pose</span><span style="font-size:8px;line-height:1">✚</span></div>
           </div>
+        </div>
+        <div style="margin-top:3px">
+          <div style="font:700 7px/1.0 'Nanum Myeongjo','Noto Serif KR','Times New Roman',serif;letter-spacing:.16em;color:#77737a;margin-bottom:3px">꩜ OUTFIT</div>
+          <div style="font:8px/1.27 'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:#3a373c">{{p}}</div>
+        </div>
+        <div>
+          <div style="font:8px/1.27 'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:#3a373c">{{h}}</div>
         </div>
       </div>
       <!-- 메시지 j : 말풍선 -->

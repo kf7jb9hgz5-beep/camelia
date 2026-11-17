@@ -103,10 +103,19 @@ def build(d):
              + f"<div style=\"display:grid;grid-template-columns:72px 1fr;gap:{GAP}px;align-items:start\">"
              + frame(d['kn'], 54, 13) + "<div>" + label('OUTFIT') + body(d['o']) + "</div></div>"
              + block(label('INNER WHISPER'), bold('“ ' + d['inner'] + ' ”')) + "</div>")
-    banshee = ("<!--@ Banshee 카드 : 카오모지 l · 옷차림 p --><div>" + bar(d['pc'], '♘', 'pc') + frame(d['kp'], 38, 11)
-               + block(label('OUTFIT'), body(d['p'], 8)) + "</div>")
-    place = ("<!--@ 장소 g / 자세 h --><div>" + bar('Place', role='place') + body(d['place'], 8)
-             + f"<div style=\"margin-top:{GAP}px\">" + bar('Pose', role='pose') + body(d['pose'], 8) + "</div></div>")
+    # Banshee / Place / Pose share one grid so the kaomoji frame ends level with the Pose bar
+    nomb = lambda h: h.replace(f"margin-bottom:{GAP-3}px", "margin-bottom:0")
+    kframe = (f"<div style=\"min-height:38px;height:100%;box-sizing:border-box;border:3px double {INK};background:#fff;display:flex;"
+              f"align-items:center;justify-content:center;font-size:11px;line-height:1;white-space:nowrap;overflow:hidden\">{d['kp']}</div>")
+    duo = (f"<!--@ Banshee 카오모지 l · 옷차림 p / 장소 g · 자세 h -->"
+           f"<div style=\"display:grid;grid-template-columns:1fr 1fr;column-gap:{GAP}px;row-gap:{GAP-3}px\">"
+           + "<div style=\"display:flex;align-items:flex-end\"><div style=\"flex:1\">" + nomb(bar(d['pc'], '♘', 'pc')) + "</div></div>"
+           + "<div style=\"display:flex;align-items:flex-end\"><div style=\"flex:1\">" + nomb(bar('Place', role='place')) + "</div></div>"
+           + kframe
+           + "<div>" + body(d['place'], 8) + f"<div style=\"margin-top:{GAP}px\">" + nomb(bar('Pose', role='pose')) + "</div></div>"
+           + f"<div style=\"margin-top:3px\">" + label('OUTFIT') + body(d['p'], 8) + "</div>"
+           + "<div>" + body(d['pose'], 8) + "</div>"
+           + "</div>")
     tail = (f"<div style=\"position:absolute;left:14px;top:-9px;width:0;height:0;border-left:6px solid transparent;"
             f"border-right:6px solid transparent;border-bottom:7px solid {BAR}\"></div>")
     bubble = (f"<div style=\"position:relative;margin-top:{GAP+2}px;border-left:4px solid {BAR};border-top:3px double {BAR};"
@@ -114,7 +123,7 @@ def build(d):
               + f"<div style=\"text-align:right;font:italic 8px {SERIF};color:#55515a;margin-top:3px\">— from. {d['npc']}</div></div>")
     msg = ("<!--@ 메시지 j : 말풍선 --><div>" + bar('To. ' + d['pc'], '†', 'msg').replace(f"margin-bottom:{GAP-3}px", "margin-bottom:0") + bubble + "</div>")
     main = (f"<div style=\"flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:{GAP+4}px\">" + pride
-            + f"<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:{GAP}px\">" + banshee + place + "</div>" + msg + "</div>")
+            + duo + msg + "</div>")
 
     corner = lambda pos: (f"<span style=\"position:absolute;{pos};font-size:11px;line-height:1;color:{BAR};background:#fff;padding:0 1px;font-size:9px\">✚</span>")
     side = ("<!--@ 오른쪽 점선 칸 : 노래 a · 가수 b · 날짜 c · 요일 d · AM/PM e · 시각 f · 처음 만난 날 m -->"
