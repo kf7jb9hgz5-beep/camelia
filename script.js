@@ -6637,25 +6637,39 @@ async function flushHtmlBackground() {
 
 
 // ==========================================================================
-// 바이올렛 테마 켜고 끄기 — 선택은 브라우저에 기억된다.
-// 화면 구성은 그대로, 색과 배경 무늬만 보라로 바뀐다. 저장 이미지는 그대로다.
+// 다크모드(보라) 켜고 끄기 — 라이트모드(핑크)는 그대로 두고, 다크모드일 때만 보라 색 · 배경으로 바뀐다.
+// 직접 고르면 그 선택을 기억하고, 고른 적이 없으면 휴대폰/PC의 다크모드 설정을 따라간다.
+// 저장 이미지는 모드와 상관없이 그대로다. (스타일은 style.css의 html.theme-violet)
 // ==========================================================================
-(function setupVioletTheme() {
+(function setupDarkMode() {
     const btn = document.getElementById("btnTheme");
     if (!btn) return;
     const root = document.documentElement;
+    const KEY = "cameliaTheme";
+    const systemDark = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+    const stored = () => { try { return localStorage.getItem(KEY); } catch (e) { return null; } };
     const sync = () => {
-        const on = root.classList.contains("theme-violet");
-        btn.textContent = on ? "♡" : "❦";
-        const label = on ? "핑크 테마로 바꾸기" : "바이올렛 테마로 바꾸기";
+        const dark = root.classList.contains("theme-violet");
+        btn.textContent = dark ? "☀" : "☾";
+        const label = dark ? "라이트모드로 바꾸기" : "다크모드로 바꾸기";
         btn.title = label;
         btn.setAttribute("aria-label", label);
     };
     btn.addEventListener("click", () => {
-        const on = root.classList.toggle("theme-violet");
-        try { localStorage.setItem("cameliaTheme", on ? "violet" : "pink"); } catch (e) {}
+        const dark = root.classList.toggle("theme-violet");
+        try { localStorage.setItem(KEY, dark ? "dark" : "light"); } catch (e) {}
         sync();
-        if (typeof showToast === "function") showToast(on ? "바이올렛 테마 ❦" : "핑크 테마 ♡");
+        if (typeof showToast === "function") showToast(dark ? "다크모드 ☾" : "라이트모드 ☀");
     });
+    // 직접 고른 적이 없으면, 기기 설정이 바뀔 때 따라 바꾼다
+    if (systemDark) {
+        const onSystem = (e) => {
+            if (stored()) return;
+            root.classList.toggle("theme-violet", e.matches);
+            sync();
+        };
+        if (systemDark.addEventListener) systemDark.addEventListener("change", onSystem);
+        else if (systemDark.addListener) systemDark.addListener(onSystem);
+    }
     sync();
 })();
