@@ -3838,3 +3838,216 @@ body.mobile-theme {
     color: #ffffff;
     box-shadow: 0 6px 14px rgba(230, 44, 122, 0.3);
 }
+
+
+/* ==========================================================================
+    밤 테마 (보라 · 검정 · 스트라이프 · 레이스)
+    html.theme-night 일 때만 적용된다. ☾ 버튼으로 켜고 끄며, 선택은 브라우저에 기억된다.
+    ⚠️ 캔버스(#captureArea)와 본문 입력창은 원래 색 그대로 둔다 → 저장 이미지는 테마와 상관없이 똑같다.
+    ========================================================================== */
+html.theme-night {
+    --bg-main: #120b19;
+    --bg-card: #1d1228;
+    --bg-sunken: #2a1a3a;
+    --text-main: #f1e8fb;
+    --text-muted: #a994c3;
+    --border-color: #3b2752;
+    --accent-color: #9d5ce0;
+    --accent-hover: #d6b8f7;
+    --accent-tint: #2b1a3e;
+    --accent-tint-strong: #5b3d82;
+    --danger-color: #ff7aa8;
+    --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 20px 44px rgba(0, 0, 0, 0.6);
+    --heart-dots: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2230%22 height=%2230%22 viewBox=%220 0 30 30%22%3E%3Cg fill=%22%233d2756%22%3E%3Cpath transform=%22translate(7.5 7.5) scale(.31)%22 d=%22M0 13 L-12.2 -0.5 C-15.6 -7.6 -7.6 -14.6 0 -6.2 C7.6 -14.6 15.6 -7.6 12.2 -0.5 Z%22/%3E%3Cpath transform=%22translate(22.5 22.5) scale(.31)%22 d=%22M0 13 L-12.2 -0.5 C-15.6 -7.6 -7.6 -14.6 0 -6.2 C7.6 -14.6 15.6 -7.6 12.2 -0.5 Z%22/%3E%3C/g%3E%3C/svg%3E");
+    --preview-bg: #0c0711;
+    --preview-dot: #3b2752;
+    --night-lace: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2228%22 height=%2215%22 viewBox=%220 0 28 15%22%3E %3Cpath fill=%22%23cdb4ec%22 fill-rule=%22evenodd%22 d=%22M0 0H28V4.6A7 7 0 0 1 14 4.6A7 7 0 0 1 0 4.6Z M7 8m-1.9 0a1.9 1.9 0 1 0 3.8 0a1.9 1.9 0 1 0 -3.8 0Z M21 8m-1.9 0a1.9 1.9 0 1 0 3.8 0a1.9 1.9 0 1 0 -3.8 0Z M14 2.3m-0.9 0a0.9 0.9 0 1 0 1.8 0a0.9 0.9 0 1 0 -1.8 0Z M0 2.3m-0.9 0a0.9 0.9 0 1 0 1.8 0a0.9 0.9 0 1 0 -1.8 0Z M28 2.3m-0.9 0a0.9 0.9 0 1 0 1.8 0a0.9 0.9 0 1 0 -1.8 0Z%22/%3E %3Ccircle cx=%227%22 cy=%2213.2%22 r=%221%22 fill=%22%23cdb4ec%22/%3E%3Ccircle cx=%2221%22 cy=%2213.2%22 r=%221%22 fill=%22%23cdb4ec%22/%3E%3C/svg%3E");
+    color-scheme: dark;
+}
+/* 캔버스 안쪽은 원래(밝은) 값으로 되돌려서 저장 결과가 바뀌지 않게 한다 */
+html.theme-night #captureArea {
+    --bg-main: #fff6fa; --bg-card: #ffffff; --bg-sunken: #ffecf4; --text-main: #2b1420; --text-muted: #b587a0;
+    --border-color: #fbdce9; --accent-color: #e62c7a; --accent-hover: #c91f68; --accent-tint: #ffe6f1; --accent-tint-strong: #ffc3dd;
+    color-scheme: light;
+}
+
+/* ---- 페이지 배경: 검정·보라 세로 스트라이프 + 작은 장미·나비 ---- */
+html.theme-night,
+html.theme-night body.mobile-theme {
+    background-color: #120b19;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2296%22 height=%2296%22 viewBox=%220 0 96 96%22%3E %3Cg opacity=%22.5%22%3E%3Cg transform=%22translate(24 26)%22%3E%3Ccircle r=%225.2%22 fill=%22%237b4fb0%22/%3E%3Cpath d=%22M0 0m-3.2 0a3.2 3.2 0 1 1 3.6 3.1M0 0m-1.4 0a1.5 1.5 0 1 1 1.7 1.4%22 fill=%22none%22 stroke=%22%23c9a9ee%22 stroke-width=%22.9%22/%3E %3Cpath d=%22M-5 3.5q-5 1 -7 5q4.5 .6 7-3.2z M5 3.2q5 .4 7.2 4.4q-4.4 1 -7-2.6z%22 fill=%22%234d6b4a%22/%3E%3C/g%3E %3Cg transform=%22translate(70 68) rotate(-14)%22 fill=%22%23a77ad8%22%3E%3Cpath d=%22M0 0C-3-6-11-7-10-1C-9 3-4 3 0 0Z M0 0C3-6 11-7 10-1C9 3 4 3 0 0Z%22/%3E%3Cpath d=%22M0 0C-3 3-8 6-6 8C-4 9-1 5 0 0Z M0 0C3 3 8 6 6 8C4 9 1 5 0 0Z%22 opacity=%22.8%22/%3E%3Crect x=%22-.5%22 y=%22-4%22 width=%221%22 height=%229%22 rx=%22.5%22 fill=%22%232a1a3b%22/%3E%3C/g%3E %3Cpath d=%22M70 18l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z M22 74l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z%22 fill=%22%23cdb4ec%22/%3E%3C/g%3E%3C/svg%3E"), repeating-linear-gradient(90deg, #120b19 0 15px, rgba(205,180,236,.07) 15px 16px, #1b1026 16px 31px, rgba(205,180,236,.07) 31px 32px);
+    background-size: 96px 96px, auto;
+    background-repeat: repeat, repeat;
+}
+/* 미리보기 영역: 더 어두운 바탕 + 보라 도트, 아래쪽 가장자리에 레이스 */
+html.theme-night .canvas-header {
+    background-color: var(--preview-bg);
+    background-image: var(--night-lace), radial-gradient(var(--preview-dot) 1.1px, transparent 1.3px);
+    background-repeat: repeat-x, repeat;
+    background-position: left bottom, 0 0;
+    background-size: 28px 15px, 14px 14px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+@media (min-width: 1024px) {
+    html.theme-night .stage-pane {
+        background-color: #0f0915;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2296%22 height=%2296%22 viewBox=%220 0 96 96%22%3E %3Cg opacity=%22.5%22%3E%3Cg transform=%22translate(24 26)%22%3E%3Ccircle r=%225.2%22 fill=%22%237b4fb0%22/%3E%3Cpath d=%22M0 0m-3.2 0a3.2 3.2 0 1 1 3.6 3.1M0 0m-1.4 0a1.5 1.5 0 1 1 1.7 1.4%22 fill=%22none%22 stroke=%22%23c9a9ee%22 stroke-width=%22.9%22/%3E %3Cpath d=%22M-5 3.5q-5 1 -7 5q4.5 .6 7-3.2z M5 3.2q5 .4 7.2 4.4q-4.4 1 -7-2.6z%22 fill=%22%234d6b4a%22/%3E%3C/g%3E %3Cg transform=%22translate(70 68) rotate(-14)%22 fill=%22%23a77ad8%22%3E%3Cpath d=%22M0 0C-3-6-11-7-10-1C-9 3-4 3 0 0Z M0 0C3-6 11-7 10-1C9 3 4 3 0 0Z%22/%3E%3Cpath d=%22M0 0C-3 3-8 6-6 8C-4 9-1 5 0 0Z M0 0C3 3 8 6 6 8C4 9 1 5 0 0Z%22 opacity=%22.8%22/%3E%3Crect x=%22-.5%22 y=%22-4%22 width=%221%22 height=%229%22 rx=%22.5%22 fill=%22%232a1a3b%22/%3E%3C/g%3E %3Cpath d=%22M70 18l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z M22 74l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z%22 fill=%22%23cdb4ec%22/%3E%3C/g%3E%3C/svg%3E"), repeating-linear-gradient(90deg, #120b19 0 15px, rgba(205,180,236,.07) 15px 16px, #1b1026 16px 31px, rgba(205,180,236,.07) 31px 32px);
+        background-size: 96px 96px, auto;
+        border-left-color: var(--border-color);
+    }
+    html.theme-night .canvas-header {
+        background: transparent;
+        box-shadow: none;
+    }
+    html.theme-night .editor-pane {
+        background-color: rgba(10, 6, 14, 0.35);
+    }
+    html.theme-night .pane-brand-badge,
+    html.theme-night .canvas-top-actions {
+        background: rgba(29, 18, 40, 0.88);
+    }
+}
+
+/* ---- 레이스 테두리: 본문 카드 · 설정 카드 위쪽, 설정 시트 머리, 하단 탭 위쪽 ---- */
+html.theme-night .editor-card,
+html.theme-night .panel-card {
+    background: var(--night-lace) repeat-x left top / 28px 15px, linear-gradient(180deg, #23162f 0%, var(--bg-card) 100%);
+    border-color: var(--border-color);
+}
+html.theme-night .editor-card {
+    padding-top: 30px;
+}
+html.theme-night .panel-card {
+    padding-top: 24px;
+}
+html.theme-night .adaptive-settings-window {
+    border-color: var(--accent-tint-strong);
+    box-shadow: 0 -16px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(205, 180, 236, 0.08) inset;
+}
+html.theme-night .sheet-header {
+    background: var(--night-lace) repeat-x left bottom / 28px 15px, var(--bg-card);
+}
+html.theme-night .bottom-tab-bar {
+    border-color: var(--accent-tint-strong);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.6);
+}
+html.theme-night .bottom-tab-bar::after {
+    content: "";
+    position: absolute;
+    left: 28px;
+    right: 28px;
+    top: -14px;
+    height: 15px;
+    background: var(--night-lace) repeat-x left top / 28px 15px;
+    transform: scaleY(-1);
+    pointer-events: none;
+}
+
+/* ---- 흰색이 직접 박혀 있던 부품들 ---- */
+html.theme-night .icon-fab,
+html.theme-night .heart-elev,
+html.theme-night .input-minimal input,
+html.theme-night .input-minimal-plain,
+html.theme-night .char-chip-insert,
+html.theme-night .char-chip-edit,
+html.theme-night .char-editor-btn-row button,
+html.theme-night .char-chip-avatar,
+html.theme-night .char-editor-avatar,
+html.theme-night .dlc-avatar-thumb,
+html.theme-night .dlc-stage,
+html.theme-night .dlc-text,
+html.theme-night .dlc-translation,
+html.theme-night .sticker-lib-use,
+html.theme-night .sticker-lib-del,
+html.theme-night .side-text-input {
+    background-color: var(--bg-sunken);
+    color: var(--text-main);
+}
+html.theme-night input[type="file"]::file-selector-button {
+    background-color: var(--bg-sunken);
+    color: var(--text-main);
+}
+html.theme-night .control-minimal-row.row-dots {
+    background: radial-gradient(rgba(157, 92, 224, 0.28) 1px, transparent 1.3px) 0 0 / 7px 7px, var(--bg-card);
+}
+html.theme-night .toast {
+    background: rgba(29, 18, 40, 0.96);
+    color: var(--text-main);
+    box-shadow: inset 0 0 0 3px #1d1228, inset 0 0 0 4px var(--vn-line), 0 10px 26px rgba(0, 0, 0, 0.55);
+}
+/* 미연시풍 꾸밈(토스트 테두리·이름표·▼ 등)에 쓰는 핑크도 보라로 */
+html.theme-night {
+    --vn-pink: #9d5ce0;
+    --vn-line: #5b3d82;
+}
+html.theme-night #captureArea {
+    --vn-pink: #e62c7a;
+    --vn-line: #ffc3dd;
+}
+/* 입력칸 글자색 (캔버스·본문 입력창 제외 — 본문 입력창은 종이처럼 밝게 둔다) */
+html.theme-night body.mobile-theme :is(input, select, textarea):not(#captureArea *):not(#textEditor *) {
+    color: var(--text-main);
+}
+html.theme-night body.mobile-theme :is(input, textarea)::placeholder {
+    color: #7d6a97;
+}
+html.theme-night #textEditor {
+    background-color: #fbf8fe;
+    border-color: #cdb4ec;
+    color: #2b1420;
+    caret-color: #7a3fb8;
+}
+
+/* ---- 장미 그림들은 보라 장미로 ---- */
+html.theme-night .brand-logo-img,
+html.theme-night .control-minimal-row.corner-heart-br::after,
+html.theme-night .sticker-library-empty::before,
+html.theme-night .preset-empty::before {
+    filter: hue-rotate(-58deg) saturate(0.95) brightness(0.92);
+}
+html.theme-night .brand-logo {
+    filter: drop-shadow(0 5px 10px rgba(157, 92, 224, 0.45));
+}
+
+/* ---- 하트 손잡이 · 체크 하트 · 하단 탭 풍선 (보라색 버전) ---- */
+html.theme-night .range-slider::-webkit-slider-thumb {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23ffffff' stroke='%239d5ce0' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+html.theme-night .range-slider::-moz-range-thumb {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23ffffff' stroke='%239d5ce0' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+html.theme-night .heart-num .heart-ico {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%239d5ce0' stroke='%239d5ce0' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+html.theme-night .control-minimal-row input[type="range"]::-webkit-slider-thumb {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23ffffff' stroke='%239d5ce0' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+html.theme-night .control-minimal-row input[type="range"]::-moz-range-thumb {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23ffffff' stroke='%239d5ce0' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+html.theme-night .dock-btn::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%239d5ce0'/%3E%3C/svg%3E");
+}
+html.theme-night body.mobile-theme input[type="checkbox"]:not(.checkbox-minimal-group input):not(.replacement-rule-cell input),
+html.theme-night body.mobile-theme input[type="radio"] {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23fff' stroke='%238f6cbb' stroke-width='1.8' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+html.theme-night body.mobile-theme input[type="checkbox"]:not(.checkbox-minimal-group input):not(.replacement-rule-cell input):checked {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%239d5ce0' stroke='%239d5ce0' stroke-width='1' stroke-linejoin='round'/%3E%3Cpath d='M7.8 10.4l2.8 2.8 5.6-5.4' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+html.theme-night body.mobile-theme input[type="radio"]:checked {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%239d5ce0' stroke='%239d5ce0' stroke-width='1' stroke-linejoin='round'/%3E%3Ccircle cx='12' cy='10.8' r='2.6' fill='%23fff'/%3E%3C/svg%3E");
+}
+html.theme-night .checkbox-minimal-group input[type="checkbox"]::before {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23fff' stroke='%23c4a6e8' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+html.theme-night .replacement-rule-cell input[type="checkbox"]::before {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23fff' stroke='%23c4a6e8' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+html.theme-night .checkbox-minimal-group input[type="checkbox"]:checked::before,
+html.theme-night .replacement-rule-cell input[type="checkbox"]:checked::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23fff' stroke='%23fff' stroke-width='1' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+

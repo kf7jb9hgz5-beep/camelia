@@ -6634,3 +6634,28 @@ async function flushHtmlBackground() {
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
     else run();
 })();
+
+
+// ==========================================================================
+// 밤 테마 (보라 · 검정 · 스트라이프 · 레이스) 켜고 끄기 — 선택은 브라우저에 기억된다.
+// 화면 UI만 바뀌고, 캔버스·저장 이미지는 그대로다. (스타일은 style.css의 html.theme-night)
+// ==========================================================================
+(function setupNightTheme() {
+    const btn = document.getElementById("btnTheme");
+    if (!btn) return;
+    const root = document.documentElement;
+    const sync = () => {
+        const night = root.classList.contains("theme-night");
+        btn.textContent = night ? "♡" : "☾";
+        const label = night ? "핑크 테마로 바꾸기" : "밤 테마로 바꾸기";
+        btn.title = label;
+        btn.setAttribute("aria-label", label);
+    };
+    btn.addEventListener("click", () => {
+        const night = root.classList.toggle("theme-night");
+        try { localStorage.setItem("cameliaTheme", night ? "night" : "pink"); } catch (e) {}
+        sync();
+        if (typeof showToast === "function") showToast(night ? "밤 테마 ☾" : "핑크 테마 ♡");
+    });
+    sync();
+})();
