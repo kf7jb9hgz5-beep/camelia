@@ -3840,12 +3840,141 @@ body.mobile-theme {
 }
 
 /* ==========================================================================
-    바이올렛 배경 (❦ 버튼으로 켜고 끔, 선택은 브라우저에 기억됨)
-    화면 디자인(카드 · 버튼 · 색)은 핑크 라이트 모드 그대로 두고, 배경 무늬 두 가지만 바꾼다.
+    바이올렛 테마 (❦ 버튼으로 켜고 끔, 선택은 브라우저에 기억됨)
+    화면 구성(카드 · 버튼 · 하트 · 제목 모양)은 핑크 라이트 모드 그대로 두고,
+    색만 보라 계열로 바꾸고 배경 무늬 두 가지를 바꾼다.
     - 미리보기 쪽 도트 배경  → 어두운 보라 바탕 + 연보라 도트
     - 아래쪽 하트 도트 배경  → 라벤더 세로 줄무늬
-    캔버스 · 저장 이미지는 그대로다.
+    ⚠️ 캔버스(#captureArea)는 원래 색 그대로 → 저장 이미지는 테마와 상관없이 똑같다.
     ========================================================================== */
+html.theme-violet {
+    --bg-main: #f7f1fc;
+    --bg-card: #ffffff;
+    --bg-sunken: #f0e6f9;
+    --text-main: #2b1838;
+    --text-muted: #9a82b5;
+    --border-color: #e6d8f3;
+    --accent-color: #7a4ca0;
+    --accent-hover: #6b3f8e;
+    --accent-tint: #f1e7fa;
+    --accent-tint-strong: #d9c3ee;
+    --danger-color: #b0306a;
+    --shadow-sm: 0 2px 10px rgba(122, 76, 160, 0.1);
+    --shadow-md: 0 10px 30px rgba(122, 76, 160, 0.14);
+    --shadow-lg: 0 20px 44px rgba(122, 76, 160, 0.24);
+    --vn-pink: #7a4ca0;
+    --vn-line: #d9c3ee;
+}
+html.theme-violet #captureArea {
+    --bg-main: #fff6fa; --bg-card: #ffffff; --bg-sunken: #ffecf4; --text-main: #2b1420; --text-muted: #b587a0;
+    --border-color: #fbdce9; --accent-color: #e62c7a; --accent-hover: #c91f68; --accent-tint: #ffe6f1; --accent-tint-strong: #ffc3dd;
+    --danger-color: #e0335a; --vn-pink: #e62c7a; --vn-line: #ffc3dd;
+    --shadow-sm: 0 2px 10px rgba(230, 44, 122, 0.08); --shadow-md: 0 10px 30px rgba(230, 44, 122, 0.12); --shadow-lg: 0 20px 44px rgba(230, 44, 122, 0.2);
+}
+
+/* ---- 핑크로 직접 박혀 있던 색(그림자 · 하트 손잡이 · 체크 하트 등)을 보라로 ---- */
+html.theme-violet .icon-fab {
+    box-shadow: 0 6px 16px rgba(122, 76, 160, 0.2);
+}
+html.theme-violet .sticker-resize-handle {
+    box-shadow: 0 2px 6px rgba(122, 76, 160, 0.4);
+}
+html.theme-violet .adaptive-settings-window {
+    box-shadow: 0 -16px 40px rgba(122, 76, 160, 0.22);
+}
+html.theme-violet .range-slider {
+    box-shadow: inset 0 1px 3px rgba(122, 76, 160, 0.18);
+}
+html.theme-violet .range-slider::-webkit-slider-thumb {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23ffffff' stroke='%237a4ca0' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    filter: drop-shadow(0 2px 5px rgba(122, 76, 160, 0.45));
+}
+html.theme-violet .range-slider::-moz-range-thumb {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23ffffff' stroke='%237a4ca0' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    filter: drop-shadow(0 2px 5px rgba(122, 76, 160, 0.45));
+}
+html.theme-violet .heart-num .heart-ico {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%237a4ca0' stroke='%237a4ca0' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    filter: drop-shadow(0 1px 3px rgba(122, 76, 160, 0.35));
+}
+html.theme-violet .control-minimal-row input[type="range"] {
+    box-shadow: inset 0 1px 3px rgba(122, 76, 160, 0.18);
+}
+html.theme-violet .control-minimal-row input[type="range"]::-webkit-slider-thumb {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23ffffff' stroke='%237a4ca0' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    filter: drop-shadow(0 2px 5px rgba(122, 76, 160, 0.45));
+}
+html.theme-violet .control-minimal-row input[type="range"]::-moz-range-thumb {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23ffffff' stroke='%237a4ca0' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E");
+    filter: drop-shadow(0 2px 5px rgba(122, 76, 160, 0.45));
+}
+html.theme-violet .segmented-control button.active {
+    box-shadow: 0 4px 10px rgba(122, 76, 160, 0.35);
+}
+html.theme-violet .preset-thumb {
+    background-color: #f3eff7;
+}
+html.theme-violet .bottom-tab-bar {
+    box-shadow: 0 14px 34px rgba(122, 76, 160, 0.22), 0 2px 0 rgba(122, 76, 160, 0.06) inset;
+}
+html.theme-violet .dock-btn::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%237a4ca0'/%3E%3C/svg%3E");
+}
+html.theme-violet .brand-logo {
+    filter: drop-shadow(0 5px 8px rgba(122, 76, 160, 0.32));
+}
+html.theme-violet .sticker-lib-del {
+    box-shadow: 0 3px 8px rgba(122, 76, 160, 0.2);
+}
+html.theme-violet body.mobile-theme input[type="checkbox"]:not(.checkbox-minimal-group input):not(.replacement-rule-cell input),
+html.theme-violet body.mobile-theme input[type="radio"] {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23fff' stroke='%23c4a6e3' stroke-width='1.8' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+html.theme-violet body.mobile-theme input[type="checkbox"]:not(.checkbox-minimal-group input):not(.replacement-rule-cell input):checked {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%237a4ca0' stroke='%237a4ca0' stroke-width='1' stroke-linejoin='round'/%3E%3Cpath d='M7.8 10.4l2.8 2.8 5.6-5.4' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+html.theme-violet body.mobile-theme input[type="radio"]:checked {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%237a4ca0' stroke='%237a4ca0' stroke-width='1' stroke-linejoin='round'/%3E%3Ccircle cx='12' cy='10.8' r='2.6' fill='%23fff'/%3E%3C/svg%3E");
+}
+html.theme-violet .checkbox-minimal-group input[type="checkbox"]::before {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23fff' stroke='%23d9c3ee' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+    filter: drop-shadow(0 1px 2px rgba(122, 76, 160, 0.3));
+}
+html.theme-violet .replacement-rule-cell input[type="checkbox"]::before {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' fill='%23fff' stroke='%23d9c3ee' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+    filter: drop-shadow(0 1px 2px rgba(122, 76, 160, 0.3));
+}
+html.theme-violet .toast {
+    box-shadow: inset 0 0 0 3px #ffffff, inset 0 0 0 4px var(--vn-line), 0 10px 26px rgba(122, 76, 160, 0.25);
+}
+html.theme-violet .panel-card {
+    background: linear-gradient(180deg, #fcf9fe 0%, var(--bg-main) 100%);
+}
+@media (min-width: 1024px) {
+html.theme-violet .stage-pane {
+    box-shadow: inset 8px 0 24px rgba(122, 76, 160, 0.05);
+}
+}
+html.theme-violet .restore-go {
+    box-shadow: 0 6px 14px rgba(122, 76, 160, 0.3);
+}
+
+/* ---- 사진으로 박혀 있던 장미 · 핑크 도트도 보라로 ---- */
+html.theme-violet .brand-logo-img,
+html.theme-violet .control-minimal-row.corner-heart-br::after,
+html.theme-violet .sticker-library-empty::before,
+html.theme-violet .preset-empty::before {
+    filter: hue-rotate(-50deg) saturate(0.9) brightness(0.95);
+}
+html.theme-violet .brand-logo {
+    filter: drop-shadow(0 5px 8px rgba(122, 76, 160, 0.35));
+}
+html.theme-violet .control-minimal-row.row-dots {
+    background: radial-gradient(circle, #e6d6f4 1.3px, rgba(0, 0, 0, 0) 1.7px) 0 0 / 8px 8px,
+        linear-gradient(90deg, #f7effd 0%, #ffffff 70%);
+}
+
+/* ---- 배경 무늬 두 가지 ---- */
 html.theme-violet,
 html.theme-violet body.mobile-theme {
     background-color: #d6bfea;

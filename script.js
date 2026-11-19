@@ -6637,8 +6637,8 @@ async function flushHtmlBackground() {
 
 
 // ==========================================================================
-// 바이올렛 배경 켜고 끄기 — 선택은 브라우저에 기억된다.
-// 배경 무늬(미리보기 쪽 도트 · 아래쪽 줄무늬)만 바뀌고 나머지 디자인과 저장 이미지는 그대로다.
+// 바이올렛 테마 켜고 끄기 — 선택은 브라우저에 기억된다.
+// 화면 구성은 그대로, 색과 배경 무늬만 보라로 바뀐다. 저장 이미지는 그대로다.
 // ==========================================================================
 (function setupVioletTheme() {
     const btn = document.getElementById("btnTheme");
@@ -6647,7 +6647,7 @@ async function flushHtmlBackground() {
     const sync = () => {
         const on = root.classList.contains("theme-violet");
         btn.textContent = on ? "♡" : "❦";
-        const label = on ? "핑크 배경으로 바꾸기" : "바이올렛 배경으로 바꾸기";
+        const label = on ? "핑크 테마로 바꾸기" : "바이올렛 테마로 바꾸기";
         btn.title = label;
         btn.setAttribute("aria-label", label);
     };
@@ -6655,7 +6655,7 @@ async function flushHtmlBackground() {
         const on = root.classList.toggle("theme-violet");
         try { localStorage.setItem("cameliaTheme", on ? "violet" : "pink"); } catch (e) {}
         sync();
-        if (typeof showToast === "function") showToast(on ? "바이올렛 배경 ❦" : "핑크 배경 ♡");
+        if (typeof showToast === "function") showToast(on ? "바이올렛 테마 ❦" : "핑크 테마 ♡");
     });
     sync();
 })();
