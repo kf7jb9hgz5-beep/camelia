@@ -1185,11 +1185,53 @@ function applyItalicFallbackForCapture(root) {
 }
 
 // html2canvas 공통 옵션: 복제본(onclone)에 기울임 대체 처리를 적용한다.
+// 저장 속도: html2canvas는 저장할 캔버스만이 아니라 문서 전체(편집창 · 설정 패널 등 1,500개 넘는 요소)를
+// 통째로 복제한 뒤 그린다. 캔버스와 상관없는 화면 UI는 복제에서 빼서 그리는 시간을 절반 이하로 줄인다.
+// (스타일시트 · 캔버스의 부모 요소 · SVG 무늬/필터 정의는 그대로 둔다 → 결과 이미지는 똑같다)
+function makeCaptureIgnore(target) {
+    return (node) => {
+        if (!(node instanceof Element)) return false;
+        if (node === target || target.contains(node) || node.contains(target)) return false;
+        if (/^(STYLE|LINK|HEAD|TITLE|META|BASE)$/.test(node.tagName)) return false;
+        if (node.tagName.toLowerCase() === "svg" && node.querySelector("filter, pattern, linearGradient, radialGradient, clipPath, mask")) return false;
+        return true;
+    };
+}
+
+// 저장 · 복사 중 표시 + 중복 실행 막기
+// (반응이 없어 보여서 버튼을 또 누르면 같은 무거운 작업이 두 번 돌아 더 느려졌다)
+window.__exportBusy = false;
+function beginExportBusy(message) {
+    if (window.__exportBusy) return false;
+    window.__exportBusy = true;
+    let el = document.getElementById("exportBusy");
+    if (!el) {
+        el = document.createElement("div");
+        el.id = "exportBusy";
+        el.className = "export-busy";
+        el.setAttribute("role", "status");
+        el.setAttribute("aria-live", "polite");
+        el.innerHTML = '<span class="export-busy-heart" aria-hidden="true">♥</span><span class="export-busy-text"></span>';
+        document.body.appendChild(el);
+    }
+    el.querySelector(".export-busy-text").textContent = message || "이미지 만드는 중…";
+    el.classList.add("show");
+    ["btnSave", "btnCopy"].forEach((id) => document.getElementById(id)?.setAttribute("aria-busy", "true"));
+    return true;
+}
+function endExportBusy() {
+    window.__exportBusy = false;
+    document.getElementById("exportBusy")?.classList.remove("show");
+    ["btnSave", "btnCopy"].forEach((id) => document.getElementById(id)?.removeAttribute("aria-busy"));
+}
+
 function captureOptions(el, extra) {
     return Object.assign({
         useCORS: true,
         allowTaint: true,
         backgroundColor: null,
+        logging: false,
+        ignoreElements: makeCaptureIgnore(el),
         scale: getExportScale(el),
         onclone: (clonedDoc) => {
             try {
@@ -3152,6 +3194,7 @@ async function syncBeforeExport() {
 
 document.getElementById("btnCopy").addEventListener("click", async () => {
     if (!els.captureArea) return;
+    if (!beginExportBusy("복사할 이미지 만드는 중…")) return;
     await syncBeforeExport();
     const originalHeight = els.captureArea.style.height;
     const originalOverflow = els.captureArea.style.overflow;
@@ -3171,6 +3214,7 @@ document.getElementById("btnCopy").addEventListener("click", async () => {
             els.captureArea.style.overflow = originalOverflow;
             els.captureArea.style.transform = originalTransform;
             applyPreviewScale();
+            endExportBusy();
             try { canvas.toBlob((blob) => {
                 if (!blob) { showToast("이미지 변환에 실패했어요."); return; }
                 const item = new ClipboardItem({ "image/png": blob });
@@ -3189,11 +3233,14 @@ document.getElementById("btnCopy").addEventListener("click", async () => {
             els.captureArea.style.overflow = originalOverflow;
             els.captureArea.style.transform = originalTransform;
             applyPreviewScale();
+            endExportBusy();
+            showToast("이미지 변환에 실패했어요. 다시 눌러 주세요.");
         });
 });
 
 document.getElementById("btnSave").addEventListener("click", async () => {
     if (!els.captureArea) return;
+    if (!beginExportBusy("이미지 만드는 중…")) return;
     await syncBeforeExport();
     const originalHeight = els.captureArea.style.height;
     const originalOverflow = els.captureArea.style.overflow;
@@ -3213,6 +3260,7 @@ document.getElementById("btnSave").addEventListener("click", async () => {
             els.captureArea.style.overflow = originalOverflow;
             els.captureArea.style.transform = originalTransform;
             applyPreviewScale();
+            endExportBusy();
             try { canvas.toBlob((blob) => {
                 if (!blob) { showToast("이미지 변환에 실패했어요."); return; }
                 const blobURL = URL.createObjectURL(blob);
@@ -3235,6 +3283,8 @@ document.getElementById("btnSave").addEventListener("click", async () => {
             els.captureArea.style.overflow = originalOverflow;
             els.captureArea.style.transform = originalTransform;
             applyPreviewScale();
+            endExportBusy();
+            showToast("이미지 변환에 실패했어요. 다시 눌러 주세요.");
         });
 });
 
@@ -6499,7 +6549,11 @@ async function flushHtmlBackground() {
     function schedule() {
         if (!enabled) return;
         clearTimeout(timer);
-        timer = setTimeout(saveNow, 700);
+        timer = setTimeout(() => {
+            // 저장 · 복사로 이미지를 만드는 중에는 끼어들지 않고 끝난 뒤에 저장한다
+            if (window.__exportBusy) { schedule(); return; }
+            saveNow();
+        }, 700);
     }
     window.__saveWorkNow = saveNow;
 
@@ -6633,4 +6687,43 @@ async function flushHtmlBackground() {
     const run = () => setTimeout(start, 50); // 탭 저장 복원(setTimeout 0)이 먼저 끝난 다음
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
     else run();
+})();
+
+
+// ==========================================================================
+// 다크모드(보라) 켜고 끄기 — 라이트모드(핑크)는 그대로 두고, 다크모드일 때만 보라 색 · 배경으로 바뀐다.
+// 직접 고르면 그 선택을 기억하고, 고른 적이 없으면 휴대폰/PC의 다크모드 설정을 따라간다.
+// 저장 이미지는 모드와 상관없이 그대로다. (스타일은 style.css의 html.theme-violet)
+// ==========================================================================
+(function setupDarkMode() {
+    const btn = document.getElementById("btnTheme");
+    if (!btn) return;
+    const root = document.documentElement;
+    const KEY = "cameliaTheme";
+    const systemDark = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+    const stored = () => { try { return localStorage.getItem(KEY); } catch (e) { return null; } };
+    const sync = () => {
+        const dark = root.classList.contains("theme-violet");
+        btn.textContent = dark ? "☀" : "☾";
+        const label = dark ? "라이트모드로 바꾸기" : "다크모드로 바꾸기";
+        btn.title = label;
+        btn.setAttribute("aria-label", label);
+    };
+    btn.addEventListener("click", () => {
+        const dark = root.classList.toggle("theme-violet");
+        try { localStorage.setItem(KEY, dark ? "dark" : "light"); } catch (e) {}
+        sync();
+        if (typeof showToast === "function") showToast(dark ? "다크모드 ☾" : "라이트모드 ☀");
+    });
+    // 직접 고른 적이 없으면, 기기 설정이 바뀔 때 따라 바꾼다
+    if (systemDark) {
+        const onSystem = (e) => {
+            if (stored()) return;
+            root.classList.toggle("theme-violet", e.matches);
+            sync();
+        };
+        if (systemDark.addEventListener) systemDark.addEventListener("change", onSystem);
+        else if (systemDark.addListener) systemDark.addListener(onSystem);
+    }
+    sync();
 })();
