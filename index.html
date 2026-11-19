@@ -11,9 +11,9 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=92" />
-        <!-- 밤 테마: 화면이 그려지기 전에 먼저 적용해서 흰 화면이 번쩍이지 않게 한다 -->
-        <script>try { if (localStorage.getItem("cameliaTheme") === "night") document.documentElement.classList.add("theme-night"); } catch (e) {}</script>
+        <link rel="stylesheet" href="style.css?v=93" />
+        <!-- 바이올렛 레이스 테마: 화면이 그려지기 전에 먼저 적용해서 흰 화면이 번쩍이지 않게 한다 -->
+        <script>try { var t = localStorage.getItem("cameliaTheme"); if (t === "violet" || t === "night") document.documentElement.classList.add("theme-violet"); } catch (e) {}</script>
     </head>
     <body class="mobile-theme">
         <div class="stage-pane" id="stagePane">
@@ -145,7 +145,7 @@
 
 
         <div class="canvas-top-actions">
-            <button type="button" class="icon-fab" id="btnTheme" title="밤 테마로 바꾸기" aria-label="밤 테마로 바꾸기">☾</button>
+            <button type="button" class="icon-fab" id="btnTheme" title="바이올렛 레이스 테마로 바꾸기" aria-label="바이올렛 레이스 테마로 바꾸기">❦</button>
             <button type="button" class="icon-fab" id="btnOpenPresets" title="프리셋">☆</button>
             <button class="btn-export secondary" id="btnCopy">복사</button>
             <button class="btn-export primary" id="btnSave">저장</button>
@@ -1249,6 +1249,6 @@
 
         <script src="presets.js?v=52"></script>
         <script src="decor-assets.js?v=1"></script>
-        <script src="script.js?v=79"></script>
+        <script src="script.js?v=80"></script>
     </body>
 </html>
