@@ -610,6 +610,7 @@ function updateCanvasCore() {
         try { syncLiveHighlights(); } catch (e) {}
     }
     try { applyHighlightOpacity(); } catch (e) {}
+    try { syncBgImageRemoveButton(); } catch (e) {}
 
     applyPreviewScale();
 }
@@ -3295,9 +3296,30 @@ document.getElementById("bgImageInput").addEventListener("change", function (e) 
         reader.onload = (event) => {
             document.getElementById("bgImageLayer").style.backgroundImage = `url(${event.target.result})`;
             updateBgImageStyles();
+            syncBgImageRemoveButton();
+            if (typeof updateCanvas === "function") updateCanvas();
         };
         reader.readAsDataURL(file);
     }
+});
+
+// 배경 사진 빼기: 넣은 사진을 지우고 같은 사진도 다시 고를 수 있게 입력칸을 비운다.
+// (버튼은 사진이 들어 있을 때만 보인다 — 작업 복원 등으로 사진이 들어와도 맞춰 보이도록 주기적으로 확인)
+function syncBgImageRemoveButton() {
+    const btn = document.getElementById("btnBgImageRemove");
+    const layer = document.getElementById("bgImageLayer");
+    if (!btn || !layer) return;
+    const has = !!layer.style.backgroundImage && layer.style.backgroundImage !== "none";
+    btn.style.display = has ? "" : "none";
+}
+document.getElementById("btnBgImageRemove")?.addEventListener("click", () => {
+    const layer = document.getElementById("bgImageLayer");
+    const input = document.getElementById("bgImageInput");
+    if (layer) layer.style.backgroundImage = "";
+    if (input) input.value = "";
+    syncBgImageRemoveButton();
+    if (typeof updateCanvas === "function") updateCanvas();
+    if (typeof showToast === "function") showToast("배경 사진을 뺐어요");
 });
 
 function updateBgImageStyles() {
@@ -6691,26 +6713,25 @@ async function flushHtmlBackground() {
 
 
 // ==========================================================================
-// 다크모드(보라) 켜고 끄기 — 라이트모드(핑크)는 그대로 두고, 다크모드일 때만 보라 색 · 배경으로 바뀐다.
+// 다크모드(보라) 켜고 끄기 (하트 스위치) — 라이트모드(핑크)는 그대로 두고, 다크모드일 때만 보라 색 · 배경으로 바뀐다.
 // 직접 고르면 그 선택을 기억하고, 고른 적이 없으면 휴대폰/PC의 다크모드 설정을 따라간다.
 // 저장 이미지는 모드와 상관없이 그대로다. (스타일은 style.css의 html.theme-violet)
 // ==========================================================================
 (function setupDarkMode() {
-    const btn = document.getElementById("btnTheme");
-    if (!btn) return;
+    const sw = document.getElementById("btnTheme"); // 하트 스위치 (켜면 다크모드)
+    if (!sw) return;
     const root = document.documentElement;
     const KEY = "cameliaTheme";
     const systemDark = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
     const stored = () => { try { return localStorage.getItem(KEY); } catch (e) { return null; } };
     const sync = () => {
         const dark = root.classList.contains("theme-violet");
-        btn.textContent = dark ? "☀" : "☾";
-        const label = dark ? "라이트모드로 바꾸기" : "다크모드로 바꾸기";
-        btn.title = label;
-        btn.setAttribute("aria-label", label);
+        sw.checked = dark;
+        sw.setAttribute("aria-checked", dark ? "true" : "false");
     };
-    btn.addEventListener("click", () => {
-        const dark = root.classList.toggle("theme-violet");
+    sw.addEventListener("change", () => {
+        const dark = sw.checked;
+        root.classList.toggle("theme-violet", dark);
         try { localStorage.setItem(KEY, dark ? "dark" : "light"); } catch (e) {}
         sync();
         if (typeof showToast === "function") showToast(dark ? "다크모드 ☾" : "라이트모드 ☀");

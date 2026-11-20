@@ -3848,6 +3848,7 @@ body.mobile-theme {
     ⚠️ 캔버스(#captureArea)는 원래 색 그대로 → 저장 이미지는 테마와 상관없이 똑같다.
     ========================================================================== */
 html.theme-violet {
+    /* (다크모드) */
     --bg-main: #f7f1fc;
     --bg-card: #ffffff;
     --bg-sunken: #f0e6f9;
@@ -4039,4 +4040,40 @@ html.theme-violet .canvas-header {
 }
 @media (prefers-reduced-motion: reduce) {
     .export-busy-heart { animation: none; }
+}
+
+/* ==========================================================================
+    다크모드 하트 스위치 (설정 칸의 하트 스위치와 같은 모양 · 색은 모드를 따라감)
+    ========================================================================== */
+.canvas-top-actions .theme-switch {
+    width: auto;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 8px 6px 11px;
+    border-radius: var(--radius-pill);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.theme-switch-moon {
+    font-size: 14px;
+    line-height: 1;
+    color: var(--accent-color);
+}
+
+/* 배경 사진 빼기 버튼 */
+.btn-bg-image-remove {
+    flex-shrink: 0;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-color);
+    background: var(--bg-main);
+    color: var(--danger-color);
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
 }
