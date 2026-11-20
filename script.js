@@ -610,6 +610,7 @@ function updateCanvasCore() {
         try { syncLiveHighlights(); } catch (e) {}
     }
     try { applyHighlightOpacity(); } catch (e) {}
+    try { syncBgImageRemoveButton(); } catch (e) {}
 
     applyPreviewScale();
 }
@@ -3295,9 +3296,30 @@ document.getElementById("bgImageInput").addEventListener("change", function (e) 
         reader.onload = (event) => {
             document.getElementById("bgImageLayer").style.backgroundImage = `url(${event.target.result})`;
             updateBgImageStyles();
+            syncBgImageRemoveButton();
+            if (typeof updateCanvas === "function") updateCanvas();
         };
         reader.readAsDataURL(file);
     }
+});
+
+// 배경 사진 빼기: 넣은 사진을 지우고 같은 사진도 다시 고를 수 있게 입력칸을 비운다.
+// (버튼은 사진이 들어 있을 때만 보인다 — 작업 복원 등으로 사진이 들어와도 맞춰 보이도록 주기적으로 확인)
+function syncBgImageRemoveButton() {
+    const btn = document.getElementById("btnBgImageRemove");
+    const layer = document.getElementById("bgImageLayer");
+    if (!btn || !layer) return;
+    const has = !!layer.style.backgroundImage && layer.style.backgroundImage !== "none";
+    btn.style.display = has ? "" : "none";
+}
+document.getElementById("btnBgImageRemove")?.addEventListener("click", () => {
+    const layer = document.getElementById("bgImageLayer");
+    const input = document.getElementById("bgImageInput");
+    if (layer) layer.style.backgroundImage = "";
+    if (input) input.value = "";
+    syncBgImageRemoveButton();
+    if (typeof updateCanvas === "function") updateCanvas();
+    if (typeof showToast === "function") showToast("배경 사진을 뺐어요");
 });
 
 function updateBgImageStyles() {

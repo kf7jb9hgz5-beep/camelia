@@ -11,7 +11,7 @@
             href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap"
             rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-        <link rel="stylesheet" href="style.css?v=98" />
+        <link rel="stylesheet" href="style.css?v=99" />
         <!-- 다크모드(보라): 화면이 그려지기 전에 먼저 적용해서 화면이 번쩍이지 않게 한다.
              직접 고른 적이 없으면 휴대폰/PC의 다크모드 설정을 따른다. -->
         <script>try { var t = localStorage.getItem("cameliaTheme"); var dark = (t === "dark" || t === "violet" || t === "night") || (!t && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches); if (dark) document.documentElement.classList.add("theme-violet"); } catch (e) {}</script>
@@ -546,6 +546,7 @@
                     <div class="control-minimal-row">
                         <label>이미지</label>
                         <input type="file" id="bgImageInput" accept="image/*" />
+                        <button type="button" class="btn-bg-image-remove" id="btnBgImageRemove" style="display: none">사진 빼기</button>
                     </div>
                     <div class="control-minimal-row">
                         <label>크기</label>
@@ -1253,6 +1254,6 @@
 
         <script src="presets.js?v=52"></script>
         <script src="decor-assets.js?v=1"></script>
-        <script src="script.js?v=85"></script>
+        <script src="script.js?v=86"></script>
     </body>
 </html>
