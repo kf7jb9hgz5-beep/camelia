@@ -1787,15 +1787,6 @@ function saveCharactersToStorage() {
     }
 }
 
-// 캐릭터 포인트 색 기본값: 예전엔 모두 거의 검정(#171717)이라 "이름에 인물 포인트 색상 적용"을 켜도
-// 본문과 같은 색이라 바뀐 게 안 보였다 → 캐릭터마다 구분되는 색을 차례로 넣어 준다.
-const CHAR_POINT_COLORS = ["#e62c7a", "#2563eb", "#7a4ca0", "#0f9d76", "#e8833a", "#c2185b", "#0ea5e9", "#8b5cf6"];
-const OLD_DEFAULT_CHAR_COLOR = "#171717";
-function nextCharPointColor() {
-    const used = new Set(characters.map((c) => (c.color || "").toLowerCase()));
-    return CHAR_POINT_COLORS.find((c) => !used.has(c)) || CHAR_POINT_COLORS[characters.length % CHAR_POINT_COLORS.length];
-}
-
 function loadCharactersFromStorage() {
     try {
         const raw = localStorage.getItem("quoteStudioCharacters");
@@ -1803,15 +1794,6 @@ function loadCharactersFromStorage() {
     } catch (e) {
         characters = [];
     }
-    // 색을 한 번도 안 고른 캐릭터(색 없음 / 처음 기본값)에는 구분되는 색을 넣어 준다
-    let changed = false;
-    characters.forEach((c, i) => {
-        if (!c.color || c.color.toLowerCase() === OLD_DEFAULT_CHAR_COLOR) {
-            c.color = CHAR_POINT_COLORS[i % CHAR_POINT_COLORS.length];
-            changed = true;
-        }
-    });
-    if (changed) saveCharactersToStorage();
 }
 
 function renderCharacterList() {
@@ -1877,15 +1859,13 @@ function openCharacterEditor(id) {
         nameInput.value = c.name || "";
         avatarBox.style.backgroundImage = c.avatarData ? `url(${c.avatarData})` : "none";
         avatarBox.dataset.hasImage = c.avatarData ? "true" : "false";
-        if (colorInput) colorInput.value = c.color || nextCharPointColor();
-        if (typeof syncColorSwatches === "function") syncColorSwatches();
+        if (colorInput) colorInput.value = c.color || "#171717";
         deleteBtn.style.display = "block";
     } else {
         nameInput.value = "";
         avatarBox.style.backgroundImage = "none";
         avatarBox.dataset.hasImage = "false";
-        if (colorInput) colorInput.value = nextCharPointColor();
-        if (typeof syncColorSwatches === "function") syncColorSwatches();
+        if (colorInput) colorInput.value = "#171717";
         deleteBtn.style.display = "none";
     }
 
@@ -2773,7 +2753,7 @@ onClick("btnSaveCharacter", () => {
     const name = nameInput.value.trim() || "이름 없음";
     const existing = editingCharacterId ? characters.find((x) => x.id === editingCharacterId) : null;
     const avatarData = pendingCharAvatarData !== null ? pendingCharAvatarData : (existing ? existing.avatarData : null);
-    const color = document.getElementById("charEditorColor")?.value || nextCharPointColor();
+    const color = document.getElementById("charEditorColor")?.value || "#171717";
 
     if (existing) {
         existing.name = name;
