@@ -474,6 +474,10 @@ function updateCanvasCore() {
         }
     }
 
+    // 대사 블록 사이에 저절로 생기는 빈 줄(대사 추가할 때 지문 입력용으로 붙는 줄)은 미리보기에서 빼고,
+    // 그 자리를 대사 탭의 간격 설정으로 채운다 (아래 applyDialogueGaps). 편집창의 빈 줄은 그대로 둔다.
+    removeBlankLinesBetweenDialogue(textWrapper);
+
     const columnsActive = !!(els.columnToggle && els.columnToggle.checked && textWrapper.querySelector(".canvas-column"));
     const paragraphGroups = columnsActive
         ? Array.from(textWrapper.querySelectorAll(".canvas-column")).map((col) =>
@@ -509,6 +513,7 @@ function updateCanvasCore() {
             }
         });
     });
+    applyDialogueGaps(textWrapper);
 
     const infoContainer = document.getElementById("canvasInfo");
     const textContainer = document.getElementById("canvasTextContainer");
@@ -1782,6 +1787,15 @@ function saveCharactersToStorage() {
     }
 }
 
+// 캐릭터 포인트 색 기본값: 예전엔 모두 거의 검정(#171717)이라 "이름에 인물 포인트 색상 적용"을 켜도
+// 본문과 같은 색이라 바뀐 게 안 보였다 → 캐릭터마다 구분되는 색을 차례로 넣어 준다.
+const CHAR_POINT_COLORS = ["#e62c7a", "#2563eb", "#7a4ca0", "#0f9d76", "#e8833a", "#c2185b", "#0ea5e9", "#8b5cf6"];
+const OLD_DEFAULT_CHAR_COLOR = "#171717";
+function nextCharPointColor() {
+    const used = new Set(characters.map((c) => (c.color || "").toLowerCase()));
+    return CHAR_POINT_COLORS.find((c) => !used.has(c)) || CHAR_POINT_COLORS[characters.length % CHAR_POINT_COLORS.length];
+}
+
 function loadCharactersFromStorage() {
     try {
         const raw = localStorage.getItem("quoteStudioCharacters");
@@ -1789,6 +1803,15 @@ function loadCharactersFromStorage() {
     } catch (e) {
         characters = [];
     }
+    // 색을 한 번도 안 고른 캐릭터(색 없음 / 처음 기본값)에는 구분되는 색을 넣어 준다
+    let changed = false;
+    characters.forEach((c, i) => {
+        if (!c.color || c.color.toLowerCase() === OLD_DEFAULT_CHAR_COLOR) {
+            c.color = CHAR_POINT_COLORS[i % CHAR_POINT_COLORS.length];
+            changed = true;
+        }
+    });
+    if (changed) saveCharactersToStorage();
 }
 
 function renderCharacterList() {
@@ -1854,13 +1877,15 @@ function openCharacterEditor(id) {
         nameInput.value = c.name || "";
         avatarBox.style.backgroundImage = c.avatarData ? `url(${c.avatarData})` : "none";
         avatarBox.dataset.hasImage = c.avatarData ? "true" : "false";
-        if (colorInput) colorInput.value = c.color || "#171717";
+        if (colorInput) colorInput.value = c.color || nextCharPointColor();
+        if (typeof syncColorSwatches === "function") syncColorSwatches();
         deleteBtn.style.display = "block";
     } else {
         nameInput.value = "";
         avatarBox.style.backgroundImage = "none";
         avatarBox.dataset.hasImage = "false";
-        if (colorInput) colorInput.value = "#171717";
+        if (colorInput) colorInput.value = nextCharPointColor();
+        if (typeof syncColorSwatches === "function") syncColorSwatches();
         deleteBtn.style.display = "none";
     }
 
@@ -2183,6 +2208,43 @@ function refreshFootnoteMarkerColors() {
     const color = document.getElementById("footnoteColor")?.value || "#2563eb";
     els.editor.querySelectorAll(".footnote-marker").forEach((marker) => {
         marker.style.color = color;
+    });
+}
+
+// ==== 대사 블록 사이 간격 (대사 탭 > 간격) ====
+// 로그: 다른 인물로 넘어갈 때 "대사(턴) 간 간격", 같은 인물이 이어 말할 때 "같은 인물 연속 대사 간격"
+// 블록: 모든 대사 줄 사이에 "대사 줄 사이 간격"
+// (예전엔 이 설정값을 읽는 곳이 없어서 숫자를 바꿔도 아무 변화가 없었다)
+function isBlankParagraph(el) {
+    if (!el || el.classList.contains("dlg-editor-marker")) return false;
+    if (el.querySelector("img, hr, .editor-image-block, .html-embed-block, .hr-divider, .template-block, .box-quote")) return false;
+    return el.textContent.replace(/[\u200b\s]/g, "") === "";
+}
+function removeBlankLinesBetweenDialogue(root) {
+    if (!root) return;
+    root.querySelectorAll(".dlg-editor-marker").forEach((marker) => {
+        const blanks = [];
+        let prev = marker.previousElementSibling;
+        while (prev && isBlankParagraph(prev)) { blanks.push(prev); prev = prev.previousElementSibling; }
+        if (prev && prev.classList.contains("dlg-editor-marker")) blanks.forEach((b) => b.remove());
+    });
+}
+function applyDialogueGaps(root) {
+    if (!root) return;
+    const mode = document.getElementById("dialogueMode")?.value || "log";
+    const num = (id, d) => { const v = parseFloat(document.getElementById(id)?.value); return isNaN(v) ? d : v; };
+    const lineGap = num("dlgLineGap", 10);
+    const contGap = num("dlgContinuationGap", 4);
+    root.querySelectorAll(".dlg-editor-marker").forEach((marker) => {
+        const prev = marker.previousElementSibling;
+        if (!prev || !prev.classList.contains("dlg-editor-marker")) return;
+        let gap = lineGap;
+        if (mode === "log") {
+            const a = dialogueLines.find((l) => l.id === prev.dataset.lineId);
+            const b = dialogueLines.find((l) => l.id === marker.dataset.lineId);
+            if (a && b && a.charId === b.charId) gap = contGap;
+        }
+        prev.style.marginBottom = `${gap}px`;
     });
 }
 
@@ -2711,7 +2773,7 @@ onClick("btnSaveCharacter", () => {
     const name = nameInput.value.trim() || "이름 없음";
     const existing = editingCharacterId ? characters.find((x) => x.id === editingCharacterId) : null;
     const avatarData = pendingCharAvatarData !== null ? pendingCharAvatarData : (existing ? existing.avatarData : null);
-    const color = document.getElementById("charEditorColor")?.value || "#171717";
+    const color = document.getElementById("charEditorColor")?.value || nextCharPointColor();
 
     if (existing) {
         existing.name = name;
