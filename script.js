@@ -474,6 +474,10 @@ function updateCanvasCore() {
         }
     }
 
+    // 대사 블록 사이에 저절로 생기는 빈 줄(대사 추가할 때 지문 입력용으로 붙는 줄)은 미리보기에서 빼고,
+    // 그 자리를 대사 탭의 간격 설정으로 채운다 (아래 applyDialogueGaps). 편집창의 빈 줄은 그대로 둔다.
+    removeBlankLinesBetweenDialogue(textWrapper);
+
     const columnsActive = !!(els.columnToggle && els.columnToggle.checked && textWrapper.querySelector(".canvas-column"));
     const paragraphGroups = columnsActive
         ? Array.from(textWrapper.querySelectorAll(".canvas-column")).map((col) =>
@@ -509,6 +513,7 @@ function updateCanvasCore() {
             }
         });
     });
+    applyDialogueGaps(textWrapper);
 
     const infoContainer = document.getElementById("canvasInfo");
     const textContainer = document.getElementById("canvasTextContainer");
@@ -2183,6 +2188,43 @@ function refreshFootnoteMarkerColors() {
     const color = document.getElementById("footnoteColor")?.value || "#2563eb";
     els.editor.querySelectorAll(".footnote-marker").forEach((marker) => {
         marker.style.color = color;
+    });
+}
+
+// ==== 대사 블록 사이 간격 (대사 탭 > 간격) ====
+// 로그: 다른 인물로 넘어갈 때 "대사(턴) 간 간격", 같은 인물이 이어 말할 때 "같은 인물 연속 대사 간격"
+// 블록: 모든 대사 줄 사이에 "대사 줄 사이 간격"
+// (예전엔 이 설정값을 읽는 곳이 없어서 숫자를 바꿔도 아무 변화가 없었다)
+function isBlankParagraph(el) {
+    if (!el || el.classList.contains("dlg-editor-marker")) return false;
+    if (el.querySelector("img, hr, .editor-image-block, .html-embed-block, .hr-divider, .template-block, .box-quote")) return false;
+    return el.textContent.replace(/[\u200b\s]/g, "") === "";
+}
+function removeBlankLinesBetweenDialogue(root) {
+    if (!root) return;
+    root.querySelectorAll(".dlg-editor-marker").forEach((marker) => {
+        const blanks = [];
+        let prev = marker.previousElementSibling;
+        while (prev && isBlankParagraph(prev)) { blanks.push(prev); prev = prev.previousElementSibling; }
+        if (prev && prev.classList.contains("dlg-editor-marker")) blanks.forEach((b) => b.remove());
+    });
+}
+function applyDialogueGaps(root) {
+    if (!root) return;
+    const mode = document.getElementById("dialogueMode")?.value || "log";
+    const num = (id, d) => { const v = parseFloat(document.getElementById(id)?.value); return isNaN(v) ? d : v; };
+    const lineGap = num("dlgLineGap", 10);
+    const contGap = num("dlgContinuationGap", 4);
+    root.querySelectorAll(".dlg-editor-marker").forEach((marker) => {
+        const prev = marker.previousElementSibling;
+        if (!prev || !prev.classList.contains("dlg-editor-marker")) return;
+        let gap = lineGap;
+        if (mode === "log") {
+            const a = dialogueLines.find((l) => l.id === prev.dataset.lineId);
+            const b = dialogueLines.find((l) => l.id === marker.dataset.lineId);
+            if (a && b && a.charId === b.charId) gap = contGap;
+        }
+        prev.style.marginBottom = `${gap}px`;
     });
 }
 
