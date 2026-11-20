@@ -318,18 +318,109 @@ function applyPresetSnapshot(data) {
     }
 }
 
-function getPresetsFromStorage() {
+// ==== 프리셋 저장소 ====
+// 예전엔 localStorage(브라우저당 약 5MB)에 넣어서 HTML 배경처럼 큰 프리셋 몇 개면 금방 꽉 찼다.
+// 지금은 훨씬 넉넉한 IndexedDB에 보관하고, 화면에서는 메모리에 올려둔 목록(__presetCache)을 바로 쓴다.
+// 처음 열 때 localStorage에 남아 있던 프리셋은 IndexedDB로 옮긴 뒤 localStorage에서 지운다.
+const PRESET_LS_KEY = "quoteStudioPresets";
+const PRESET_DB = "camelia-presets";
+const PRESET_STORE = "presets";
+let __presetCache = [];
+let __presetUseIdb = !!window.indexedDB;
+
+function presetOpenDb() {
+    return new Promise((resolve, reject) => {
+        if (!window.indexedDB) return reject(new Error("IndexedDB 미지원"));
+        const req = indexedDB.open(PRESET_DB, 1);
+        req.onupgradeneeded = () => {
+            if (!req.result.objectStoreNames.contains(PRESET_STORE)) req.result.createObjectStore(PRESET_STORE);
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+        req.onblocked = () => reject(new Error("IndexedDB가 막혀 있음"));
+    });
+}
+
+async function presetDbRead() {
+    const db = await presetOpenDb();
     try {
-        const raw = localStorage.getItem("quoteStudioPresets");
+        return await new Promise((resolve, reject) => {
+            const r = db.transaction(PRESET_STORE, "readonly").objectStore(PRESET_STORE).get("list");
+            r.onsuccess = () => resolve(Array.isArray(r.result) ? r.result : null);
+            r.onerror = () => reject(r.error);
+        });
+    } finally { db.close(); }
+}
+
+async function presetDbWrite(list) {
+    const db = await presetOpenDb();
+    try {
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction(PRESET_STORE, "readwrite");
+            tx.objectStore(PRESET_STORE).put(list, "list");
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(tx.error || new Error("저장 중단"));
+        });
+    } finally { db.close(); }
+}
+
+function presetLsRead() {
+    try {
+        const raw = localStorage.getItem(PRESET_LS_KEY);
         return raw ? JSON.parse(raw) : [];
     } catch (e) {
         return [];
     }
 }
 
-function savePresetsToStorage(list) {
+// 페이지를 열 때 한 번: IndexedDB에서 목록을 읽어 오고, 필요하면 localStorage 것을 옮긴다
+window.__presetsReady = (async () => {
+    const legacy = presetLsRead();
+    if (__presetUseIdb) {
+        try {
+            const stored = await presetDbRead();
+            let list = stored || [];
+            if (legacy.length) {
+                // 아직 안 옮긴 예전 프리셋을 뒤에 붙인다 (이름+설정이 같은 건 건너뜀)
+                const sig = (p) => `${p.name}|${JSON.stringify(p.data)}`;
+                const have = new Set(list.map(sig));
+                legacy.forEach((p) => { if (p && !have.has(sig(p))) { list.push(p); have.add(sig(p)); } });
+                await presetDbWrite(list);
+                try { localStorage.removeItem(PRESET_LS_KEY); } catch (e) {}
+            }
+            __presetCache = list;
+            return;
+        } catch (e) {
+            console.warn("IndexedDB를 쓸 수 없어서 localStorage에 프리셋을 저장해요:", e);
+            __presetUseIdb = false;
+        }
+    }
+    __presetCache = legacy;
+})().then(() => {
+    if (typeof renderPresets === "function" && document.readyState !== "loading") renderPresets();
+});
+
+function getPresetsFromStorage() {
+    return __presetCache.slice();
+}
+
+// 저장에 성공하면 true. 실패하면(공간 부족 등) 목록은 그대로 두고 false
+async function savePresetsToStorage(list) {
+    await window.__presetsReady;
+    if (__presetUseIdb) {
+        try {
+            await presetDbWrite(list);
+            __presetCache = list.slice();
+            return true;
+        } catch (e) {
+            console.warn("프리셋 저장 실패:", e);
+            return false;
+        }
+    }
     try {
-        localStorage.setItem("quoteStudioPresets", JSON.stringify(list));
+        localStorage.setItem(PRESET_LS_KEY, JSON.stringify(list));
+        __presetCache = list.slice();
         return true;
     } catch (e) {
         console.warn("프리셋 저장 실패:", e);
@@ -421,12 +512,13 @@ async function savePreset() {
     try {
         const data = getPresetSnapshot();
         const thumb = await capturePresetThumbnail();
+        await window.__presetsReady;
         const list = getPresetsFromStorage();
         list.push({ name, data, thumb });
-        if (!savePresetsToStorage(list)) {
+        if (!(await savePresetsToStorage(list))) {
             // 저장 공간이 모자라면 미리보기 없이 다시 시도
             list[list.length - 1].thumb = null;
-            if (!savePresetsToStorage(list)) {
+            if (!(await savePresetsToStorage(list))) {
                 list.pop();
                 alert("저장 공간이 부족해서 프리셋을 저장하지 못했어요. 안 쓰는 프리셋을 지워주세요.");
                 return;
@@ -468,10 +560,11 @@ function undoPresetApply() {
     if (typeof showToast === "function") showToast(`"${last.name}" 적용을 취소했어요`);
 }
 
-function deletePreset(index) {
+async function deletePreset(index) {
+    await window.__presetsReady;
     const list = getPresetsFromStorage();
     list.splice(index, 1);
-    savePresetsToStorage(list);
+    if (!(await savePresetsToStorage(list))) alert("프리셋을 지우지 못했어요. 다시 시도해 주세요.");
     renderPresets();
 }
 
@@ -498,10 +591,11 @@ function buildPresetSwatch(data) {
 async function fillMissingPresetThumb(index, name) {
     const thumb = await capturePresetThumbnail();
     if (!thumb) return;
+    await window.__presetsReady;
     const list = getPresetsFromStorage();
     if (!list[index] || list[index].name !== name) return;
-    list[index].thumb = thumb;
-    if (savePresetsToStorage(list)) renderPresets();
+    list[index] = Object.assign({}, list[index], { thumb });
+    if (await savePresetsToStorage(list)) renderPresets();
 }
 
 // 프리셋 목록을 화면에 그려줌 (script.js의 DOMContentLoaded에서 호출됨)
@@ -652,6 +746,7 @@ async function backupWriteStickers(list) {
 }
 
 async function backupAllData() {
+    await window.__presetsReady;
     const presets = getPresetsFromStorage();
     const chars = (typeof characters !== "undefined" && Array.isArray(characters)) ? characters : [];
     const rules = (typeof replacementRules !== "undefined" && Array.isArray(replacementRules)) ? replacementRules : [];
@@ -689,6 +784,7 @@ async function restoreAllData(file) {
     if (!confirm(`프리셋 ${inPresets.length}개 · 캐릭터 ${inChars.length}명 · 치환 규칙 ${inRules.length}개 · 스티커 ${inStickers.length}개가 들어 있는 백업이에요.\n기존 것은 그대로 두고, 없는 것만 추가할까요?`)) return;
 
     // 프리셋: 이름과 설정이 완전히 같은 것은 이미 있는 것으로 보고 건너뜀
+    await window.__presetsReady;
     const list = getPresetsFromStorage();
     const sig = (p) => `${p.name}|${JSON.stringify(p.data)}`;
     const have = new Set(list.map(sig));
@@ -697,9 +793,9 @@ async function restoreAllData(file) {
     for (const p of inPresets) {
         if (have.has(sig(p))) continue;
         list.push({ name: p.name, data: p.data, thumb: typeof p.thumb === "string" ? p.thumb : null });
-        if (!savePresetsToStorage(list)) {
+        if (!(await savePresetsToStorage(list))) {
             list[list.length - 1].thumb = null; // 공간이 모자라면 미리보기 없이
-            if (!savePresetsToStorage(list)) { list.pop(); savePresetsToStorage(list); presetsFull = true; break; }
+            if (!(await savePresetsToStorage(list))) { list.pop(); presetsFull = true; break; }
         }
         have.add(sig(p));
         addedPresets++;
