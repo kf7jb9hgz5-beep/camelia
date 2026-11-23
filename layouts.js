@@ -157,6 +157,72 @@ const PAGE_LAYOUTS = {
             L.appendChild(h.img("b", { right: 5, bottom: 5, width: 28, height: 25 }, { gray: s.gray, border: s.border }));
         },
     },
+    split: {
+        name: "양쪽 사진 + 가운데 좁은 글",
+        size: [820, 640],
+        slots: [{ label: "가운데 좁은 글", left: 43, top: 5, width: 14, bottom: 5, align: "center", vcenter: true, size: 11 }],
+        slotsFor(v) {
+            const w = Math.min(60, Math.max(5, parseFloat(v.colW) || 14));
+            return [Object.assign({}, this.slots[0], { left: 50 - w / 2, width: w })];
+        },
+        images: [["left", "왼쪽 사진"], ["right", "오른쪽 사진"]],
+        fields: [
+            { key: "colW", label: "가운데 글 칸 폭", type: "range", min: 5, max: 60, def: 14 },
+            { key: "leftOvColor", label: "왼쪽 오버레이색", type: "color", def: "#ffffff" },
+            { key: "leftOv", label: "왼쪽 투명도", type: "range", min: 0, max: 100, def: 0 },
+            { key: "rightOvColor", label: "오른쪽 오버레이색", type: "color", def: "#000000" },
+            { key: "rightOv", label: "오른쪽 투명도", type: "range", min: 0, max: 100, def: 0 },
+            { key: "gray", label: "사진 흑백", type: "check", def: false },
+        ],
+        render(L, s, h) {
+            const imgs = pageLayoutState.images.split || {};
+            [["left", 0, s.leftOvColor, s.leftOv], ["right", 50, s.rightOvColor, s.rightOv]].forEach(([key, x, c, amt]) => {
+                L.appendChild(h.img(key, { left: x, top: 0, width: 50, height: 100 }, { gray: s.gray }));
+                if (imgs[key] && parseFloat(amt) > 0) {
+                    const ov = h.box({ left: x, top: 0, width: 50, height: 100 }, { background: c });
+                    ov.style.opacity = String(parseFloat(amt) / 100);
+                    L.appendChild(ov);
+                }
+            });
+        },
+    },
+    photoPanel: {
+        name: "왼쪽 사진 + 오른쪽 단색 칸",
+        size: [600, 800],
+        slots: [
+            { label: "사진 위 큰 글", left: 4, top: 46, width: 56, size: 34, maxH: 20, align: "center", color: "#f3d6e4" },
+            { label: "사진 아래 글", left: 6, bottom: 3, width: 52, size: 13, maxH: 22, align: "center", color: "#eeeeee" },
+            { label: "오른쪽 칸 글", left: 66, top: 5, width: 30, bottom: 5, size: 11, align: "center", vcenter: true },
+        ],
+        slotsFor(v) {
+            const pw = Math.min(60, Math.max(20, parseFloat(v.panelW) || 36));
+            const pl = 100 - pw;
+            const pad = 3;
+            return [
+                Object.assign({}, this.slots[0], { left: 3, width: pl - 6 }),
+                Object.assign({}, this.slots[1], { left: 4, width: pl - 8 }),
+                Object.assign({}, this.slots[2], { left: pl + pad, width: pw - pad * 2 }),
+            ];
+        },
+        images: [["photo", "왼쪽 사진"]],
+        fields: [
+            { key: "panelW", label: "오른쪽 칸 폭", type: "range", min: 20, max: 60, def: 36 },
+            { key: "panelColor", label: "오른쪽 칸 색", type: "color", def: "#f3dfe7" },
+            { key: "ovColor", label: "사진 오버레이색", type: "color", def: "#000000" },
+            { key: "ov", label: "사진 투명도", type: "range", min: 0, max: 100, def: 20 },
+            { key: "gray", label: "사진 흑백", type: "check", def: true },
+        ],
+        render(L, s, h) {
+            const pw = Math.min(60, Math.max(20, parseFloat(s.panelW) || 36));
+            L.appendChild(h.img("photo", { left: 0, top: 0, width: 100 - pw, height: 100 }, { gray: s.gray }));
+            if (((pageLayoutState.images.photoPanel || {}).photo) && parseFloat(s.ov) > 0) {
+                const ov = h.box({ left: 0, top: 0, width: 100 - pw, height: 100 }, { background: s.ovColor });
+                ov.style.opacity = String(parseFloat(s.ov) / 100);
+                L.appendChild(ov);
+            }
+            L.appendChild(h.box({ left: 100 - pw, top: 0, width: pw, height: 100 }, { background: s.panelColor, boxShadow: "-4px 0 14px rgba(0,0,0,.18)" }));
+        },
+    },
 };
 
 // ---- 상태 ----
@@ -369,12 +435,18 @@ function clearPageLayout() {
 // 페이지 크기(너비 · 높이, px). 레이아웃마다 따로 기억한다.
 function getPageLayoutSize(id) {
     const v = pageLayoutState.values[id] || {};
-    const w = Math.min(2000, Math.max(200, parseFloat(v.pageW) || 520));
-    const h = Math.min(3000, Math.max(200, parseFloat(v.pageH) || 650));
+    const d = (PAGE_LAYOUTS[id] && PAGE_LAYOUTS[id].size) || [520, 650];
+    const w = Math.min(2000, Math.max(200, parseFloat(v.pageW) || d[0]));
+    const h = Math.min(3000, Math.max(200, parseFloat(v.pageH) || d[1]));
     return { w, h };
 }
 
 // 칸 글 설정: t{번호}=글, t{번호}_font, t{번호}_size, t{번호}_lh(행간 %)
+function getLayoutSlots(id) {
+    const t = PAGE_LAYOUTS[id];
+    return t.slotsFor ? t.slotsFor(getPageLayoutValues(id)) : t.slots;
+}
+
 function getSlotValues(id, i) {
     const t = PAGE_LAYOUTS[id];
     const v = pageLayoutState.values[id] || {};
@@ -384,6 +456,7 @@ function getSlotValues(id, i) {
         font: v[`t${i}_font`] || "",
         size: parseFloat(v[`t${i}_size`]) || p.size || 13,
         lh: parseFloat(v[`t${i}_lh`]) || 170,
+        color: v[`t${i}_color`] || p.color || "",
     };
 }
 
@@ -429,7 +502,7 @@ function applyPageLayout() {
     }
     if (textLayer.parentNode !== area || textLayer.previousSibling !== layer) area.insertBefore(textLayer, layer.nextSibling);
     textLayer.innerHTML = "";
-    t.slots.forEach((p, i) => {
+    getLayoutSlots(id).forEach((p, i) => {
         const sv = getSlotValues(id, i);
         const el = document.createElement("div");
         el.className = "pl-slot";
@@ -442,7 +515,7 @@ function applyPageLayout() {
         inner.style.fontSize = `${sv.size}px`;
         inner.style.lineHeight = `${(sv.size * sv.lh / 100).toFixed(2)}px`;
         inner.style.letterSpacing = `${parseFloat(els.letterSpacing?.value) || 0}px`;
-        inner.style.color = color;
+        inner.style.color = sv.color || color;
         inner.style.wordBreak = els.wordBreak?.value || "keep-all";
         inner.style.overflowWrap = "break-word";
         inner.style.whiteSpace = "pre-wrap";
@@ -485,6 +558,8 @@ function fitPageLayoutSlot(el, inner, p, H) {
         inner.style.transform = `scale(${k})`;
         inner.style.transformOrigin = "left top";
     }
+    // 세로 가운데 정렬 칸: 남는 높이의 절반만큼 내린다
+    if (p.vcenter && h < avail) inner.style.marginTop = `${(avail - h) / 2}px`;
     if (p.top !== undefined && p.bottom !== undefined) return;
     el.style.height = `${Math.min(h, avail)}px`;
 }
@@ -587,6 +662,12 @@ function buildPageLayoutPanel() {
         fr.appendChild(fs);
         numberInput(row("크기"), sv.size, 6, 80, 0.5, "px", (x) => setVal(`t${i}_size`, x));
         numberInput(row("행간"), sv.lh, 80, 400, 5, "%", (x) => setVal(`t${i}_lh`, x));
+        const cr = row("글자색");
+        const ci = document.createElement("input");
+        ci.type = "color";
+        ci.value = sv.color || els.globalTextColor?.value || "#222222";
+        ci.addEventListener("input", () => setVal(`t${i}_color`, ci.value));
+        cr.appendChild(ci);
     });
 
     if ((t.images || []).length) section("사진");
