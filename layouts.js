@@ -186,6 +186,43 @@ const PAGE_LAYOUTS = {
             });
         },
     },
+    photoPanel: {
+        name: "왼쪽 사진 + 오른쪽 단색 칸",
+        size: [600, 800],
+        slots: [
+            { label: "사진 위 큰 글", left: 4, top: 46, width: 56, size: 34, maxH: 20, align: "center", color: "#f3d6e4" },
+            { label: "사진 아래 글", left: 6, bottom: 3, width: 52, size: 13, maxH: 22, align: "center", color: "#eeeeee" },
+            { label: "오른쪽 칸 글", left: 66, top: 5, width: 30, bottom: 5, size: 11, align: "center", vcenter: true },
+        ],
+        slotsFor(v) {
+            const pw = Math.min(60, Math.max(20, parseFloat(v.panelW) || 36));
+            const pl = 100 - pw;
+            const pad = 3;
+            return [
+                Object.assign({}, this.slots[0], { left: 3, width: pl - 6 }),
+                Object.assign({}, this.slots[1], { left: 4, width: pl - 8 }),
+                Object.assign({}, this.slots[2], { left: pl + pad, width: pw - pad * 2 }),
+            ];
+        },
+        images: [["photo", "왼쪽 사진"]],
+        fields: [
+            { key: "panelW", label: "오른쪽 칸 폭", type: "range", min: 20, max: 60, def: 36 },
+            { key: "panelColor", label: "오른쪽 칸 색", type: "color", def: "#f3dfe7" },
+            { key: "ovColor", label: "사진 오버레이색", type: "color", def: "#000000" },
+            { key: "ov", label: "사진 투명도", type: "range", min: 0, max: 100, def: 20 },
+            { key: "gray", label: "사진 흑백", type: "check", def: true },
+        ],
+        render(L, s, h) {
+            const pw = Math.min(60, Math.max(20, parseFloat(s.panelW) || 36));
+            L.appendChild(h.img("photo", { left: 0, top: 0, width: 100 - pw, height: 100 }, { gray: s.gray }));
+            if (((pageLayoutState.images.photoPanel || {}).photo) && parseFloat(s.ov) > 0) {
+                const ov = h.box({ left: 0, top: 0, width: 100 - pw, height: 100 }, { background: s.ovColor });
+                ov.style.opacity = String(parseFloat(s.ov) / 100);
+                L.appendChild(ov);
+            }
+            L.appendChild(h.box({ left: 100 - pw, top: 0, width: pw, height: 100 }, { background: s.panelColor, boxShadow: "-4px 0 14px rgba(0,0,0,.18)" }));
+        },
+    },
 };
 
 // ---- 상태 ----
@@ -419,6 +456,7 @@ function getSlotValues(id, i) {
         font: v[`t${i}_font`] || "",
         size: parseFloat(v[`t${i}_size`]) || p.size || 13,
         lh: parseFloat(v[`t${i}_lh`]) || 170,
+        color: v[`t${i}_color`] || p.color || "",
     };
 }
 
@@ -477,7 +515,7 @@ function applyPageLayout() {
         inner.style.fontSize = `${sv.size}px`;
         inner.style.lineHeight = `${(sv.size * sv.lh / 100).toFixed(2)}px`;
         inner.style.letterSpacing = `${parseFloat(els.letterSpacing?.value) || 0}px`;
-        inner.style.color = color;
+        inner.style.color = sv.color || color;
         inner.style.wordBreak = els.wordBreak?.value || "keep-all";
         inner.style.overflowWrap = "break-word";
         inner.style.whiteSpace = "pre-wrap";
@@ -624,6 +662,12 @@ function buildPageLayoutPanel() {
         fr.appendChild(fs);
         numberInput(row("크기"), sv.size, 6, 80, 0.5, "px", (x) => setVal(`t${i}_size`, x));
         numberInput(row("행간"), sv.lh, 80, 400, 5, "%", (x) => setVal(`t${i}_lh`, x));
+        const cr = row("글자색");
+        const ci = document.createElement("input");
+        ci.type = "color";
+        ci.value = sv.color || els.globalTextColor?.value || "#222222";
+        ci.addEventListener("input", () => setVal(`t${i}_color`, ci.value));
+        cr.appendChild(ci);
     });
 
     if ((t.images || []).length) section("사진");
