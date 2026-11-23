@@ -15,7 +15,7 @@ const PAGE_LAYOUTS = {
     magStrip: {
         name: "잡지 · 오른쪽 사진줄",
         hint: "글은 왼쪽 아래 칸에 들어가요. 글자 크기 11~13 정도를 추천해요.",
-        slots: [{ left: 8, bottom: 21, width: 50 }],
+        slots: [{ left: 8, bottom: 21, width: 50, maxH: 70 }],
         images: [["s1", "사진 1"], ["s2", "사진 2"], ["s3", "사진 3"], ["s4", "사진 4"]],
         fields: [
             { key: "label", label: "사진 위 작은 글", type: "text", def: "clover" },
@@ -116,7 +116,7 @@ const PAGE_LAYOUTS = {
     center: {
         name: "가운데 그림 + 캡션",
         hint: "글은 그림 아래 가운데에 들어가요. 짧은 문장 몇 줄이 잘 어울려요.",
-        slots: [{ left: 10, top: 63, width: 80, align: "center" }],
+        slots: [{ left: 10, top: 62, width: 80, align: "center", maxH: 33 }],
         images: [["main", "가운데 그림"]],
         fields: [
             { key: "border", label: "그림 테두리", type: "check", def: true },
@@ -130,7 +130,7 @@ const PAGE_LAYOUTS = {
     duo: {
         name: "사진 두 장 · 대각선",
         hint: "구분선 앞의 글은 왼쪽 위 사진 옆, 구분선 뒤의 글은 오른쪽 아래 사진 옆에 들어가요.",
-        slots: [{ left: 46, top: 5, width: 50 }, { left: 4, bottom: 5, width: 50, align: "right" }],
+        slots: [{ left: 46, top: 5, width: 50, maxH: 57 }, { left: 4, bottom: 5, width: 50, align: "right", maxH: 57 }],
         images: [["a", "왼쪽 위 사진"], ["b", "오른쪽 아래 사진"]],
         fields: [
             { key: "border", label: "사진 테두리", type: "check", def: true },
@@ -146,10 +146,10 @@ const PAGE_LAYOUTS = {
         name: "두 단 + 가운데 사진 + 각주",
         hint: "구분선으로 나눈 순서대로 ① 왼쪽 단 ② 오른쪽 단 ③ 가운데 흐린 각주 ④ 아래 사진 옆 글 칸에 들어가요. 글자 크기 10~12 정도를 추천해요.",
         slots: [
-            { left: 5, top: 5, width: 27 },
-            { left: 68, top: 5, width: 27 },
-            { left: 34, top: 41, width: 61, note: true },
-            { left: 60, top: 56, width: 35 },
+            { left: 5, top: 5, width: 27, maxH: 33 },
+            { left: 68, top: 5, width: 27, maxH: 33 },
+            { left: 34, top: 41, width: 61, note: true, maxH: 12 },
+            { left: 60, top: 56, width: 35, maxH: 39 },
         ],
         images: [["mid", "가운데 사진"], ["low", "아래 사진"]],
         fields: [
@@ -171,7 +171,7 @@ const PAGE_LAYOUTS = {
     zigzag: {
         name: "지그재그 소개 + 배경 사진",
         hint: "구분선 앞의 글은 위(왼쪽 사진 옆), 구분선 뒤의 글은 아래(오른쪽 사진 옆, 오른쪽 정렬)에 들어가요.",
-        slots: [{ left: 37, top: 5, width: 58 }, { left: 5, bottom: 5, width: 58, align: "right" }],
+        slots: [{ left: 37, top: 5, width: 58, maxH: 58 }, { left: 5, bottom: 5, width: 58, align: "right", maxH: 58 }],
         images: [["art", "배경 사진"], ["a", "위 사진"], ["b", "아래 사진"]],
         fields: [
             { key: "overlayColor", label: "오버레이색", type: "color", def: "#000000" },
@@ -419,9 +419,21 @@ function applyPageLayout() {
 
     // 글 위치는 페이지 기준이므로 가로 장평(scaleX) 변형은 끈다
     wrapper.style.transform = "none";
-    wrapper.style.width = "100%";
     wrapper.style.marginLeft = "0";
     wrapper.style.display = "block";
+    wrapper.style.padding = "0";
+    // 본문 칸(wrapper)을 캔버스와 정확히 같은 자리 · 크기로 맞춘다 (다른 설정이 감싼 틀이 있어도)
+    wrapper.style.left = "0px";
+    wrapper.style.top = "0px";
+    wrapper.style.width = `${area.offsetWidth}px`;
+    wrapper.style.height = `${area.offsetHeight}px`;
+    {
+        const ar = area.getBoundingClientRect();
+        const wr = wrapper.getBoundingClientRect();
+        const k = ar.width / (area.offsetWidth || ar.width || 1) || 1;
+        wrapper.style.left = `${(ar.left - wr.left) / k}px`;
+        wrapper.style.top = `${(ar.top - wr.top) / k}px`;
+    }
 
     // 본문을 구분선 기준으로 나눈다
     const groups = [[]];
@@ -471,18 +483,13 @@ function applyPageLayout() {
     // 단마다 마지막 문단 아래 여백 없애기
     slotEls.forEach((el) => { const last = el.lastElementChild; if (last) { last.style.marginBottom = "0px"; } });
 
-    // 넘치는 글은 다음 칸으로 (문서 두 쪽)
-    if (t.flow && groups.length < t.slots.length) {
-        for (let i = 0; i < slotEls.length - 1; i++) {
-            const a = slotEls[i], b = slotEls[i + 1];
-            let guard = 0;
-            while (a.scrollHeight > a.clientHeight + 1 && a.children.length > 1 && guard++ < 400) {
-                const moved = a.lastElementChild;
-                b.insertBefore(moved, b.firstChild);
-            }
-        }
-        slotEls.forEach((el) => { Array.from(el.children).forEach((c, idx, arr) => { c.style.marginBottom = idx === arr.length - 1 ? "0px" : `${els.paraSpacing.value}px`; }); });
-    }
+    // 문서 두 쪽: 글이 앞 쪽을 채우면 다음 쪽으로 넘기고, 그래도 넘치면 모든 쪽 글자를 같은 비율로 줄인다
+    const flowing = t.flow && groups.length < t.slots.length;
+    if (flowing) flowPageLayoutSlots(slotEls, t.slots, H);
+
+    // 칸마다 글이 넘치면 글자를 같은 비율로 줄여서 칸 안에 다 들어가게 한다
+    // (글자 크기 · 대사 블록 · 사진 등 안쪽 크기를 한꺼번에 줄이려고 transform: scale을 쓴다. 저장에도 그대로 나옴)
+    if (!flowing) slotEls.forEach((el, i) => fitPageLayoutSlot(el, t.slots[i], H));
 
     // 장식 레이어
     let layer = document.getElementById("pageLayoutLayer");
@@ -496,6 +503,74 @@ function applyPageLayout() {
     const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
     const muted = m ? `rgba(${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)},0.5)` : "rgba(0,0,0,.45)";
     t.render(layer, values, pageLayoutHelpers(W, H, color, muted, font));
+}
+
+function flowPageLayoutSlots(slotEls, slots, H) {
+    const items = [];
+    slotEls.forEach((el) => { while (el.firstChild) items.push(el.removeChild(el.firstChild)); });
+    const inners = slotEls.map((el) => {
+        el.style.overflow = "hidden";
+        const inner = document.createElement("div");
+        inner.className = "pl-slot-inner";
+        inner.style.transformOrigin = "left top";
+        el.appendChild(inner);
+        return inner;
+    });
+    const avails = slots.map((p) => H * (100 - p.top - p.bottom) / 100);
+    const gap = `${parseFloat(els.paraSpacing?.value) || 0}px`;
+    const pour = (k) => {
+        inners.forEach((inner, i) => {
+            inner.innerHTML = "";
+            inner.style.width = `${slotEls[i].clientWidth / k}px`;
+            inner.style.transform = k < 1 ? `scale(${k})` : "";
+        });
+        let page = 0;
+        for (const node of items) {
+            const inner = inners[page];
+            inner.appendChild(node);
+            if (node.nodeType === 1) node.style.marginBottom = gap;
+            if (inner.offsetHeight * k > avails[page] && inner.childNodes.length > 1 && page < inners.length - 1) {
+                inner.removeChild(node);
+                page++;
+                inners[page].appendChild(node);
+            }
+        }
+        inners.forEach((inner) => { const last = inner.lastElementChild; if (last) last.style.marginBottom = "0px"; });
+        return inners[inners.length - 1].offsetHeight * k <= avails[avails.length - 1] + 1;
+    };
+    let k = 1, guard = 0;
+    while (!pour(k) && k > 0.3 && guard++ < 30) k = Math.max(0.3, k * 0.94);
+}
+
+function fitPageLayoutSlot(el, p, H) {
+    let avail = null;
+    if (p.top !== undefined && p.bottom !== undefined) avail = H * (100 - p.top - p.bottom) / 100;
+    else if (p.maxH !== undefined) avail = H * p.maxH / 100;
+    const inner = document.createElement("div");
+    inner.className = "pl-slot-inner";
+    while (el.firstChild) inner.appendChild(el.firstChild);
+    el.appendChild(inner);
+    if (!avail) return;
+    const slotW = el.clientWidth;
+    el.style.overflow = "hidden";
+    let k = 1;
+    const measure = () => {
+        inner.style.width = `${slotW / k}px`;
+        return inner.offsetHeight * k;
+    };
+    let h = measure();
+    let guard = 0;
+    while (h > avail && k > 0.3 && guard++ < 40) {
+        k = Math.max(0.3, k * Math.min(0.97, Math.sqrt(avail / h)));
+        h = measure();
+    }
+    if (k < 1) {
+        inner.style.transform = `scale(${k})`;
+        inner.style.transformOrigin = "left top";
+    }
+    // 아래 기준 칸(위가 열려 있는 칸)은 줄인 높이에 맞춰야 아래쪽에 붙는다
+    el.style.height = `${Math.min(h, avail)}px`;
+    if (p.top !== undefined && p.bottom !== undefined) el.style.height = "";
 }
 
 // ---- 설정 화면 ----
