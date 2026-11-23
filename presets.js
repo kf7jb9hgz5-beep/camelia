@@ -128,7 +128,9 @@ function getPresetSnapshot() {
         wmColor: document.getElementById("wmColor")?.value,
         wmSize: document.getElementById("wmSize")?.value,
         wmPos: document.getElementById("wmPos")?.value,
-        wmOpacity: document.getElementById("wmOpacity")?.value
+        wmOpacity: document.getElementById("wmOpacity")?.value,
+        // 페이지 레이아웃(layouts.js): 고른 레이아웃 · 칸 설정 · 넣은 사진
+        pageLayout: (typeof getPageLayoutState === "function") ? getPageLayoutState() : undefined
     };
 }
 
@@ -312,6 +314,8 @@ function applyPresetSnapshot(data) {
             subTextColor: els.subTextColor.value
         });
     }
+
+    if (data.pageLayout && typeof setPageLayoutState === "function") setPageLayoutState(data.pageLayout);
 
     if (typeof updateCanvas === "function") {
         updateCanvas();

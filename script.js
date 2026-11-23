@@ -192,13 +192,19 @@ function updateDockDots() {
 
 function updateCanvas() {
     updateCanvasCore();
-    if (typeof applySideImage === "function") applySideImage();
-    // ⚠️ 글자 맞춤(fit)은 옆 사진이 레이아웃을 확정한 "다음에" 해야 한다.
-    // (예전엔 코어 안에서 먼저 맞추고 옆 사진을 나중에 붙여서 비율이 어긋났음)
-    if (els.ratioSelect && els.ratioSelect.value !== "free") {
-        fitTextToCanvas();
-        // 글자 크기가 바뀌면 옆 사진 칸 높이도 바뀌므로 한 번 더 맞춰준다.
+    if (typeof isPageLayoutActive === "function" && isPageLayoutActive()) {
+        // 페이지 레이아웃(layouts.js): 글 칸 · 사진 칸 위치가 정해져 있어서 옆 사진 · 글자 맞춤은 쓰지 않는다
+        applyPageLayout();
+    } else {
+        if (typeof clearPageLayout === "function") clearPageLayout();
         if (typeof applySideImage === "function") applySideImage();
+        // ⚠️ 글자 맞춤(fit)은 옆 사진이 레이아웃을 확정한 "다음에" 해야 한다.
+        // (예전엔 코어 안에서 먼저 맞추고 옆 사진을 나중에 붙여서 비율이 어긋났음)
+        if (els.ratioSelect && els.ratioSelect.value !== "free") {
+            fitTextToCanvas();
+            // 글자 크기가 바뀌면 옆 사진 칸 높이도 바뀌므로 한 번 더 맞춰준다.
+            if (typeof applySideImage === "function") applySideImage();
+        }
     }
     if (typeof renderHalftoneLayer === "function") renderHalftoneLayer();
     if (typeof renderWatermarkLayer === "function") renderWatermarkLayer();
@@ -213,7 +219,9 @@ function updateCanvas() {
 let __fontRefitToken = 0;
 function refitCanvasNow() {
     if (!els.captureArea) return;
-    if (els.ratioSelect && els.ratioSelect.value !== "free") {
+    if (typeof isPageLayoutActive === "function" && isPageLayoutActive()) {
+        applyPageLayout();
+    } else if (els.ratioSelect && els.ratioSelect.value !== "free") {
         fitTextToCanvas();
         if (typeof applySideImage === "function") applySideImage();
     }
@@ -6464,6 +6472,8 @@ async function flushHtmlBackground() {
     function collect(level) {
         const data = { v: 1 };
         try { if (typeof getPresetSnapshot === "function") data.settings = getPresetSnapshot(); } catch (e) {}
+        // 레이아웃 사진은 크고 IndexedDB에 따로 저장되므로 여기서는 뺀다
+        if (data.settings && data.settings.pageLayout) data.settings.pageLayout = Object.assign({}, data.settings.pageLayout, { images: {}, imagesOmitted: true });
         data.texts = {};
         TEXT_IDS.forEach((id) => { const el = document.getElementById(id); if (el) data.texts[id] = el.value; });
         if (level >= 1 && els.editor) data.editor = els.editor.innerHTML;
@@ -6576,6 +6586,8 @@ async function flushHtmlBackground() {
     function collect() {
         const data = { v: 1, savedAt: Date.now() };
         try { if (typeof getPresetSnapshot === "function") data.settings = getPresetSnapshot(); } catch (e) {}
+        // 레이아웃 사진은 크고 IndexedDB에 따로 저장되므로 여기서는 뺀다
+        if (data.settings && data.settings.pageLayout) data.settings.pageLayout = Object.assign({}, data.settings.pageLayout, { images: {}, imagesOmitted: true });
         data.texts = {};
         TEXT_IDS.forEach((id) => { const el = document.getElementById(id); if (el) data.texts[id] = el.value; });
         if (els.editor) data.editor = els.editor.innerHTML;

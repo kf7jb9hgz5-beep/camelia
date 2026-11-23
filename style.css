@@ -4077,3 +4077,21 @@ html.theme-violet .canvas-header {
     font-weight: 700;
     cursor: pointer;
 }
+
+
+/* ==== 페이지 레이아웃 (layouts.js) ==== */
+#captureArea.pl-on { padding: 0 !important; }
+#captureArea.pl-on #canvasHeading,
+#captureArea.pl-on #canvasInfo,
+#captureArea.pl-on #sideImageBox,
+#captureArea.pl-on .side-text-box { display: none !important; }
+#captureArea.pl-on #canvasContentContainer { position: absolute; inset: 0; padding: 0; }
+#captureArea.pl-on #sideImageRow,
+#captureArea.pl-on #canvasTextContainer { position: static !important; display: block !important; }
+#captureArea.pl-on #canvasTextWrapper { position: absolute !important; inset: 0; margin: 0 !important; height: 100%; }
+#pageLayoutLayer { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+#pageLayoutFields .pl-img-btns { display: flex; gap: 6px; }
+#pageLayoutFields .pl-img-btns .btn-template { margin: 0; padding: 6px 12px; cursor: pointer; }
+#pageLayoutFields .pl-range { display: flex; align-items: center; gap: 8px; flex: 1; }
+#pageLayoutFields .pl-range span { min-width: 40px; text-align: right; font-size: 12px; }
+#pageLayoutFields input[type="text"] { flex: 1; min-width: 0; }
