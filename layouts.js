@@ -172,14 +172,17 @@ const PAGE_LAYOUTS = {
         name: "지그재그 소개 + 흐린 배경 그림",
         hint: "구분선 앞의 글은 위(왼쪽 사진 옆), 구분선 뒤의 글은 아래(오른쪽 사진 옆, 오른쪽 정렬)에 들어가요.",
         slots: [{ left: 37, top: 5, width: 58 }, { left: 5, bottom: 5, width: 58, align: "right" }],
-        images: [["a", "위 사진"], ["b", "아래 사진"], ["art", "가운데 흐린 그림"]],
+        images: [["a", "위 사진"], ["b", "아래 사진"], ["art", "배경 사진"]],
         fields: [
-            { key: "artOpacity", label: "흐린 그림 진하기", type: "range", min: 5, max: 60, def: 16 },
+            { key: "artFull", label: "배경 사진 페이지 전체", type: "check", def: false },
+            { key: "artOpacity", label: "배경 사진 진하기", type: "range", min: 5, max: 100, def: 16 },
             { key: "border", label: "사진 테두리", type: "check", def: true },
             { key: "gray", label: "사진 흑백", type: "check", def: true },
         ],
         render(L, s, h) {
-            const art = h.img("art", { left: 12, top: 22, width: 76, height: 56 }, { gray: s.gray, contain: true, noPlaceholder: true });
+            const art = s.artFull
+                ? h.img("art", { left: 0, top: 0, width: 100, height: 100 }, { gray: s.gray, noPlaceholder: true })
+                : h.img("art", { left: 12, top: 22, width: 76, height: 56 }, { gray: s.gray, contain: true, noPlaceholder: true });
             art.style.opacity = String((parseFloat(s.artOpacity) || 16) / 100);
             L.appendChild(art);
             L.appendChild(h.img("a", { left: 5, top: 5, width: 28, height: 25 }, { gray: s.gray, border: s.border }));
