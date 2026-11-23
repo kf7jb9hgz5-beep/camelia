@@ -2,10 +2,10 @@
 // 페이지 레이아웃 (잡지 · 책 · 문서 창 · 메모 · 사진 배치 템플릿)
 // --------------------------------------------------------------------------
 // 레이아웃을 고르면 캔버스가 "한 장의 페이지"가 된다.
-//  - 글 칸: 본문 편집창의 글이 그대로 들어간다 (폰트 · 크기 · 형광펜 · 대사 등 그대로 적용).
-//    본문에 "구분선"을 넣으면 그다음 글은 다음 글 칸으로 넘어간다.
+//  - 글 칸: 배치 탭에서 칸마다 따로 쓴 글이 들어간다 (칸마다 폰트 · 크기 · 행간 따로).
+//    글이 칸보다 길면 글자를 자동으로 줄여서 다 들어가게 한다.
 //  - 사진 칸 · 장식(창 테두리, 책, 아래 줄 정보 등)은 #pageLayoutLayer에 그린다 (글보다 뒤).
-// 위치는 모두 캔버스 크기에 대한 % 라서 비율을 바꿔도 같은 모양으로 늘어난다.
+// 페이지 크기(너비 · 높이)는 배치 탭에서 정하고, 칸 위치는 페이지 크기에 대한 % 라서 같이 늘어난다.
 // 저장(html2canvas)에서 안 되는 CSS(filter 등)는 쓰지 않는다. 흑백은 사진을 미리 흑백으로 바꿔서 넣는다.
 // ==========================================================================
 
@@ -14,8 +14,7 @@ const PAGE_LAYOUTS = {
 
     magStrip: {
         name: "잡지 · 오른쪽 사진줄",
-        hint: "글은 왼쪽 아래 칸에 들어가요. 글자 크기 11~13 정도를 추천해요.",
-        slots: [{ left: 8, bottom: 21, width: 50 }],
+        slots: [{ label: "왼쪽 아래 글", left: 8, bottom: 21, width: 50, maxH: 70, size: 12 }],
         images: [["s1", "사진 1"], ["s2", "사진 2"], ["s3", "사진 3"], ["s4", "사진 4"]],
         fields: [
             { key: "label", label: "사진 위 작은 글", type: "text", def: "clover" },
@@ -34,8 +33,7 @@ const PAGE_LAYOUTS = {
 
     magBig: {
         name: "잡지 · 큰 사진",
-        hint: "글은 오른쪽 아래 칸에 들어가요. 글자 크기 11~13 정도를 추천해요.",
-        slots: [{ left: 44, top: 62, width: 48, bottom: 14, clip: true }],
+        slots: [{ label: "오른쪽 아래 글", left: 44, top: 62, width: 48, bottom: 14, size: 12 }],
         images: [["main", "큰 사진"]],
         fields: [
             { key: "label", label: "사진 위 작은 글", type: "text", def: "material/emotional" },
@@ -54,8 +52,7 @@ const PAGE_LAYOUTS = {
 
     book: {
         name: "펼친 책",
-        hint: "글은 오른쪽 쪽에 들어가요. 왼쪽 쪽에는 원하는 사진을 넣을 수 있어요.",
-        slots: [{ left: 54, top: 26, width: 35, bottom: 25, clip: true }],
+        slots: [{ label: "오른쪽 쪽 글", left: 54, top: 26, width: 35, bottom: 25, size: 12 }],
         images: [["left", "왼쪽 쪽 사진"]],
         fields: [
             { key: "outerBg", label: "바깥 배경색", type: "color", def: "#0c0c0c" },
@@ -76,9 +73,7 @@ const PAGE_LAYOUTS = {
 
     doc: {
         name: "문서 두 쪽",
-        hint: "글이 왼쪽 쪽을 채우면 오른쪽 쪽으로 저절로 넘어가요. 구분선을 넣으면 그 자리에서 넘어가요.",
-        slots: [{ left: 9, top: 8, width: 35.5, bottom: 4, clip: true }, { left: 55.5, top: 8, width: 35.5, bottom: 4, clip: true }],
-        flow: true,
+        slots: [{ label: "왼쪽 쪽 글", left: 9, top: 8, width: 35.5, bottom: 4, size: 12, indent: true }, { label: "오른쪽 쪽 글", left: 55.5, top: 8, width: 35.5, bottom: 4, size: 12, indent: true }],
         fields: [
             { key: "outerBg", label: "바깥 배경색", type: "color", def: "#d9d9d9" },
             { key: "paperColor", label: "종이 색", type: "color", def: "#f2e8d8" },
@@ -92,8 +87,7 @@ const PAGE_LAYOUTS = {
 
     memo: {
         name: "메모 앱 창",
-        hint: "글은 창 안에 들어가요.",
-        slots: [{ left: 12, top: 31, width: 76, bottom: 22, clip: true }],
+        slots: [{ label: "창 안 글", left: 12, top: 31, width: 76, bottom: 22, size: 12 }],
         fields: [
             { key: "date", label: "날짜", type: "text", def: "2026년 11월 23일 오후 2:35" },
             { key: "title", label: "제목", type: "text", def: "1-1. 《제목》" },
@@ -115,8 +109,7 @@ const PAGE_LAYOUTS = {
 
     center: {
         name: "가운데 그림 + 캡션",
-        hint: "글은 그림 아래 가운데에 들어가요. 짧은 문장 몇 줄이 잘 어울려요.",
-        slots: [{ left: 10, top: 63, width: 80, align: "center" }],
+        slots: [{ label: "그림 아래 글", left: 10, top: 62, width: 80, align: "center", maxH: 33, size: 16 }],
         images: [["main", "가운데 그림"]],
         fields: [
             { key: "border", label: "그림 테두리", type: "check", def: true },
@@ -129,8 +122,7 @@ const PAGE_LAYOUTS = {
 
     duo: {
         name: "사진 두 장 · 대각선",
-        hint: "구분선 앞의 글은 왼쪽 위 사진 옆, 구분선 뒤의 글은 오른쪽 아래 사진 옆에 들어가요.",
-        slots: [{ left: 46, top: 5, width: 50 }, { left: 4, bottom: 5, width: 50, align: "right" }],
+        slots: [{ label: "왼쪽 위 사진 옆 글", left: 46, top: 5, width: 50, maxH: 57, size: 16 }, { label: "오른쪽 아래 사진 옆 글", left: 4, bottom: 5, width: 50, align: "right", maxH: 57, size: 16 }],
         images: [["a", "왼쪽 위 사진"], ["b", "오른쪽 아래 사진"]],
         fields: [
             { key: "border", label: "사진 테두리", type: "check", def: true },
@@ -142,36 +134,9 @@ const PAGE_LAYOUTS = {
         },
     },
 
-    spread: {
-        name: "두 단 + 가운데 사진 + 각주",
-        hint: "구분선으로 나눈 순서대로 ① 왼쪽 단 ② 오른쪽 단 ③ 가운데 흐린 각주 ④ 아래 사진 옆 글 칸에 들어가요. 글자 크기 10~12 정도를 추천해요.",
-        slots: [
-            { left: 5, top: 5, width: 27 },
-            { left: 68, top: 5, width: 27 },
-            { left: 34, top: 41, width: 61, note: true },
-            { left: 60, top: 56, width: 35 },
-        ],
-        images: [["mid", "가운데 사진"], ["low", "아래 사진"]],
-        fields: [
-            { key: "mark", label: "각주 앞 표시", type: "text", def: "ff." },
-            { key: "midOpacity", label: "가운데 사진 진하기", type: "range", min: 10, max: 100, def: 45 },
-            { key: "lowOpacity", label: "아래 사진 진하기", type: "range", min: 10, max: 100, def: 35 },
-            { key: "gray", label: "사진 흑백", type: "check", def: true },
-        ],
-        render(L, s, h) {
-            const mid = h.img("mid", { left: 34, top: 8, width: 32, height: 26 }, { gray: s.gray });
-            mid.style.opacity = String((parseFloat(s.midOpacity) || 45) / 100);
-            const low = h.img("low", { left: 5, top: 55, width: 50, height: 33 }, { gray: s.gray });
-            low.style.opacity = String((parseFloat(s.lowOpacity) || 35) / 100);
-            L.appendChild(mid);
-            L.appendChild(low);
-        },
-    },
-
     zigzag: {
         name: "지그재그 소개 + 배경 사진",
-        hint: "구분선 앞의 글은 위(왼쪽 사진 옆), 구분선 뒤의 글은 아래(오른쪽 사진 옆, 오른쪽 정렬)에 들어가요.",
-        slots: [{ left: 37, top: 5, width: 58 }, { left: 5, bottom: 5, width: 58, align: "right" }],
+        slots: [{ label: "위 사진 옆 글", left: 37, top: 5, width: 58, maxH: 58, size: 13 }, { label: "아래 사진 옆 글", left: 5, bottom: 5, width: 58, align: "right", maxH: 58, size: 13 }],
         images: [["art", "배경 사진"], ["a", "위 사진"], ["b", "아래 사진"]],
         fields: [
             { key: "overlayColor", label: "오버레이색", type: "color", def: "#000000" },
@@ -398,93 +363,53 @@ function clearPageLayout() {
     const area = els.captureArea;
     if (!area || !area.classList.contains("pl-on")) return;
     area.classList.remove("pl-on");
-    const layer = document.getElementById("pageLayoutLayer");
-    if (layer) layer.remove();
+    ["pageLayoutLayer", "pageLayoutText"].forEach((id) => { const el = document.getElementById(id); if (el) el.remove(); });
+}
+
+// 페이지 크기(너비 · 높이, px). 레이아웃마다 따로 기억한다.
+function getPageLayoutSize(id) {
+    const v = pageLayoutState.values[id] || {};
+    const w = Math.min(2000, Math.max(200, parseFloat(v.pageW) || 520));
+    const h = Math.min(3000, Math.max(200, parseFloat(v.pageH) || 650));
+    return { w, h };
+}
+
+// 칸 글 설정: t{번호}=글, t{번호}_font, t{번호}_size, t{번호}_lh(행간 %)
+function getSlotValues(id, i) {
+    const t = PAGE_LAYOUTS[id];
+    const v = pageLayoutState.values[id] || {};
+    const p = t.slots[i];
+    return {
+        text: v[`t${i}`] ?? "",
+        font: v[`t${i}_font`] || "",
+        size: parseFloat(v[`t${i}_size`]) || p.size || 13,
+        lh: parseFloat(v[`t${i}_lh`]) || 170,
+    };
 }
 
 function applyPageLayout() {
     const area = els.captureArea;
-    const wrapper = document.getElementById("canvasTextWrapper");
     const content = document.getElementById("canvasContentContainer");
-    if (!area || !wrapper || !content) return;
+    if (!area || !content) return;
     const id = pageLayoutState.id;
     const t = PAGE_LAYOUTS[id];
     area.classList.add("pl-on");
     area.style.padding = "0px";
 
-    // 자동 조절 비율이면 페이지 모양(4:5)으로 높이를 정해준다
-    const W = parseFloat(area.style.width) || area.getBoundingClientRect().width || 420;
-    if (!area.dataset.fixedRatioW) area.style.height = `${Math.round(W * 1.25)}px`;
-    const H = parseFloat(area.style.height) || W * 1.25;
-
-    // 글 위치는 페이지 기준이므로 가로 장평(scaleX) 변형은 끈다
-    wrapper.style.transform = "none";
-    wrapper.style.width = "100%";
-    wrapper.style.marginLeft = "0";
-    wrapper.style.display = "block";
-
-    // 본문을 구분선 기준으로 나눈다
-    const groups = [[]];
-    Array.from(wrapper.childNodes).forEach((n) => {
-        if (n.nodeType === 1 && n.classList.contains("canvas-column")) {
-            Array.from(n.childNodes).forEach((c) => groups[groups.length - 1].push(c));
-            return;
-        }
-        if (n.nodeType === 1 && n.classList.contains("hr-divider")) { groups.push([]); return; }
-        groups[groups.length - 1].push(n);
-    });
-    while (groups.length > t.slots.length) {
-        const extra = groups.pop();
-        groups[groups.length - 1].push(...extra);
-    }
-    wrapper.innerHTML = "";
+    // 페이지 크기는 배치 탭에서 정한 너비 · 높이 그대로
+    const { w: W, h: H } = getPageLayoutSize(id);
+    area.style.width = `${W}px`;
+    area.style.maxWidth = "none";
+    area.style.height = `${H}px`;
+    area.style.maxHeight = "none";
+    delete area.dataset.fixedRatioW;
+    delete area.dataset.fixedRatioH;
 
     const color = els.globalTextColor?.value || "#222222";
     const values = getPageLayoutValues(id);
-    const slotEls = t.slots.map((p, i) => {
-        const el = document.createElement("div");
-        el.className = "pl-slot";
-        el.style.position = "absolute";
-        ["left", "top", "right", "bottom"].forEach((k) => { if (p[k] !== undefined) el.style[k] = `${p[k]}%`; });
-        el.style.width = `${p.width}%`;
-        if (p.clip) el.style.overflow = "hidden";
-        (groups[i] || []).forEach((n) => el.appendChild(n));
-        if (p.align) {
-            el.style.textAlign = p.align;
-            Array.from(el.children).forEach((c) => { c.style.textAlign = p.align; });
-        }
-        if (p.note) {
-            el.style.opacity = "0.5";
-            el.style.fontSize = "0.86em";
-            el.style.fontStyle = "italic";
-            const first = el.firstElementChild;
-            if (first && values.mark) {
-                const m = document.createElement("span");
-                m.textContent = `${values.mark} `;
-                m.style.fontSize = "1.25em";
-                first.insertBefore(m, first.firstChild);
-            }
-        }
-        wrapper.appendChild(el);
-        return el;
-    });
-    // 단마다 마지막 문단 아래 여백 없애기
-    slotEls.forEach((el) => { const last = el.lastElementChild; if (last) { last.style.marginBottom = "0px"; } });
+    const baseFont = els.fontSelect?.value || "sans-serif";
 
-    // 넘치는 글은 다음 칸으로 (문서 두 쪽)
-    if (t.flow && groups.length < t.slots.length) {
-        for (let i = 0; i < slotEls.length - 1; i++) {
-            const a = slotEls[i], b = slotEls[i + 1];
-            let guard = 0;
-            while (a.scrollHeight > a.clientHeight + 1 && a.children.length > 1 && guard++ < 400) {
-                const moved = a.lastElementChild;
-                b.insertBefore(moved, b.firstChild);
-            }
-        }
-        slotEls.forEach((el) => { Array.from(el.children).forEach((c, idx, arr) => { c.style.marginBottom = idx === arr.length - 1 ? "0px" : `${els.paraSpacing.value}px`; }); });
-    }
-
-    // 장식 레이어
+    // 장식 · 사진 레이어 (글 뒤)
     let layer = document.getElementById("pageLayoutLayer");
     if (!layer) {
         layer = document.createElement("div");
@@ -492,10 +417,76 @@ function applyPageLayout() {
         area.insertBefore(layer, content);
     }
     layer.innerHTML = "";
-    const font = getComputedStyle(wrapper).fontFamily || els.fontSelect.value;
     const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
     const muted = m ? `rgba(${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)},0.5)` : "rgba(0,0,0,.45)";
-    t.render(layer, values, pageLayoutHelpers(W, H, color, muted, font));
+    t.render(layer, values, pageLayoutHelpers(W, H, color, muted, baseFont));
+
+    // 글 칸 레이어 (배치 탭에서 칸마다 쓴 글)
+    let textLayer = document.getElementById("pageLayoutText");
+    if (!textLayer) {
+        textLayer = document.createElement("div");
+        textLayer.id = "pageLayoutText";
+    }
+    if (textLayer.parentNode !== area || textLayer.previousSibling !== layer) area.insertBefore(textLayer, layer.nextSibling);
+    textLayer.innerHTML = "";
+    t.slots.forEach((p, i) => {
+        const sv = getSlotValues(id, i);
+        const el = document.createElement("div");
+        el.className = "pl-slot";
+        el.style.position = "absolute";
+        ["left", "top", "right", "bottom"].forEach((k) => { if (p[k] !== undefined) el.style[k] = `${p[k]}%`; });
+        el.style.width = `${p.width}%`;
+        const inner = document.createElement("div");
+        inner.className = "pl-slot-inner";
+        inner.style.fontFamily = sv.font || baseFont;
+        inner.style.fontSize = `${sv.size}px`;
+        inner.style.lineHeight = `${(sv.size * sv.lh / 100).toFixed(2)}px`;
+        inner.style.letterSpacing = `${parseFloat(els.letterSpacing?.value) || 0}px`;
+        inner.style.color = color;
+        inner.style.wordBreak = els.wordBreak?.value || "keep-all";
+        inner.style.overflowWrap = "break-word";
+        inner.style.whiteSpace = "pre-wrap";
+        inner.style.textAlign = p.align || "left";
+        sv.text.split("\n").forEach((line) => {
+            const d = document.createElement("div");
+            if (line.trim() === "") d.appendChild(document.createElement("br"));
+            else d.textContent = line;
+            if (p.indent && line.trim() !== "") d.style.textIndent = "1em";
+            inner.appendChild(d);
+        });
+        el.appendChild(inner);
+        textLayer.appendChild(el);
+        fitPageLayoutSlot(el, inner, p, H);
+    });
+
+    if (typeof applyPreviewScale === "function") applyPreviewScale();
+}
+
+// 칸보다 글이 길면 그 칸 글자를 같은 비율로 줄여서 다 들어가게 한다 (transform: scale — 저장에도 그대로 나옴)
+function fitPageLayoutSlot(el, inner, p, H) {
+    let avail = null;
+    if (p.top !== undefined && p.bottom !== undefined) avail = H * (100 - p.top - p.bottom) / 100;
+    else if (p.maxH !== undefined) avail = H * p.maxH / 100;
+    if (!avail) return;
+    const slotW = el.clientWidth;
+    el.style.overflow = "hidden";
+    let k = 1;
+    const measure = () => {
+        inner.style.width = `${slotW / k}px`;
+        return inner.offsetHeight * k;
+    };
+    let h = measure();
+    let guard = 0;
+    while (h > avail && k > 0.3 && guard++ < 40) {
+        k = Math.max(0.3, k * Math.min(0.97, Math.sqrt(avail / h)));
+        h = measure();
+    }
+    if (k < 1) {
+        inner.style.transform = `scale(${k})`;
+        inner.style.transformOrigin = "left top";
+    }
+    if (p.top !== undefined && p.bottom !== undefined) return;
+    el.style.height = `${Math.min(h, avail)}px`;
 }
 
 // ---- 설정 화면 ----
@@ -517,8 +508,8 @@ function buildPageLayoutPanel() {
     const t = PAGE_LAYOUTS[id];
     box.innerHTML = "";
     if (hint) hint.textContent = id === "none"
-        ? "레이아웃을 고르면 캔버스가 잡지 · 책 같은 한 장의 페이지가 돼요. 글은 본문 편집창에 쓰면 되고, 구분선을 넣으면 다음 글 칸으로 넘어가요."
-        : `${t.hint || ""} 사진 칸 위치가 정해져 있어서 여백 설정은 쓰지 않아요.`;
+        ? "레이아웃을 고르면 캔버스가 잡지 · 책 같은 한 장의 페이지가 돼요. 글은 아래 칸마다 따로 써요."
+        : "글은 아래 글 칸마다 따로 써요 (본문 편집창 글은 쓰지 않아요). 글이 칸보다 길면 글자가 자동으로 작아져서 다 들어가요.";
     if (id === "none") return;
 
     const values = getPageLayoutValues(id);
@@ -538,6 +529,67 @@ function buildPageLayoutPanel() {
         return r;
     };
 
+    const section = (title) => {
+        const h = document.createElement("div");
+        h.className = "pl-section-title";
+        h.textContent = title;
+        box.appendChild(h);
+    };
+    const numberInput = (r, val, min, max, step, unit, onChange) => {
+        const g = document.createElement("div");
+        g.className = "pl-num";
+        const n = document.createElement("input");
+        n.type = "number";
+        n.min = min; n.max = max; n.step = step; n.value = val;
+        n.addEventListener("input", () => {
+            const x = parseFloat(n.value);
+            if (!isNaN(x) && x >= min && x <= max) onChange(x);
+        });
+        n.addEventListener("change", () => {
+            let x = parseFloat(n.value);
+            if (isNaN(x)) return;
+            x = Math.min(max, Math.max(min, x));
+            n.value = x;
+            onChange(x);
+        });
+        g.appendChild(n);
+        if (unit) { const u = document.createElement("span"); u.textContent = unit; g.appendChild(u); }
+        r.appendChild(g);
+    };
+
+    // 페이지 크기
+    section("페이지 크기");
+    const size = getPageLayoutSize(id);
+    numberInput(row("너비"), size.w, 200, 2000, 10, "px", (x) => setVal("pageW", x));
+    numberInput(row("높이"), size.h, 200, 3000, 10, "px", (x) => setVal("pageH", x));
+
+    // 글 칸
+    const fontOptions = Array.from(document.querySelectorAll("#fontSelect option")).map((o) => [o.value, o.textContent]);
+    t.slots.forEach((p, i) => {
+        const sv = getSlotValues(id, i);
+        section(`글 칸 ${i + 1} · ${p.label}`);
+        const ta = document.createElement("textarea");
+        ta.className = "side-text-input pl-textarea";
+        ta.rows = 5;
+        ta.placeholder = "여기에 이 칸에 들어갈 글을 써요";
+        ta.value = sv.text;
+        ta.addEventListener("input", () => setVal(`t${i}`, ta.value));
+        box.appendChild(ta);
+        const fr = row("폰트");
+        const fs = document.createElement("select");
+        [["", "본문과 같은 폰트"], ...fontOptions].forEach(([v, label]) => {
+            const o = document.createElement("option");
+            o.value = v; o.textContent = label;
+            fs.appendChild(o);
+        });
+        fs.value = sv.font;
+        fs.addEventListener("change", () => setVal(`t${i}_font`, fs.value));
+        fr.appendChild(fs);
+        numberInput(row("크기"), sv.size, 6, 80, 0.5, "px", (x) => setVal(`t${i}_size`, x));
+        numberInput(row("행간"), sv.lh, 80, 400, 5, "%", (x) => setVal(`t${i}_lh`, x));
+    });
+
+    if ((t.images || []).length) section("사진");
     (t.images || []).forEach(([key, label]) => {
         const r = row(label);
         const wrap = document.createElement("div");
@@ -583,6 +635,7 @@ function buildPageLayoutPanel() {
         r.appendChild(wrap);
     });
 
+    if ((t.fields || []).length) section("꾸미기");
     (t.fields || []).forEach((f) => {
         const r = row(f.label);
         if (f.type === "check") {
