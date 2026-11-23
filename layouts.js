@@ -169,12 +169,11 @@ const PAGE_LAYOUTS = {
     },
 
     zigzag: {
-        name: "지그재그 소개 + 흐린 배경 그림",
+        name: "지그재그 소개 + 배경 사진",
         hint: "구분선 앞의 글은 위(왼쪽 사진 옆), 구분선 뒤의 글은 아래(오른쪽 사진 옆, 오른쪽 정렬)에 들어가요.",
         slots: [{ left: 37, top: 5, width: 58 }, { left: 5, bottom: 5, width: 58, align: "right" }],
         images: [["a", "위 사진"], ["b", "아래 사진"], ["art", "배경 사진"]],
         fields: [
-            { key: "artFull", label: "배경 사진 페이지 전체", type: "check", def: false },
             { key: "artOpacity", label: "배경 사진 진하기", type: "range", min: 5, max: 100, def: 100 },
             { key: "overlayColor", label: "배경 사진 덮는 색", type: "color", def: "#ffffff" },
             { key: "overlayAmount", label: "덮는 색 진하기", type: "range", min: 0, max: 100, def: 75 },
@@ -182,14 +181,12 @@ const PAGE_LAYOUTS = {
             { key: "gray", label: "사진 흑백", type: "check", def: true },
         ],
         render(L, s, h) {
-            const art = s.artFull
-                ? h.img("art", { left: 0, top: 0, width: 100, height: 100 }, { gray: s.gray, noPlaceholder: true })
-                : h.img("art", { left: 12, top: 22, width: 76, height: 56 }, { gray: s.gray, noPlaceholder: true });
+            const art = h.img("art", { left: 0, top: 0, width: 100, height: 100 }, { gray: s.gray, noPlaceholder: true });
             art.style.opacity = String((parseFloat(s.artOpacity) || 100) / 100);
             L.appendChild(art);
             // 색상 오버레이: 배경 사진 위에 고른 색을 반투명하게 덮는다 (사진이 있을 때만)
             if (((pageLayoutState.images.zigzag || {}).art) && parseFloat(s.overlayAmount) > 0) {
-                const ov = h.box(s.artFull ? { left: 0, top: 0, width: 100, height: 100 } : { left: 12, top: 22, width: 76, height: 56 }, { background: s.overlayColor });
+                const ov = h.box({ left: 0, top: 0, width: 100, height: 100 }, { background: s.overlayColor });
                 ov.style.opacity = String(parseFloat(s.overlayAmount) / 100);
                 L.appendChild(ov);
             }
