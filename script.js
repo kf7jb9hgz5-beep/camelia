@@ -632,7 +632,9 @@ function applyPreviewScale() {
     const wrapper = document.getElementById("captureAreaScaleWrapper");
     if (!wrapper || !els.captureArea) return;
 
-    if (els.ratioSelect.value !== "free") {
+    // 페이지 레이아웃은 너비 · 높이를 직접 정하므로 "자동 조절"처럼 화면에 맞춰 줄여서 보여준다
+    const layoutOn = typeof isPageLayoutActive === "function" && isPageLayoutActive();
+    if (els.ratioSelect.value !== "free" && !layoutOn) {
         wrapper.style.width = "";
         wrapper.style.height = "";
         els.captureArea.style.transform = "none";
