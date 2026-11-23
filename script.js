@@ -5982,6 +5982,7 @@ document.addEventListener("click", (e) => {
         });
     }
 
+    window.__initHeartNumbers = init; // 나중에 만들어지는 칸(배치 탭)에도 하트 숫자칸을 입히려고
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", init);
     } else {

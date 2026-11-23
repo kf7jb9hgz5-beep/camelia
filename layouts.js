@@ -570,6 +570,8 @@ function buildPageLayoutPanel() {
     const box = document.getElementById("pageLayoutFields");
     const hint = document.getElementById("pageLayoutHint");
     if (!sel || !box) return;
+    const panel = document.getElementById("panel-layout");
+    if (panel && box.parentElement !== panel) panel.appendChild(box);
     if (!sel.options.length) {
         Object.entries(PAGE_LAYOUTS).forEach(([id, t]) => {
             const o = document.createElement("option");
@@ -594,30 +596,61 @@ function buildPageLayoutPanel() {
         savePageLayoutSoon();
         updateCanvas();
     };
+    // 다른 탭과 같은 모양: 카드(♡ 제목) 안에 「라벨」 행, 하트 숫자칸 + ▲▼, 슬라이더
+    let card = box;
+    const section = (title) => {
+        card = document.createElement("div");
+        card.className = "panel-card";
+        const head = document.createElement("div");
+        head.className = "panel-card-head";
+        const h = document.createElement("div");
+        h.className = "panel-section-title";
+        h.textContent = title;
+        head.appendChild(h);
+        card.appendChild(head);
+        box.appendChild(card);
+    };
     const row = (labelText) => {
         const r = document.createElement("div");
         r.className = "control-minimal-row pl-row";
         const lb = document.createElement("label");
-        lb.textContent = labelText;
+        lb.textContent = `「${labelText}」`;
         r.appendChild(lb);
-        box.appendChild(r);
+        card.appendChild(r);
         return r;
     };
-
-    const section = (title) => {
-        const h = document.createElement("div");
-        h.className = "pl-section-title";
-        h.textContent = title;
-        box.appendChild(h);
-    };
-    const numberInput = (r, val, min, max, step, unit, onChange) => {
+    let numSeq = 0;
+    const numberInput = (r, val, min, max, step, unit, onChange, withSlider) => {
         const g = document.createElement("div");
-        g.className = "pl-num";
+        g.className = "stepper-minimal heart-num";
+        const ico = document.createElement("span");
+        ico.className = "heart-ico";
+        ico.setAttribute("aria-hidden", "true");
         const n = document.createElement("input");
         n.type = "number";
+        n.id = `plNum${++numSeq}`;
         n.min = min; n.max = max; n.step = step; n.value = val;
+        if (typeof HEART_STEPS === "object") HEART_STEPS[n.id] = step;
+        const u = document.createElement("span");
+        u.className = "heart-unit";
+        u.textContent = unit || "";
+        g.appendChild(ico); g.appendChild(n); g.appendChild(u);
+        r.appendChild(g);
+        let slider = null;
+        if (withSlider) {
+            slider = document.createElement("input");
+            slider.type = "range";
+            slider.className = "range-slider";
+            slider.min = min; slider.max = max; slider.step = step; slider.value = val;
+            card.appendChild(slider);
+            slider.addEventListener("input", () => {
+                n.value = slider.value;
+                n.dispatchEvent(new Event("input", { bubbles: true }));
+            });
+        }
         n.addEventListener("input", () => {
             const x = parseFloat(n.value);
+            if (slider) slider.value = n.value;
             if (!isNaN(x) && x >= min && x <= max) onChange(x);
         });
         n.addEventListener("change", () => {
@@ -627,9 +660,6 @@ function buildPageLayoutPanel() {
             n.value = x;
             onChange(x);
         });
-        g.appendChild(n);
-        if (unit) { const u = document.createElement("span"); u.textContent = unit; g.appendChild(u); }
-        r.appendChild(g);
     };
 
     // 페이지 크기
@@ -649,7 +679,7 @@ function buildPageLayoutPanel() {
         ta.placeholder = "여기에 이 칸에 들어갈 글을 써요";
         ta.value = sv.text;
         ta.addEventListener("input", () => setVal(`t${i}`, ta.value));
-        box.appendChild(ta);
+        card.appendChild(ta);
         const fr = row("폰트");
         const fs = document.createElement("select");
         [["", "본문과 같은 폰트"], ...fontOptions].forEach(([v, label]) => {
@@ -720,13 +750,16 @@ function buildPageLayoutPanel() {
     (t.fields || []).forEach((f) => {
         const r = row(f.label);
         if (f.type === "check") {
+            const g = document.createElement("div");
+            g.className = "checkbox-minimal-group";
+            const lb = document.createElement("label");
             const cb = document.createElement("input");
             cb.type = "checkbox";
             cb.checked = !!values[f.key];
             cb.addEventListener("change", () => setVal(f.key, cb.checked));
-            const g = document.createElement("div");
-            g.className = "checkbox-minimal-group";
-            g.appendChild(cb);
+            lb.appendChild(cb);
+            lb.appendChild(document.createTextNode(" 사용"));
+            g.appendChild(lb);
             r.appendChild(g);
         } else if (f.type === "color") {
             const c = document.createElement("input");
@@ -735,17 +768,7 @@ function buildPageLayoutPanel() {
             c.addEventListener("input", () => setVal(f.key, c.value));
             r.appendChild(c);
         } else if (f.type === "range") {
-            const g = document.createElement("div");
-            g.className = "pl-range";
-            const rg = document.createElement("input");
-            rg.type = "range";
-            rg.min = f.min; rg.max = f.max; rg.value = values[f.key];
-            const num = document.createElement("span");
-            num.textContent = `${values[f.key]}%`;
-            rg.addEventListener("input", () => { num.textContent = `${rg.value}%`; setVal(f.key, parseFloat(rg.value)); });
-            g.appendChild(rg);
-            g.appendChild(num);
-            r.appendChild(g);
+            numberInput(r, values[f.key], f.min, f.max, 1, "%", (x) => setVal(f.key, x), true);
         } else {
             const tx = document.createElement("input");
             tx.type = "text";
@@ -754,6 +777,7 @@ function buildPageLayoutPanel() {
             r.appendChild(tx);
         }
     });
+    if (typeof window.__initHeartNumbers === "function") { try { window.__initHeartNumbers(); } catch (e) {} }
     if (typeof wrapColorInputs === "function") { try { wrapColorInputs(); } catch (e) {} }
     if (typeof syncColorSwatches === "function") { try { syncColorSwatches(); } catch (e) {} }
 }
