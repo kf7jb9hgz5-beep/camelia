@@ -13,8 +13,10 @@ const PAGE_LAYOUTS = {
     none: { name: "사용 안 함" },
 
     magStrip: {
+        stretchY: 50,
         name: "잡지 · 오른쪽 사진줄",
-        slots: [{ label: "왼쪽 아래 글", left: 8, bottom: 21, width: 50, maxH: 70, size: 12 }],
+        minAspect: 0.85,
+        slots: [{ label: "왼쪽 아래 글", left: 8, bottom: 21, width: 50, maxH: 70, size: 15 }],
         images: [["s1", "사진 1"], ["s2", "사진 2"], ["s3", "사진 3"], ["s4", "사진 4"]],
         fields: [
             { key: "label", label: "사진 위 작은 글", type: "text", def: "clover" },
@@ -25,15 +27,18 @@ const PAGE_LAYOUTS = {
             { key: "gray", label: "사진 흑백", type: "check", def: true },
         ],
         render(L, s, h) {
-            [9, 29.5, 50, 70.5].forEach((top, i) => L.appendChild(h.img(`s${i + 1}`, { left: 66, top, width: 26, height: 17.5 }, { gray: s.gray })));
+            const y0 = h.y(9), y1 = h.y(88), gap = (y1 - y0) * 0.04, each = (y1 - y0 - gap * 3) / 4;
+            [0, 1, 2, 3].forEach((i) => L.appendChild(h.img(`s${i + 1}`, { left: 66, width: 26, topPx: y0 + i * (each + gap), heightPx: each }, { gray: s.gray })));
             L.appendChild(h.text(s.label, { left: 66, top: 5.6 }, { size: 0.026, color: "muted", italic: true }));
             h.footer(L, [s.f1, s.f2, s.f3, s.f4]);
         },
     },
 
     magBig: {
+        stretchY: 70,
         name: "잡지 · 큰 사진",
-        slots: [{ label: "오른쪽 아래 글", left: 44, top: 62, width: 48, bottom: 14, size: 12 }],
+        minAspect: 0.85,
+        slots: [{ label: "오른쪽 아래 글", left: 44, top: 62, width: 48, bottom: 14, size: 15 }],
         images: [["main", "큰 사진"]],
         fields: [
             { key: "label", label: "사진 위 작은 글", type: "text", def: "material/emotional" },
@@ -51,7 +56,10 @@ const PAGE_LAYOUTS = {
     },
 
     book: {
+        stretchY: 50,
         name: "펼친 책",
+        size: [520, 650],
+        fixedH: true,
         slots: [{ label: "오른쪽 쪽 글", left: 54, top: 26, width: 35, bottom: 25, size: 12 }],
         images: [["left", "왼쪽 쪽 사진"]],
         fields: [
@@ -72,8 +80,10 @@ const PAGE_LAYOUTS = {
     },
 
     doc: {
+        stretchY: 50,
         name: "문서 두 쪽",
-        slots: [{ label: "왼쪽 쪽 글", left: 9, top: 8, width: 35.5, bottom: 4, size: 12, indent: true }, { label: "오른쪽 쪽 글", left: 55.5, top: 8, width: 35.5, bottom: 4, size: 12, indent: true }],
+        minAspect: 0.62,
+        slots: [{ label: "왼쪽 쪽 글", left: 9, top: 8, width: 35.5, bottom: 4, size: 15, indent: true }, { label: "오른쪽 쪽 글", left: 55.5, top: 8, width: 35.5, bottom: 4, size: 15, indent: true }],
         fields: [
             { key: "outerBg", label: "바깥 배경색", type: "color", def: "#d9d9d9" },
             { key: "paperColor", label: "종이 색", type: "color", def: "#f2e8d8" },
@@ -86,8 +96,10 @@ const PAGE_LAYOUTS = {
     },
 
     memo: {
+        stretchY: 50,
         name: "메모 앱 창",
-        slots: [{ label: "창 안 글", left: 12, top: 31, width: 76, bottom: 22, size: 12 }],
+        minAspect: 0.6,
+        slots: [{ label: "창 안 글", left: 12, top: 31, width: 76, bottom: 22, size: 15 }],
         fields: [
             { key: "date", label: "날짜", type: "text", def: "2026년 11월 23일 오후 2:35" },
             { key: "title", label: "제목", type: "text", def: "1-1. 《제목》" },
@@ -97,8 +109,8 @@ const PAGE_LAYOUTS = {
         ],
         render(L, s, h) {
             const win = h.box({ left: 7, top: 12, width: 86, height: 74 }, { background: s.winColor, borderRadius: h.px(0.028), boxShadow: "0 8px 28px rgba(0,0,0,.16)", border: "1px solid rgba(0,0,0,.08)", overflow: "hidden" });
-            const bar = h.box({ left: 0, top: 0, width: 100, height: 9 }, { background: s.barColor, borderBottom: "1px solid rgba(0,0,0,.07)" });
-            [4, 7.5, 11].forEach((x) => bar.appendChild(h.box({ left: x, top: 34, width: 0, height: 0 }, { width: h.px(0.026), height: h.px(0.026), borderRadius: "50%", background: "#d9d9d9" })));
+            const bar = h.box({ left: 0, top: 0, width: 100, rel: true }, { height: h.px(0.06), background: s.barColor, borderBottom: "1px solid rgba(0,0,0,.07)" });
+            [4, 7.5, 11].forEach((x) => bar.appendChild(h.box({ left: x, top: 34, width: 0, height: 0, rel: true }, { width: h.px(0.026), height: h.px(0.026), borderRadius: "50%", background: "#d9d9d9" })));
             win.appendChild(bar);
             L.appendChild(win);
             L.appendChild(h.text(s.date, { left: 7, top: 23, width: 86 }, { size: 0.024, color: "muted", align: "center" }));
@@ -108,7 +120,10 @@ const PAGE_LAYOUTS = {
     },
 
     center: {
+        stretchY: 70,
         name: "가운데 그림 + 캡션",
+        size: [520, 650],
+        fixedH: true,
         slots: [{ label: "그림 아래 글", left: 10, top: 62, width: 80, align: "center", maxH: 33, size: 16 }],
         images: [["main", "가운데 그림"]],
         fields: [
@@ -121,8 +136,10 @@ const PAGE_LAYOUTS = {
     },
 
     duo: {
+        stretchY: [40, 60],
         name: "사진 두 장 · 대각선",
-        slots: [{ label: "왼쪽 위 사진 옆 글", left: 46, top: 5, width: 50, maxH: 57, size: 16 }, { label: "오른쪽 아래 사진 옆 글", left: 4, bottom: 5, width: 50, align: "right", maxH: 57, size: 16 }],
+        minAspect: 0.55,
+        slots: [{ label: "왼쪽 위 사진 옆 글", left: 46, top: 5, width: 50, maxH: 44, size: 24 }, { label: "오른쪽 아래 사진 옆 글", left: 4, bottom: 5, width: 50, align: "right", maxH: 44, size: 18 }],
         images: [["a", "왼쪽 위 사진"], ["b", "오른쪽 아래 사진"]],
         fields: [
             { key: "border", label: "사진 테두리", type: "check", def: true },
@@ -135,8 +152,10 @@ const PAGE_LAYOUTS = {
     },
 
     zigzag: {
+        stretchY: [40, 60],
         name: "지그재그 소개 + 배경 사진",
-        slots: [{ label: "위 사진 옆 글", left: 37, top: 5, width: 58, maxH: 58, size: 13 }, { label: "아래 사진 옆 글", left: 5, bottom: 5, width: 58, align: "right", maxH: 58, size: 13 }],
+        minAspect: 0.7,
+        slots: [{ label: "위 사진 옆 글", left: 37, top: 5, width: 58, maxH: 43, size: 16 }, { label: "아래 사진 옆 글", left: 5, bottom: 5, width: 58, align: "right", maxH: 43, size: 16 }],
         images: [["art", "배경 사진"], ["a", "위 사진"], ["b", "아래 사진"]],
         fields: [
             { key: "overlayColor", label: "오버레이색", type: "color", def: "#000000" },
@@ -158,8 +177,9 @@ const PAGE_LAYOUTS = {
         },
     },
     split: {
+        stretchY: 50,
         name: "양쪽 사진 + 가운데 좁은 글",
-        size: [820, 640],
+        minAspect: 0.78,
         slots: [{ label: "가운데 좁은 글", left: 43, top: 5, width: 14, bottom: 5, align: "center", vcenter: true, size: 11 }],
         slotsFor(v) {
             const w = Math.min(60, Math.max(5, parseFloat(v.colW) || 14));
@@ -187,12 +207,13 @@ const PAGE_LAYOUTS = {
         },
     },
     photoPanel: {
+        stretchY: [50, 85],
         name: "왼쪽 사진 + 오른쪽 단색 칸",
-        size: [600, 800],
+        minAspect: 1.0,
         slots: [
-            { label: "사진 위 큰 글", left: 4, top: 46, width: 56, size: 34, maxH: 20, align: "center", color: "#f3d6e4" },
-            { label: "사진 아래 글", left: 6, bottom: 3, width: 52, size: 13, maxH: 22, align: "center", color: "#eeeeee" },
-            { label: "오른쪽 칸 글", left: 66, top: 5, width: 30, bottom: 5, size: 11, align: "center", vcenter: true },
+            { label: "사진 위 큰 글", left: 4, top: 46, width: 56, size: 48, maxH: 20, align: "center", color: "#f3d6e4" },
+            { label: "사진 아래 글", left: 6, bottom: 3, width: 52, size: 16, maxH: 22, align: "center", color: "#eeeeee" },
+            { label: "오른쪽 칸 글", left: 66, top: 5, width: 30, bottom: 5, size: 14, align: "center", vcenter: true },
         ],
         slotsFor(v) {
             const pw = Math.min(60, Math.max(20, parseFloat(v.panelW) || 36));
@@ -353,16 +374,53 @@ function getGrayImage(src) {
 }
 
 // ---- 그리기 ----
-function pageLayoutHelpers(W, H, color, muted, font) {
+// 세로 위치 바꾸기: 설계 높이 Hb 기준 % → px. 늘어난 만큼(extra)은 "늘어나는 줄(ys)" 아래쪽에만 더해진다.
+// → 늘어나는 줄 위의 사진 · 글은 그대로, 줄을 가로지르는 칸은 길어지고, 그 아래 것은 아래로 밀린다.
+function makeYMap(Hb, lines) {
+    // lines: [[ys, extra], ...] — ys 아래쪽은 그 줄에서 늘어난 만큼 밀린다
+    return (pct) => (pct * Hb) / 100 + lines.reduce((sum, [ys, ex]) => sum + (pct > ys ? ex : 0), 0);
+}
+
+function placeVert(el, p, Y, H) {
+    if (p.topPx !== undefined) {
+        el.style.top = `${p.topPx}px`;
+        if (p.heightPx !== undefined) el.style.height = `${p.heightPx}px`;
+        return;
+    }
+    let y1 = null, y2 = null;
+    if (p.top !== undefined) y1 = p.top;
+    if (p.bottom !== undefined) y2 = 100 - p.bottom;
+    if (p.height !== undefined) {
+        if (y1 !== null) y2 = y1 + p.height;
+        else if (y2 !== null) y1 = y2 - p.height;
+    }
+    if (y1 !== null && y2 !== null) {
+        el.style.top = `${Y(y1)}px`;
+        el.style.height = `${Math.max(0, Y(y2) - Y(y1))}px`;
+    } else if (y1 !== null) {
+        el.style.top = `${Y(y1)}px`;
+    } else if (y2 !== null) {
+        el.style.bottom = `${H - Y(y2)}px`;
+    }
+}
+
+function pageLayoutHelpers(W, H, color, muted, font, Y, Hb) {
     const pos = (el, p) => {
         el.style.position = "absolute";
-        ["left", "top", "right", "bottom"].forEach((k) => { if (p[k] !== undefined) el.style[k] = `${p[k]}%`; });
-        if (p.width !== undefined) el.style.width = `${p.width}%`;
-        if (p.height !== undefined) el.style.height = `${p.height}%`;
         el.style.boxSizing = "border-box";
+        ["left", "right"].forEach((k) => { if (p[k] !== undefined) el.style[k] = `${p[k]}%`; });
+        if (p.width !== undefined) el.style.width = `${p.width}%`;
+        if (p.rel) {
+            ["top", "bottom"].forEach((k) => { if (p[k] !== undefined) el.style[k] = `${p[k]}%`; });
+            if (p.height !== undefined) el.style.height = `${p.height}%`;
+            return;
+        }
+        placeVert(el, p, Y, H);
     };
     const h = {
-        px: (k) => `${(W * k).toFixed(2)}px`,
+        y: (pct) => Y(pct),
+        // 장식 글자 · 테두리 크기는 처음(설계) 높이 기준 — 페이지가 길어져도 커지지 않는다
+        px: (k) => `${(Math.min(W, Hb || H) * k).toFixed(2)}px`,
         box(p, css) {
             const el = document.createElement("div");
             pos(el, p);
@@ -433,12 +491,15 @@ function clearPageLayout() {
 }
 
 // 페이지 크기(너비 · 높이, px). 레이아웃마다 따로 기억한다.
+// 기본: 너비 820, 높이는 글 길이에 맞춰 자동으로 늘어남 (펼친 책 · 가운데 그림은 520×650 고정)
 function getPageLayoutSize(id) {
+    const t = PAGE_LAYOUTS[id] || {};
     const v = pageLayoutState.values[id] || {};
-    const d = (PAGE_LAYOUTS[id] && PAGE_LAYOUTS[id].size) || [520, 650];
+    const d = t.size || [820, Math.round(820 * (t.minAspect || 0.8))];
     const w = Math.min(2000, Math.max(200, parseFloat(v.pageW) || d[0]));
-    const h = Math.min(3000, Math.max(200, parseFloat(v.pageH) || d[1]));
-    return { w, h };
+    const h = Math.min(4000, Math.max(200, parseFloat(v.pageH) || d[1]));
+    const auto = v.autoH !== undefined ? !!v.autoH : !t.fixedH;
+    return { w, h, auto, minH: Math.round(w * (t.minAspect || (d[1] / d[0]))) };
 }
 
 // 칸 글 설정: t{번호}=글, t{번호}_font, t{번호}_size, t{번호}_lh(행간 %)
@@ -469,11 +530,10 @@ function applyPageLayout() {
     area.classList.add("pl-on");
     area.style.padding = "0px";
 
-    // 페이지 크기는 배치 탭에서 정한 너비 · 높이 그대로
-    const { w: W, h: H } = getPageLayoutSize(id);
+    const size = getPageLayoutSize(id);
+    const W = size.w;
     area.style.width = `${W}px`;
     area.style.maxWidth = "none";
-    area.style.height = `${H}px`;
     area.style.maxHeight = "none";
     delete area.dataset.fixedRatioW;
     delete area.dataset.fixedRatioH;
@@ -489,11 +549,6 @@ function applyPageLayout() {
         layer.id = "pageLayoutLayer";
         area.insertBefore(layer, content);
     }
-    layer.innerHTML = "";
-    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
-    const muted = m ? `rgba(${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)},0.5)` : "rgba(0,0,0,.45)";
-    t.render(layer, values, pageLayoutHelpers(W, H, color, muted, baseFont));
-
     // 글 칸 레이어 (배치 탭에서 칸마다 쓴 글)
     let textLayer = document.getElementById("pageLayoutText");
     if (!textLayer) {
@@ -502,12 +557,13 @@ function applyPageLayout() {
     }
     if (textLayer.parentNode !== area || textLayer.previousSibling !== layer) area.insertBefore(textLayer, layer.nextSibling);
     textLayer.innerHTML = "";
-    getLayoutSlots(id).forEach((p, i) => {
+    const slots = getLayoutSlots(id);
+    const built = slots.map((p, i) => {
         const sv = getSlotValues(id, i);
         const el = document.createElement("div");
         el.className = "pl-slot";
         el.style.position = "absolute";
-        ["left", "top", "right", "bottom"].forEach((k) => { if (p[k] !== undefined) el.style[k] = `${p[k]}%`; });
+        el.style.left = `${p.left}%`;
         el.style.width = `${p.width}%`;
         const inner = document.createElement("div");
         inner.className = "pl-slot-inner";
@@ -529,17 +585,62 @@ function applyPageLayout() {
         });
         el.appendChild(inner);
         textLayer.appendChild(el);
-        fitPageLayoutSlot(el, inner, p, H);
+        return { el, inner, p };
     });
 
+    // 높이: 자동이면 설계 높이(최소 높이)에서 시작해, 글이 넘치는 만큼만 "늘어나는 줄" 아래로 페이지를 늘린다
+    const lines = [].concat(t.stretchY ?? 50).sort((x, y) => x - y).map((ys) => [ys, 0]);
+    const region = (p) => {
+        if (p.top !== undefined && p.bottom !== undefined) return [p.top, 100 - p.bottom];
+        if (p.top !== undefined) return [p.top, p.top + (p.maxH ?? 100 - p.top)];
+        if (p.bottom !== undefined) return [100 - p.bottom - (p.maxH ?? 100 - p.bottom), 100 - p.bottom];
+        return [0, 100];
+    };
+    let Hb = size.h;
+    if (size.auto) {
+        Hb = size.minH;
+        // 칸마다 지나가는 첫 번째 줄에서 모자란 만큼 늘린다 (앞 줄에서 이미 늘어난 만큼은 빼고)
+        built.forEach(({ inner, p }) => {
+            const [y1, y2] = region(p);
+            const k = lines.findIndex(([ys]) => y1 < ys && y2 > ys);
+            if (k < 0) return;
+            inner.style.width = `${(W * p.width) / 100}px`;
+            const have = ((y2 - y1) * Hb) / 100 + lines.reduce((sum, [ys, ex], j) => sum + (j !== k && y1 < ys && y2 > ys ? ex : 0), 0);
+            const need = inner.offsetHeight + 4 - have;
+            if (need > lines[k][1]) lines[k][1] = need;
+            inner.style.width = "";
+        });
+        let room = 4000 - Hb;
+        lines.forEach((l) => { l[1] = Math.max(0, Math.min(room, Math.ceil(l[1]))); room -= l[1]; });
+    }
+    const H = Hb + lines.reduce((sum, l) => sum + l[1], 0);
+    const Y = makeYMap(Hb, lines);
+    area.style.height = `${H}px`;
+    area.dataset.layoutH = String(H);
+    built.forEach(({ el, p }) => {
+        const [y1, y2] = region(p);
+        el.style.top = el.style.bottom = el.style.height = "";
+        if (p.top !== undefined && p.bottom !== undefined) { el.style.top = `${Y(y1)}px`; el.style.height = `${Y(y2) - Y(y1)}px`; }
+        else if (p.top !== undefined) el.style.top = `${Y(y1)}px`;
+        else el.style.bottom = `${H - Y(y2)}px`;
+        p.__avail = Y(y2) - Y(y1);
+    });
+
+    layer.innerHTML = "";
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
+    const muted = m ? `rgba(${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)},0.5)` : "rgba(0,0,0,.45)";
+    t.render(layer, values, pageLayoutHelpers(W, H, color, muted, baseFont, Y, Hb));
+
+    built.forEach(({ el, inner, p }) => fitPageLayoutSlot(el, inner, p, H));
+
+    // HTML 배경도 바뀐 페이지 크기에 맞춰 다시 그린다
+    if (typeof syncHtmlBackground === "function") syncHtmlBackground();
     if (typeof applyPreviewScale === "function") applyPreviewScale();
 }
 
 // 칸보다 글이 길면 그 칸 글자를 같은 비율로 줄여서 다 들어가게 한다 (transform: scale — 저장에도 그대로 나옴)
 function fitPageLayoutSlot(el, inner, p, H) {
-    let avail = null;
-    if (p.top !== undefined && p.bottom !== undefined) avail = H * (100 - p.top - p.bottom) / 100;
-    else if (p.maxH !== undefined) avail = H * p.maxH / 100;
+    const avail = p.__avail;
     if (!avail) return;
     const slotW = el.clientWidth;
     el.style.overflow = "hidden";
@@ -666,7 +767,33 @@ function buildPageLayoutPanel() {
     section("페이지 크기");
     const size = getPageLayoutSize(id);
     numberInput(row("너비"), size.w, 200, 2000, 10, "px", (x) => setVal("pageW", x));
-    numberInput(row("높이"), size.h, 200, 3000, 10, "px", (x) => setVal("pageH", x));
+    {
+        const r = row("높이 자동 맞춤");
+        const g = document.createElement("div");
+        g.className = "checkbox-minimal-group";
+        const lb = document.createElement("label");
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = size.auto;
+        cb.addEventListener("change", () => {
+            const cur = parseFloat(els.captureArea?.dataset.layoutH) || size.h;
+            // 자동을 끄면 지금 보이는 높이에서 시작한다
+            if (!cb.checked) pageLayoutState.values[id] = Object.assign({}, pageLayoutState.values[id] || {}, { pageH: Math.round(cur) });
+            setVal("autoH", cb.checked);
+            buildPageLayoutPanel();
+        });
+        lb.appendChild(cb);
+        lb.appendChild(document.createTextNode(" 사용"));
+        g.appendChild(lb);
+        r.appendChild(g);
+    }
+    if (!size.auto) numberInput(row("높이"), size.h, 200, 4000, 10, "px", (x) => setVal("pageH", x));
+    else {
+        const hint = document.createElement("div");
+        hint.className = "field-hint";
+        hint.textContent = "글이 길어지면 페이지 높이가 저절로 늘어나요. 사진 · 칸 위치도 같이 늘어나요.";
+        card.appendChild(hint);
+    }
 
     // 글 칸
     const fontOptions = Array.from(document.querySelectorAll("#fontSelect option")).map((o) => [o.value, o.textContent]);
