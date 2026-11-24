@@ -305,7 +305,8 @@ function updateCanvasCore() {
         }
     }
 
-    syncHtmlBackground();
+    // 페이지 레이아웃은 크기를 나중에 정하므로 HTML 배경도 그 뒤(applyPageLayout)에서 그린다
+    if (!(typeof isPageLayoutActive === "function" && isPageLayoutActive())) syncHtmlBackground();
     renderCanvasHeading();
 
     const textWrapper = document.getElementById("canvasTextWrapper");
